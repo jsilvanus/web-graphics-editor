@@ -13,7 +13,7 @@ export const GraphicsEditorToolbar: FC<{
     <button onClick={onRedo} disabled={!canRedo} title="Redo (Ctrl/Cmd+Shift+Z)">↷ Redo</button>
     <span className="ge-spacer" />
     <button onClick={() => onAdd("text")}>＋ Text</button>
-    <button onClick={() => onAdd("rect")}>＋ Rectangle</button>
+    <button onClick={() => onAdd("rectangle")}>＋ Rectangle</button>
     <button onClick={() => onAdd("ellipse")}>＋ Ellipse</button>
     <button onClick={() => onAdd("image")}>＋ Image</button>
     <span className="ge-spacer" />
