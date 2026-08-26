@@ -23,9 +23,9 @@ export const LayerProperties: FC<{
   return <>
     <div className="ge-section"><b>Layer: {layer.id}</b><label>Type<span>{layer.type}</span></label></div>
     <TransformProperties layer={layer} aspectLock={aspectLock} onLayer={patch} onAspectLock={onAspectLock} />
-    <div className="ge-section"><label>Opacity<input type="range" min="0" max="1" step="0.01" value={Number(layer.style?.opacity ?? 1)} onChange={e => style("opacity", e.target.value)} /></label></div>
+    <div className="ge-section"><label>Opacity<input type="range" min="0" max="1" step="0.01" value={Number(layer.style?.opacity ?? 1)} onChange={event => style("opacity", event.target.value)} /></label></div>
     {layer.type === "text" && <TextProperties layer={layer} onStyle={style} onText={text => patch({ text })} />}
-    {(layer.type === "rect" || layer.type === "ellipse") && <ShapeProperties layer={layer} onStyle={style} />}
+    {(layer.type === "rectangle" || layer.type === "ellipse") && <ShapeProperties layer={layer} onStyle={style} />}
     {layer.type === "image" && <ImageProperties layer={layer} assets={assets} onLayer={patch} onTogglePicker={onToggleAssetPicker} onChooseAsset={onChooseAsset} pickerOpen={assetPicker} />}
     <AnimationProperties layer={layer} onAnimation={animation => patch({ animation })} />
   </>;
