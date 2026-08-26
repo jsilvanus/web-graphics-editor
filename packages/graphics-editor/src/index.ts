@@ -6,4 +6,4 @@ export type {
   LayerType,
 } from "./types";
 
-export { GraphicsEditor } from "./GraphicsEditor";
+export { GraphicsEditor, defaultGraphicsDocument } from "./GraphicsEditor";
