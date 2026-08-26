@@ -1,0 +1,13 @@
+{
+  "name": "@jsilvanus/web-graphics-editors",
+  "private": true,
+  "description": "Reusable web-based editors for graphics, video timelines, and related visual editing workflows.",
+  "workspaces": ["packages/*", "apps/*"],
+  "scripts": {
+    "dev": "npm run dev -w @jsilvanus/graphics-editor-demo",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "engines": { "node": ">=20" }
+}
