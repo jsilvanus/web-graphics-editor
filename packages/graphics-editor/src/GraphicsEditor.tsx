@@ -10,7 +10,7 @@ import { useEditorKeyboard } from "./hooks/useEditorKeyboard";
 import { useEditorSelection } from "./hooks/useEditorSelection";
 import { useEditorTransaction } from "./hooks/useEditorTransaction";
 import { useLayerOperations } from "./hooks/useLayerOperations";
-import type { GraphicsEditorProps, GraphicsDocument, Layer } from "./types";
+import type { GraphicsEditorProps, GraphicsDocument } from "./types";
 
 export function GraphicsEditor({ document: initialDocument, assets = [], onChange }: GraphicsEditorProps) {
   const { document, setDocument, undo, redo, canUndo, canRedo, resetHistory } = useEditorHistory(initialDocument);
@@ -22,12 +22,14 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
   const artboardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { onChange?.(document); }, [document, onChange]);
-  useEffect(() => { resetHistory(initialDocument); }, [initialDocument, resetHistory]);
+  useEffect(() => {
+    if (initialDocument !== document) resetHistory(initialDocument);
+  }, [initialDocument, document, resetHistory]);
 
   const commit = useCallback((next: GraphicsDocument) => setDocument(next, true), [setDocument]);
   const transientChange = useCallback((next: GraphicsDocument) => setDocument(next, false), [setDocument]);
   const transaction = useEditorTransaction(commit);
-  const { updateLayer, updateStyle, add, remove, duplicate } = useLayerOperations(commit);
+  const { updateLayer, updateStyle, add, remove, duplicate } = useLayerOperations(setDocument);
   const interaction = useCanvasInteraction(document, artboardRef, grid, aspectLock, transientChange);
 
   useEditorKeyboard(undo, redo);
@@ -43,8 +45,8 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
   };
   const onPointerMove = (event: React.PointerEvent) => interaction.pointerMove(event);
   const onPointerUp = () => {
-    interaction.pointerUp();
     transaction.end(document);
+    interaction.pointerUp();
   };
 
   return <div className="graphics-editor">
@@ -57,7 +59,7 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
         {selectedLayer ? <LayerProperties layer={selectedLayer} assets={assets} aspectLock={aspectLock} assetPicker={assetPicker} onLayer={(id, patch) => updateLayer(id, patch)} onStyle={updateStyle} onChooseAsset={asset => { updateLayer(selectedLayer.id, { src: asset.url }); setAssetPicker(false); }} onToggleAssetPicker={() => setAssetPicker(v => !v)} onAspectLock={setAspectLock} /> : <div className="ge-section"><span>Select a layer.</span></div>}
       </aside>
     </div>
-    <style>{`.graphics-editor{background:#111827;color:#e5e7eb;border:1px solid #263244;border-radius:10px;overflow:hidden;font:14px system-ui,sans-serif}.ge-toolbar{display:flex;gap:6px;padding:9px;background:#0b1220;border-bottom:1px solid #263244;flex-wrap:wrap}.ge-toolbar button,.ge-properties button{background:#1f2937;color:#e5e7eb;border:1px solid #374151;border-radius:5px;padding:7px 10px;cursor:pointer}.ge-toolbar button.ge-active{background:#164e63}.ge-toolbar button:disabled{opacity:.45;cursor:not-allowed}.ge-spacer{flex:1}.ge-layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;min-height:620px}.ge-canvas-wrap{padding:18px;display:flex;align-items:flex-start;justify-content:center;background:#0f172a;overflow:auto}.ge-canvas{width:min(100%,960px);aspect-ratio:${WIDTH}/${HEIGHT};position:relative}.ge-artboard{position:absolute;inset:0;overflow:hidden}.ge-grid{position:absolute;inset:0;background-image:linear-gradient(#38bdf822 1px,transparent 1px),linear-gradient(90deg,#38bdf822 1px,transparent 1px);background-size:${100/96}% ${100/54}%;pointer-events:none}.ge-safe{position:absolute;pointer-events:none;border:1px dashed rgba(255,255,0,.6);z-index:1000}.safe90{left:5%;right:5%;top:5%;bottom:5%}.safe80{left:10%;right:10%;top:10%;bottom:10%;border-color:rgba(255,140,0,.6)}.ge-handle{position:absolute;width:12px;height:12px;background:#38bdf8;border:2px solid #fff;border-radius:2px;transform:translate(-50%,-50%);z-index:20}.ge-rotate{position:absolute;width:12px;height:12px;background:#f472b6;border:2px solid #fff;border-radius:50%;transform:translate(-50%,-50%);z-index:20}.ge-properties{padding:14px;background:#111827;border-left:1px solid #263244;overflow:auto}.ge-section{display:grid;gap:8px;padding:10px 0;border-bottom:1px solid #263244}.ge-section>b{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8}.ge-section label{display:grid;gap:4px;font-size:12px;color:#94a3b8}.ge-section input,.ge-section select,.ge-section textarea{width:100%;box-sizing:border-box;background:#0b1220;color:#e5e7eb;border:1px solid #374151;border-radius:5px;padding:7px}.ge-two{display:grid;grid-template-columns:1fr 1fr;gap:7px}.ge-layer-list{display:grid;gap:4px}.ge-layer-list button{display:flex;justify-content:space-between;text-align:left}.ge-layer-list .ge-layer-selected{background:#164e63}@media(max-width:850px){.ge-layout{grid-template-columns:1fr}.ge-properties{border-left:0;border-top:1px solid #263244}}`}</style>
+    <style>{`.graphics-editor{background:#111827;color:#e5e7eb;border:1px solid #263244;border-radius:10px;overflow:hidden;font:14px system-ui,sans-serif}.ge-toolbar{display:flex;gap:6px;padding:9px;background:#0b1220;border-bottom:1px solid #263244;flex-wrap:wrap}.ge-toolbar button,.ge-properties button{background:#1f2937;color:#e5e7eb;border:1px solid #374151;border-radius:5px;padding:7px 10px;cursor:pointer}.ge-toolbar button.ge-active{background:#164e63}.ge-toolbar button:disabled{opacity:.45;cursor:not-allowed}.ge-spacer{flex:1}.ge-layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;min-height:620px}.ge-canvas-wrap{padding:18px;display:flex;align-items:flex-start;justify-content:center;background:#0f172a;overflow:auto}.ge-canvas{width:min(100%,960px);aspect-ratio:${WIDTH}/${HEIGHT};position:relative;touch-action:none}.ge-artboard{position:absolute;inset:0;overflow:hidden}.ge-grid{position:absolute;inset:0;background-image:linear-gradient(#38bdf822 1px,transparent 1px),linear-gradient(90deg,#38bdf822 1px,transparent 1px);background-size:${100/96}% ${100/54}%;pointer-events:none}.ge-safe{position:absolute;pointer-events:none;border:1px dashed rgba(255,255,0,.6);z-index:1000}.safe90{left:5%;right:5%;top:5%;bottom:5%}.safe80{left:10%;right:10%;top:10%;bottom:10%;border-color:rgba(255,140,0,.6)}.ge-handle{position:absolute;width:12px;height:12px;background:#38bdf8;border:2px solid #fff;border-radius:2px;transform:translate(-50%,-50%);z-index:20}.ge-rotate{position:absolute;width:12px;height:12px;background:#f472b6;border:2px solid #fff;border-radius:50%;transform:translate(-50%,-50%);z-index:20}.ge-properties{padding:14px;background:#111827;border-left:1px solid #263244;overflow:auto}.ge-section{display:grid;gap:8px;padding:10px 0;border-bottom:1px solid #263244}.ge-section>b{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8}.ge-section label{display:grid;gap:4px;font-size:12px;color:#94a3b8}.ge-section input,.ge-section select,.ge-section textarea{width:100%;box-sizing:border-box;background:#0b1220;color:#e5e7eb;border:1px solid #374151;border-radius:5px;padding:7px}.ge-two{display:grid;grid-template-columns:1fr 1fr;gap:7px}.ge-layer-list{display:grid;gap:4px}.ge-layer-list button{display:flex;justify-content:space-between;text-align:left}.ge-layer-list .ge-layer-selected{background:#164e63}@media(max-width:850px){.ge-layout{grid-template-columns:1fr}.ge-properties{border-left:0;border-top:1px solid #263244}}`}</style>
   </div>;
 }
 
