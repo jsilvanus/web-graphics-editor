@@ -37,17 +37,7 @@ The demo is a Vite/React application. Consumers may be Vite, Next.js, or another
 
 ### 1. The editor is reusable
 
-The package must not know about a host application's:
-
-- projects
-- users
-- authentication
-- database
-- API routes
-- file storage
-- framework-specific routing
-
-Host-specific integrations are supplied through props, callbacks, adapters, or explicitly optional integration packages.
+The package must not know about a host application's projects, users, authentication, database, API routes, file storage, or framework-specific routing. Host-specific integrations are supplied through props, callbacks, adapters, or explicitly optional integration packages.
 
 ### 2. The document model is first-class
 
@@ -61,9 +51,9 @@ GraphicsDocument
   layers[]
 ```
 
-Layers contain their geometry, type, content and presentation data. The editor edits the document and reports changes through `onChange`.
+Layers contain geometry, type, content and presentation data. The editor edits the document and reports changes through `onChange`.
 
-Assets are similarly supplied by the host:
+Assets are supplied by the host:
 
 ```ts
 GraphicsAsset
@@ -77,9 +67,9 @@ The editor must not construct application-specific asset URLs.
 
 ### 3. Keep editing atomic
 
-`GraphicsEditor` should primarily coordinate document state, selection and editor-level commands. Detailed UI and interaction behavior belongs in small components.
+`GraphicsEditor` primarily coordinates document state, selection and editor-level commands. Detailed UI and interaction behavior belongs in small components.
 
-Target structure:
+Current structure:
 
 ```text
 src/
@@ -87,6 +77,8 @@ src/
 ├── types.ts
 ├── constants.ts
 ├── geometry.ts
+├── document.ts
+├── serialization.ts
 │
 ├── components/
 │   ├── GraphicsEditorToolbar.tsx
@@ -105,13 +97,16 @@ src/
 │       ├── TextProperties.tsx
 │       ├── ShapeProperties.tsx
 │       ├── ImageProperties.tsx
-│       ├── AnimationProperties.tsx
-│       └── AssetPicker.tsx
+│       └── AnimationProperties.tsx
 │
-└── ...
+└── hooks/
+    ├── useCanvasInteraction.ts
+    ├── useEditorHistory.ts
+    ├── useEditorKeyboard.ts
+    ├── useEditorSelection.ts
+    ├── useEditorTransaction.ts
+    └── useLayerOperations.ts
 ```
-
-Components should have narrow responsibilities and communicate through explicit props/callbacks rather than reaching into application state.
 
 ## Phase 1 — Extract and stabilize the graphics editor
 
@@ -122,129 +117,85 @@ Components should have narrow responsibilities and communicate through explicit 
 - [x] Extract toolbar
 - [x] Extract canvas
 - [x] Extract layer list
-- [x] Extract initial layer properties component
+- [x] Extract atomic property components
+- [x] Extract atomic canvas rendering/interaction components
 - [x] Extract geometry helpers
-- [ ] Split `LayerProperties` into atomic property components
-- [ ] Split canvas into atomic rendering/interaction components
-- [ ] Remove all remaining host/application-specific assumptions
-- [ ] Add proper editor styling rather than component-local prototype styling
-- [ ] Add unit tests for geometry and document operations
+- [x] Remove Saarnavideo API/project assumptions from the editor package
+- [ ] Replace component-local prototype styling with package styling
+- [x] Add unit tests for geometry and document operations
 - [ ] Add interaction tests for selection, movement, resize and rotation
-- [ ] Make the demo exercise the public package API
-
-### Property component extraction
-
-`LayerProperties` should become a coordinator for type-independent and type-specific property panels.
-
-```text
-LayerProperties
-├── TransformProperties
-├── TextProperties       # text only
-├── ShapeProperties      # rectangle / ellipse
-├── ImageProperties      # image only
-└── AnimationProperties
-```
-
-Asset selection belongs in `AssetPicker` and receives the available assets from the host.
-
-### Canvas component extraction
-
-The canvas should separate rendering from interaction mechanics:
-
-```text
-GraphicsEditorCanvas
-├── CanvasLayer
-├── SelectionOverlay
-│   ├── ResizeHandles
-│   └── RotateHandle
-└── guides/grid/safe-area overlays
-```
-
-The canvas should deal in logical document coordinates. Browser scaling must remain an implementation detail of the canvas.
+- [x] Make the demo exercise the public package API
 
 ## Phase 2 — Editor interaction model
 
-Implement and stabilize:
+The basic interaction model is now present and should be hardened with browser tests:
 
-- single selection
-- additive/multi-selection
-- deselection
-- layer movement
-- grid snapping
-- resize handles
-- aspect-ratio locking
-- rotation
-- rotation snapping
-- duplicate
-- delete
-- keyboard shortcuts
-- z-order/layer ordering
-- undo/redo history
-
-Interaction logic should be reusable and testable independently from presentation components where practical.
+- [x] single selection
+- [x] additive/multi-selection
+- [x] deselection
+- [x] layer movement
+- [x] grid snapping
+- [x] resize handles
+- [x] aspect-ratio locking
+- [x] rotation
+- [x] rotation snapping
+- [x] duplicate
+- [x] delete
+- [x] keyboard shortcuts
+- [ ] z-order/layer ordering
+- [x] undo/redo history
+- [ ] interaction/browser tests
 
 ## Phase 3 — Layer/property model
 
-Support the existing graphics use cases cleanly:
-
 ### Text
 
-- content
-- font family
-- size
-- weight
-- alignment
-- color
-- opacity
-- shadow
-- stroke
-- animation
+- [x] content
+- [x] font family
+- [x] size
+- [x] weight
+- [x] alignment
+- [x] color
+- [x] opacity
+- [x] shadow
+- [x] stroke
+- [x] animation
 
 ### Shapes
 
-- rectangle
-- ellipse
-- fill/background
-- opacity
-- border/stroke as appropriate
-- rotation
+- [x] rectangle
+- [x] ellipse
+- [x] fill/background
+- [x] opacity
+- [x] border/stroke
+- [x] rotation
 
 ### Images
 
-- asset selection
-- source URL supplied by host
-- sizing
-- object fit
-- opacity
-- rotation
+- [x] asset selection
+- [x] source URL supplied by host
+- [x] sizing
+- [x] object fit
+- [x] opacity
+- [x] rotation
 
 ### Common transform
 
-- x/y
-- width/height
-- rotation
-- aspect-ratio lock
+- [x] x/y
+- [x] width/height
+- [x] rotation
+- [x] aspect-ratio lock
 
 ## Phase 4 — Serialization and compatibility
 
-Define a stable serialized document format.
+The generic package now has a versioned JSON boundary. Deserialization also accepts the `rect` layer type used by the extracted Saarnavideo editor and normalizes it to `rectangle`.
 
-Requirements:
-
-- JSON serializable
-- versionable
-- deterministic enough for testing/diffing
-- backwards-compatible migration path
-- independent of React
-
-Add:
-
-- `serializeGraphicsDocument()`
-- `deserializeGraphicsDocument()`
-- document version
-- migration functions when the schema changes
-
-Do not make React component state the persistence format.
+- [x] JSON serialization
+- [x] document version
+- [x] compatibility normalization for legacy `rect`
+- [x] serialization tests
+- [ ] deterministic/canonical serialization policy
+- [ ] explicit migration registry for future schema versions
 
 ## Phase 5 — Rendering/export boundary
 
@@ -263,22 +214,20 @@ Do not prematurely introduce a rendering engine. First stabilize the document mo
 
 ## Phase 6 — Package API
 
-The public package should expose only deliberate public APIs.
-
-Initial target:
+The public package currently exposes the editor, document types, default document, and stable serialization helpers:
 
 ```ts
 import {
   GraphicsEditor,
+  deserializeGraphicsDocument,
+  serializeGraphicsDocument,
   type GraphicsDocument,
   type GraphicsAsset,
   type Layer,
 } from "@jsilvanus/graphics-editor";
 ```
 
-Internal implementation components should not automatically become public API.
-
-Document helpers can be exported separately when stable.
+Internal implementation components do not automatically become public API.
 
 ## Phase 7 — Integration with existing applications
 
@@ -293,8 +242,6 @@ The goal is to have one editor implementation rather than maintaining copies in 
 
 ## Future editors
 
-The monorepo is deliberately not named around the graphics editor alone at the package/repository architecture level.
-
 Potential packages:
 
 ```text
@@ -303,43 +250,14 @@ Potential packages:
 @jsilvanus/audio-editor
 ```
 
-They may eventually share lower-level packages if useful:
-
-```text
-@jsilvanus/editor-core
-@jsilvanus/media-model
-@jsilvanus/editor-ui
-```
-
-Do **not** create these shared packages until there is real duplication. Prefer simple duplication over premature abstraction.
-
-## Quality bar
-
-Before calling the graphics editor stable:
-
-- `npm run build` succeeds for all workspaces
-- tests pass
-- demo works without host application dependencies
-- no Saarnavideo API routes or project assumptions remain in the package
-- document serialization is tested
-- core geometry is tested
-- pointer interactions are tested
-- public package exports are intentional
-- a consuming application can supply its own assets and persistence
+Shared packages such as `editor-core`, `media-model`, or `editor-ui` should only be created after real duplication appears.
 
 ## Current next step
 
-Complete the atomic extraction:
+Do a stabilization pass before expanding the feature set:
 
-1. `TransformProperties`
-2. `TextProperties`
-3. `ShapeProperties`
-4. `ImageProperties`
-5. `AnimationProperties`
-6. `AssetPicker`
-7. `CanvasLayer`
-8. `SelectionOverlay`
-9. `ResizeHandles`
-10. `RotateHandle`
-
-Then run a cleanup/test pass before adding new editor features.
+1. Add interaction/browser tests for selection, movement, resize, rotation, and undo/redo.
+2. Add z-order/layer ordering.
+3. Finish package-level styling cleanup.
+4. Add an application-side adapter example showing how Saarnavideo's `item.data.layers` becomes a `GraphicsDocument` without putting Saarnavideo concerns into the generic package.
+5. Then replace Saarnavideo's copied graphics editor with the package.
