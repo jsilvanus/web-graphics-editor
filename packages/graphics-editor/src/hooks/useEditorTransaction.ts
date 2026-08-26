@@ -1,8 +1,8 @@
 import { useCallback, useRef } from "react";
 import type { GraphicsDocument } from "../types";
 
-/** Coalesces many transient pointer updates into one history commit. */
-export function useEditorTransaction(document: GraphicsDocument, commit: (document: GraphicsDocument) => void) {
+/** Sends live pointer updates without recording each update, then commits once on pointer-up. */
+export function useEditorTransaction(document: GraphicsDocument, transientChange: (document: GraphicsDocument) => void, commit: (document: GraphicsDocument) => void) {
   const startRef = useRef<GraphicsDocument | null>(null);
 
   const begin = useCallback(() => {
@@ -10,8 +10,8 @@ export function useEditorTransaction(document: GraphicsDocument, commit: (docume
   }, [document]);
 
   const update = useCallback((next: GraphicsDocument) => {
-    commit(next);
-  }, [commit]);
+    transientChange(next);
+  }, [transientChange]);
 
   const end = useCallback((current: GraphicsDocument) => {
     const start = startRef.current;
@@ -19,5 +19,7 @@ export function useEditorTransaction(document: GraphicsDocument, commit: (docume
     if (start && start !== current) commit(current);
   }, [commit]);
 
-  return { begin, update, end };
+  const cancel = useCallback(() => { startRef.current = null; }, []);
+
+  return { begin, update, end, cancel };
 }
