@@ -10,6 +10,7 @@ export interface Layer {
   rotation?: number;
   text?: string;
   src?: string;
+  animation?: string;
   style?: Record<string, string | number>;
 }
 
