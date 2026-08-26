@@ -1,53 +1,40 @@
 import { useCallback, useRef, useState } from "react";
 import type { GraphicsDocument } from "../types";
 
-export function useEditorHistory(initial: GraphicsDocument) {
-  const [document, setDocumentState] = useState(initial);
+export function useEditorHistory(document: GraphicsDocument, onChange: (document: GraphicsDocument) => void) {
   const pastRef = useRef<GraphicsDocument[]>([]);
   const futureRef = useRef<GraphicsDocument[]>([]);
+  const [, forceUpdate] = useState(0);
 
-  const setDocument = useCallback((next: GraphicsDocument | ((current: GraphicsDocument) => GraphicsDocument), history = true) => {
-    setDocumentState(current => {
-      const resolved = typeof next === "function" ? next(current) : next;
-      if (history && resolved !== current) {
-        pastRef.current = [...pastRef.current.slice(-99), current];
-        futureRef.current = [];
-      }
-      return resolved;
-    });
-  }, []);
+  const commit = useCallback((next: GraphicsDocument) => {
+    if (next === document) return;
+    pastRef.current = [...pastRef.current.slice(-99), document];
+    futureRef.current = [];
+    onChange(next);
+    forceUpdate(value => value + 1);
+  }, [document, onChange]);
 
   const undo = useCallback(() => {
     const previous = pastRef.current.pop();
     if (!previous) return;
-    setDocumentState(current => {
-      futureRef.current = [...futureRef.current, current];
-      return previous;
-    });
-  }, []);
+    futureRef.current.push(document);
+    onChange(previous);
+    forceUpdate(value => value + 1);
+  }, [document, onChange]);
 
   const redo = useCallback(() => {
     const next = futureRef.current.pop();
     if (!next) return;
-    setDocumentState(current => {
-      pastRef.current = [...pastRef.current, current];
-      return next;
-    });
-  }, []);
+    pastRef.current.push(document);
+    onChange(next);
+    forceUpdate(value => value + 1);
+  }, [document, onChange]);
 
-  const resetHistory = useCallback((next: GraphicsDocument) => {
+  const reset = useCallback(() => {
     pastRef.current = [];
     futureRef.current = [];
-    setDocumentState(next);
+    forceUpdate(value => value + 1);
   }, []);
 
-  return {
-    document,
-    setDocument,
-    undo,
-    redo,
-    resetHistory,
-    canUndo: pastRef.current.length > 0,
-    canRedo: futureRef.current.length > 0,
-  };
+  return { commit, undo, redo, reset, canUndo: pastRef.current.length > 0, canRedo: futureRef.current.length > 0 };
 }
