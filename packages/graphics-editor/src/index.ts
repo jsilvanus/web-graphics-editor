@@ -7,3 +7,4 @@ export type {
 } from "./types";
 
 export { GraphicsEditor, defaultGraphicsDocument } from "./GraphicsEditor";
+export { GRAPHICS_DOCUMENT_VERSION, serializeGraphicsDocument, deserializeGraphicsDocument } from "./serialization";
