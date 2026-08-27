@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import type { GraphicsDocument, Layer, LayerType } from "../types";
+import { bringLayerForward, bringLayerToFront, sendLayerBackward, sendLayerToBack } from "../document";
 
 function createLayer(type: LayerType): Layer {
   const id = `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
@@ -19,5 +20,9 @@ export function useLayerOperations(setDocument: (next: GraphicsDocument | ((curr
   const add = useCallback((type: LayerType) => { const layer = createLayer(type); setDocument(document => ({ ...document, layers: [...document.layers, layer] })); return layer.id; }, [setDocument]);
   const remove = useCallback((ids: Set<string>) => setDocument(document => ({ ...document, layers: document.layers.filter(layer => !ids.has(layer.id)) })), [setDocument]);
   const duplicate = useCallback((ids: Set<string>) => { let copyIds: string[] = []; setDocument(document => { const selected = document.layers.filter(layer => ids.has(layer.id)); const copies = selected.map(layer => ({ ...layer, id: `${layer.type}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, x: layer.x + 30, y: layer.y + 30, style: layer.style ? { ...layer.style } : undefined })); copyIds = copies.map(layer => layer.id); return { ...document, layers: [...document.layers, ...copies] }; }); return copyIds; }, [setDocument]);
-  return { updateLayer, updateStyle, add, remove, duplicate };
+  const bringForward = useCallback((id: string) => setDocument(document => bringLayerForward(document, id)), [setDocument]);
+  const sendBackward = useCallback((id: string) => setDocument(document => sendLayerBackward(document, id)), [setDocument]);
+  const bringToFront = useCallback((id: string) => setDocument(document => bringLayerToFront(document, id)), [setDocument]);
+  const sendToBack = useCallback((id: string) => setDocument(document => sendLayerToBack(document, id)), [setDocument]);
+  return { updateLayer, updateStyle, add, remove, duplicate, bringForward, sendBackward, bringToFront, sendToBack };
 }
