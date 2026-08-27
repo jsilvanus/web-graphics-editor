@@ -1,4 +1,12 @@
-export type LayerType = "text" | "image" | "rectangle" | "ellipse";
+export type LayerType = "text" | "image" | "rectangle" | "ellipse" | "line" | "path";
+
+export type PathCommand =
+  | { type: "M" | "L"; x: number; y: number }
+  | { type: "H"; x: number }
+  | { type: "V"; y: number }
+  | { type: "C"; x1: number; y1: number; x2: number; y2: number; x: number; y: number }
+  | { type: "Q"; x1: number; y1: number; x: number; y: number }
+  | { type: "Z" };
 
 export interface Layer {
   id: string;
@@ -10,6 +18,8 @@ export interface Layer {
   rotation?: number;
   text?: string;
   src?: string;
+  path?: string;
+  pathCommands?: PathCommand[];
   animation?: string;
   style?: Record<string, string | number>;
 }
