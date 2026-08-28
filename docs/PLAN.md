@@ -69,7 +69,52 @@ The editor must not construct application-specific asset URLs.
 
 `GraphicsEditor` primarily coordinates document state, selection and editor-level commands. Detailed UI and interaction behavior belongs in small components.
 
-Current structure:
+### 4. Future 3D architecture
+
+3D should extend the document model without turning the 2D canvas into a fundamentally 3D editor. The core abstraction is:
+
+> **World = what exists. Camera = what sees it. View = how that view appears in the composition.**
+
+A document may contain multiple reusable 3D worlds and multiple 3D views. A view references a world and camera and behaves as a layer in the 2D composition.
+
+Conceptually:
+
+```text
+GraphicsDocument
+├── 2D layers
+├── 3D worlds
+│   ├── meshes
+│   ├── lights
+│   └── animation
+└── 3D views
+    ├── worldId
+    ├── cameraId
+    ├── visibility/filter
+    └── 2D canvas transform
+```
+
+The same world may be viewed by several cameras and placed into the canvas several times. Views may select or exclude objects independently, allowing compositions such as a wide kitchen shot and a kettle close-up from the same animated world.
+
+3D object transforms are separate from the 2D transform of the view. A 3D view is positioned, sized, ordered and composited like other canvas layers; objects inside the world have genuine 3D transforms.
+
+The underlying 3D geometry model must support **arbitrary meshes**. Cubes, cylinders, spheres and similar primitives are convenience generators, not foundational object types. The persisted document format must not depend on a rendering library's internal geometry representation.
+
+The planned real-3D renderer is **Three.js**, behind an editor-owned renderer boundary. Three.js is a rendering/interaction implementation detail, not the document model. This leaves room to change rendering technology later without changing serialized documents or the host integration API.
+
+### Planned 3D progression
+
+1. Define versioned `Graphics3DWorld`, mesh, camera, light and view data structures.
+2. Add arbitrary, renderer-independent mesh geometry and serialization.
+3. Add a Three.js-based renderer and basic generated meshes.
+4. Add a dedicated 3D workspace for scene/object/camera editing.
+5. Add 3D views as normal 2D composition layers, including visibility filtering and multiple views of one world.
+6. Integrate 3D object and camera animation with the timeline.
+7. Add richer arbitrary-mesh editing/import, materials, lighting and other 3D capabilities as needed.
+8. Keep the model and operations structured so a future AI/MCP interface can create and modify worlds, meshes, cameras, views and composition without depending on UI details.
+
+Do not implement MCP as part of the initial 3D work. Preserve programmatic accessibility and clean editing operations for later.
+
+## Current structure
 
 ```text
 src/
@@ -261,3 +306,5 @@ Do a stabilization pass before expanding the feature set:
 3. Finish package-level styling cleanup.
 4. Add an application-side adapter example showing how Saarnavideo's `item.data.layers` becomes a `GraphicsDocument` without putting Saarnavideo concerns into the generic package.
 5. Then replace Saarnavideo's copied graphics editor with the package.
+
+The 3D work should begin only after the core editor stabilization/integration boundary is sufficiently solid, while the architecture above should guide the document and API decisions made before then.
