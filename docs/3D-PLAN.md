@@ -187,6 +187,8 @@ Interpolation uses the same linear/ease-in/ease-out/ease-in-out easing vocabular
 
 Because tracks identify world objects by stable IDs rather than duplicating world state, multiple views of the same world see the same animation at a given timeline time.
 
+The unified timeline UI represents 2D scenes and their objects alongside 3D views and their world objects/cameras. A 3D view is treated as a normal 2D composition object for canvas-level animation, while its nested mesh/camera tracks represent animation inside the view.
+
 Animated prerender caching remains a later optimization: a 2D composition can evaluate a frame and prerender it when needed rather than keeping Three.js continuously active.
 
 ## Native project format and interchange
@@ -279,10 +281,11 @@ Do not attempt to reproduce Blender wholesale. Add operations according to actua
 - [x] Evaluate animated worlds/views at arbitrary timeline times without mutating source data
 - [x] Render multiple views from the same animated world using shared track state
 - [x] Ensure shared-world animation remains consistent
+- [x] Unified timeline hierarchy: 2D scenes/objects and 3D views with nested objects/cameras
+- [x] 3D keyframe authoring, dragging, editing, easing and deletion
 - [ ] Cache animated prerendered output where useful
-- [ ] Add interactive 3D timeline UI/keyframe editing
 
-The current phase provides the data model, track operations and deterministic evaluation. UI keyframe authoring and animated prerender frame caching are intentionally left for subsequent work.
+The timeline is one unified timeline and one playhead. 3D views behave as normal 2D composition objects, while their nested world objects and cameras have their own 3D tracks. View-level properties can therefore animate independently from animation inside the world.
 
 ### Phase 7 — Advanced rendering
 
@@ -332,4 +335,5 @@ AI should eventually be able to create and modify graphics through document oper
 10. **`.wegra` is the native complete project format; GLB/glTF are interchange formats.**
 11. **Prerendering is a performance/cache strategy, never the source of truth.**
 12. **3D animation tracks target stable world/view IDs and are evaluated as derived state.**
-13. **Keep MCP out of the initial implementation while preserving clean programmatic operations for it later.**
+13. **The timeline is unified: 3D views are canvas objects, with nested mesh/camera tracks.**
+14. **Keep MCP out of the initial implementation while preserving clean programmatic operations for it later.**
