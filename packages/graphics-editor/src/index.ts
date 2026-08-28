@@ -12,3 +12,5 @@ export { create3DWorld, update3DWorld, remove3DWorld, add3DMesh, update3DMesh, r
 export { ThreeGraphics3DRenderer, createThreeCamera, createThreeGeometry, createThreeScene } from "./3d-renderer";
 export type { Graphics3DRenderer, Graphics3DRenderOptions } from "./3d-renderer";
 export { createBoxMesh } from "./3d-primitives";
+export { ThreeDWorkspace } from "./ThreeDWorkspace";
+export type { ThreeDWorkspaceProps } from "./ThreeDWorkspace";
