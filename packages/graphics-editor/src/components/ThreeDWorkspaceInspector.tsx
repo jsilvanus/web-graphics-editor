@@ -1,11 +1,11 @@
-import type { Graphics3DCamera, Graphics3DWorld } from "../types";
+import type { Graphics3DCamera, Graphics3DMesh, Graphics3DWorld } from "../types";
 
 export interface ThreeDWorkspaceInspectorProps {
   world: Graphics3DWorld;
   selectedId: string | null;
   cameraId: string;
   onSelect: (id: string | null) => void;
-  onUpdateMesh: (id: string, patch: Parameters<NonNullable<unknown>>[0]) => void;
+  onUpdateMesh: (id: string, patch: Partial<Omit<Graphics3DMesh, "id">>) => void;
   onUpdateCamera: (id: string, patch: Partial<Omit<Graphics3DCamera, "id">>) => void;
   onAddBox: () => void;
   onDeleteMesh: () => void;
