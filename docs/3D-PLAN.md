@@ -200,14 +200,16 @@ No Three.js dependency is required for this phase.
 
 ### Phase 2 — Three.js renderer
 
-- [ ] Add Three.js dependency
-- [ ] Create editor-owned 3D renderer interface
-- [ ] Map mesh geometry to Three.js objects
-- [ ] Map transforms
-- [ ] Implement perspective/orthographic cameras
-- [ ] Implement basic lights/materials
-- [ ] Render simple generated meshes
-- [ ] Add renderer tests where practical
+- [x] Add Three.js dependency
+- [x] Create editor-owned 3D renderer interface
+- [x] Map mesh geometry to Three.js objects
+- [x] Map transforms
+- [x] Implement perspective/orthographic cameras
+- [x] Implement basic lights/materials
+- [x] Render simple generated meshes
+- [x] Add renderer tests where practical
+
+The initial renderer is deliberately an adapter rather than part of the document model. Three.js rotations are currently interpreted as radians; the serialized model remains independent of Three.js.
 
 ### Phase 3 — 3D workspace
 
