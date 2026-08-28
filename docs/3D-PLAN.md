@@ -170,16 +170,24 @@ Initially prerender static views. Animated 3D can later use frame/sequence cachi
 
 ## Animation
 
-3D object transforms and stored camera transforms should eventually integrate with the existing timeline.
+3D animation is stored as first-class timeline tracks alongside existing 2D tracks. A track targets a mesh, camera or view by ID and animates a semantic property; evaluation produces a derived world/view without mutating the source document.
 
-Support, as needed:
+Supported animated properties currently include:
 
-- object position/rotation/scale animation
-- camera position/rotation/FOV animation
-- visibility animation
-- shared animation state when the same world is used by multiple views
+- mesh position X/Y/Z
+- mesh rotation X/Y/Z
+- mesh scale X/Y/Z
+- camera position X/Y/Z
+- camera rotation X/Y/Z
+- camera FOV
+- 3D view opacity
+- 3D view visibility
 
-The same animated world should be able to feed several camera views at the same timeline time.
+Interpolation uses the same linear/ease-in/ease-out/ease-in-out easing vocabulary as the existing timeline.
+
+Because tracks identify world objects by stable IDs rather than duplicating world state, multiple views of the same world see the same animation at a given timeline time.
+
+Animated prerender caching remains a later optimization: a 2D composition can evaluate a frame and prerender it when needed rather than keeping Three.js continuously active.
 
 ## Native project format and interchange
 
@@ -264,12 +272,17 @@ Do not attempt to reproduce Blender wholesale. Add operations according to actua
 
 ### Phase 6 — Timeline integration
 
-- [ ] Animate object transforms
-- [ ] Animate camera transforms
-- [ ] Animate visibility
-- [ ] Render multiple views from the same animated world
-- [ ] Ensure shared-world animation remains consistent
+- [x] Add first-class 3D timeline tracks alongside existing 2D tracks
+- [x] Animate object transforms
+- [x] Animate camera transforms
+- [x] Animate 3D view visibility and opacity
+- [x] Evaluate animated worlds/views at arbitrary timeline times without mutating source data
+- [x] Render multiple views from the same animated world using shared track state
+- [x] Ensure shared-world animation remains consistent
 - [ ] Cache animated prerendered output where useful
+- [ ] Add interactive 3D timeline UI/keyframe editing
+
+The current phase provides the data model, track operations and deterministic evaluation. UI keyframe authoring and animated prerender frame caching are intentionally left for subsequent work.
 
 ### Phase 7 — Advanced rendering
 
@@ -318,4 +331,5 @@ AI should eventually be able to create and modify graphics through document oper
 9. **Serialization is versioned from the first 3D schema.**
 10. **`.wegra` is the native complete project format; GLB/glTF are interchange formats.**
 11. **Prerendering is a performance/cache strategy, never the source of truth.**
-12. **Keep MCP out of the initial implementation while preserving clean programmatic operations for it later.**
+12. **3D animation tracks target stable world/view IDs and are evaluated as derived state.**
+13. **Keep MCP out of the initial implementation while preserving clean programmatic operations for it later.**
