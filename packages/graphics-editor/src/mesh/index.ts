@@ -3,6 +3,7 @@ export * from "./from-polygons";
 export * from "./topology";
 export * from "./validate";
 export * from "./geometry";
+export * from "./graphics-mesh";
 export * from "./split-edge";
 export * from "./split-face";
 export * from "./inset-face";
