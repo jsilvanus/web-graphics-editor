@@ -1,38 +1,14 @@
 import type { CSSProperties } from "react";
 import { GRID } from "./constants";
 import type { Layer, PathNode, Point } from "./types";
+import { gradientToCss } from "./gradient";
 export { linePath, orthogonalPoint, pathCommandsToD, roundedRectPath } from "./geometry/path";
-
-export function anchor(handle: string, layer: Layer) { const { width, height } = layer; return { left: handle.includes("e") ? width : handle.includes("w") ? 0 : width / 2, top: handle.includes("s") ? height : handle.includes("n") ? 0 : height / 2 }; }
-export function resizeLayer(handle: string, start: Layer, dx: number, dy: number) { let { x, y, width, height } = start; if (handle.includes("e")) width += dx; if (handle.includes("w")) { x += dx; width -= dx; } if (handle.includes("s")) height += dy; if (handle.includes("n")) { y += dy; height -= dy; } return { x: Math.round(x), y: Math.round(y), width: Math.max(20, Math.round(width)), height: Math.max(20, Math.round(height)) }; }
-export function snap(value: number) { return Math.round(value / GRID) * GRID; }
-export function layerStyle(layer: Layer, selected: boolean): CSSProperties { const css: CSSProperties = {}; for (const [key, value] of Object.entries(layer.style ?? {})) (css as Record<string, unknown>)[key.replace(/-([a-z])/g, (_, c) => c.toUpperCase())] = value; return { position: "absolute", left: layer.x, top: layer.y, width: layer.width, height: layer.height, boxSizing: "border-box", userSelect: "none", cursor: "move", outline: selected ? "3px solid #38bdf8" : undefined, animation: layer.animation || undefined, transform: layer.rotation ? `rotate(${layer.rotation}deg)` : undefined, ...css }; }
-export function parsePx(value: unknown, fallback = 0) { const n = Number.parseFloat(String(value ?? "")); return Number.isFinite(n) ? n : fallback; }
-export function styleValue(layer: Layer, key: string, fallback = "") { return String(layer.style?.[key] ?? fallback); }
-
-export function nodesToD(nodes: PathNode[], closed = false): string {
-  if (!nodes.length) return "";
-  const parts = [`M ${nodes[0].x} ${nodes[0].y}`];
-  const end = closed ? nodes.length : nodes.length - 1;
-  for (let i = 1; i < end; i++) parts.push(segmentD(nodes[i - 1], nodes[i]));
-  if (closed && nodes.length > 1) { parts.push(segmentD(nodes[nodes.length - 1], nodes[0])); parts.push("Z"); }
-  return parts.join(" ");
-}
-function segmentD(a: PathNode, b: PathNode): string {
-  if (a.handleOut || b.handleIn) {
-    const c1 = a.handleOut ?? { x: a.x, y: a.y };
-    const c2 = b.handleIn ?? { x: b.x, y: b.y };
-    return `C ${c1.x} ${c1.y} ${c2.x} ${c2.y} ${b.x} ${b.y}`;
-  }
-  return `L ${b.x} ${b.y}`;
-}
-
-export function mirrorHandle(node: PathNode, moved: "in" | "out", point: Point): PathNode {
-  if (node.kind !== "smooth") return { ...node, [moved === "in" ? "handleIn" : "handleOut"]: point };
-  const opposite = moved === "in" ? "handleOut" : "handleIn";
-  const dx = point.x - node.x, dy = point.y - node.y, length = Math.hypot(dx, dy);
-  if (!length) return { ...node, [moved === "in" ? "handleIn" : "handleOut"]: point };
-  const oppositeLength = node[opposite] ? Math.hypot(node[opposite]!.x - node.x, node[opposite]!.y - node.y) : length;
-  const other = { x: node.x - dx / length * oppositeLength, y: node.y - dy / length * oppositeLength };
-  return { ...node, [moved === "in" ? "handleIn" : "handleOut"]: point, [opposite]: other };
-}
+export function anchor(handle:string,layer:Layer){const{width,height}=layer;return{left:handle.includes("e")?width:handle.includes("w")?0:width/2,top:handle.includes("s")?height:handle.includes("n")?0:height/2}}
+export function resizeLayer(handle:string,start:Layer,dx:number,dy:number){let{x,y,width,height}=start;if(handle.includes("e"))width+=dx;if(handle.includes("w")){x+=dx;width-=dx}if(handle.includes("s"))height+=dy;if(handle.includes("n")){y+=dy;height-=dy}return{x:Math.round(x),y:Math.round(y),width:Math.max(20,Math.round(width)),height:Math.max(20,Math.round(height))}}
+export function snap(value:number){return Math.round(value/GRID)*GRID}
+export function layerStyle(layer:Layer,selected:boolean):CSSProperties{const css:CSSProperties={};for(const[key,value]of Object.entries(layer.style??{}))(css as Record<string,unknown>)[key.replace(/-([a-z])/g,(_,c)=>c.toUpperCase())]=value;const gradient=gradientToCss(layer.gradient);if(gradient!=="none")css.backgroundImage=gradient;return{position:"absolute",left:layer.x,top:layer.y,width:layer.width,height:layer.height,boxSizing:"border-box",userSelect:"none",cursor:"move",outline:selected?"3px solid #38bdf8":undefined,animation:layer.animation||undefined,transform:layer.rotation?`rotate(${layer.rotation}deg)`:undefined,...css}}
+export function parsePx(value:unknown,fallback=0){const n=Number.parseFloat(String(value??""));return Number.isFinite(n)?n:fallback}
+export function styleValue(layer:Layer,key:string,fallback=""){return String(layer.style?.[key]??fallback)}
+export function nodesToD(nodes:PathNode[],closed=false):string{if(!nodes.length)return"";const parts=[`M ${nodes[0].x} ${nodes[0].y}`];const end=closed?nodes.length:nodes.length-1;for(let i=1;i<end;i++)parts.push(segmentD(nodes[i-1],nodes[i]));if(closed&&nodes.length>1){parts.push(segmentD(nodes[nodes.length-1],nodes[0]));parts.push("Z")}return parts.join(" ")}
+function segmentD(a:PathNode,b:PathNode):string{if(a.handleOut||b.handleIn){const c1=a.handleOut??{x:a.x,y:a.y},c2=b.handleIn??{x:b.x,y:b.y};return`C ${c1.x} ${c1.y} ${c2.x} ${c2.y} ${b.x} ${b.y}`}return`L ${b.x} ${b.y}`}
+export function mirrorHandle(node:PathNode,moved:"in"|"out",point:Point):PathNode{if(node.kind!=="smooth")return{...node,[moved==="in"?"handleIn":"handleOut"]:point};const opposite=moved==="in"?"handleOut":"handleIn",dx=point.x-node.x,dy=point.y-node.y,length=Math.hypot(dx,dy);if(!length)return{...node,[moved==="in"?"handleIn":"handleOut"]:point};const oppositeLength=node[opposite]?Math.hypot(node[opposite]!.x-node.x,node[opposite]!.y-node.y):length,other={x:node.x-dx/length*oppositeLength,y:node.y-dy/length*oppositeLength};return{...node,[moved==="in"?"handleIn":"handleOut"]:point,[opposite]:other}}
