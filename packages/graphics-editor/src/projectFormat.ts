@@ -4,55 +4,14 @@ export const WEGRA_EXTENSION = ".wegra";
 export const WEGRA_FORMAT = "wegra";
 export const WEGRA_VERSION = 1;
 
-export interface WegraManifest {
-  format: typeof WEGRA_FORMAT;
-  version: number;
-  document: string;
-  objects: string;
-  scenes: string;
-  timelines: string;
-  assets: string;
-  preview?: string;
-}
-
-export interface WegraPackage {
-  manifest: WegraManifest;
-  document: Omit<GraphicsDocument, "layers">;
-  objects: Layer[];
-  scenes: Scene[];
-  timeline?: GraphicsDocument["timeline"];
-}
-
-export function createWegraPackage(document: GraphicsDocument): WegraPackage {
-  const { layers, timeline, ...documentData } = document;
-  return {
-    manifest: {
-      format: WEGRA_FORMAT,
-      version: WEGRA_VERSION,
-      document: "document.json",
-      objects: "objects/",
-      scenes: "scenes/",
-      timelines: "timelines/",
-      assets: "assets/",
-    },
-    document: documentData,
-    objects: layers,
-    scenes: timeline?.scenes ?? [],
-    timeline,
-  };
-}
-
-export function restoreWegraPackage(pkg: WegraPackage): GraphicsDocument {
-  return {
-    ...pkg.document,
-    layers: pkg.objects,
-    timeline: pkg.timeline,
-  };
-}
-
-export function encodeWegra(document: GraphicsDocument): Blob {
-  // The package is assembled by the browser ZIP adapter in projectZip.ts.
-  // Keeping this function's contract here makes the project format independent
-  // of the UI and allows a Node/FFmpeg-side packager later.
-  throw new Error("ZIP encoding is implemented by projectZip.ts");
-}
+export interface WegraManifest { format: typeof WEGRA_FORMAT; version: number; document: string; objects: string; scenes: string; timelines: string; assets: string; preview?: string }
+export interface WegraPackage { manifest: WegraManifest; document: Omit<GraphicsDocument, "layers">; objects: Layer[]; scenes: Scene[]; timeline?: GraphicsDocument["timeline"] }
+export function createWegraPackage(document: GraphicsDocument): WegraPackage { const {layers,timeline,...documentData}=document; return {manifest:{format:WEGRA_FORMAT,version:WEGRA_VERSION,document:"document.json",objects:"objects/",scenes:"scenes/",timelines:"timelines/",assets:"assets/"},document:documentData,objects:layers,scenes:timeline?.scenes??[],timeline}; }
+export function restoreWegraPackage(pkg:WegraPackage):GraphicsDocument{return{...pkg.document,layers:pkg.objects,timeline:pkg.timeline};}
+const enc=new TextEncoder(),dec=new TextDecoder();const u16=(n:number)=>{const a=new Uint8Array(2);new DataView(a.buffer).setUint16(0,n,true);return a};const u32=(n:number)=>{const a=new Uint8Array(4);new DataView(a.buffer).setUint32(0,n>>>0,true);return a};const cat=(xs:Uint8Array[])=>{const o=new Uint8Array(xs.reduce((n,x)=>n+x.length,0));let p=0;for(const x of xs){o.set(x,p);p+=x.length}return o};
+function crc32(d:Uint8Array){let c=0xffffffff;for(const b of d){c^=b;for(let i=0;i<8;i++)c=(c>>>1)^((c&1)?0xedb88320:0)}return(c^0xffffffff)>>>0}
+async function zipDeflate(d:Uint8Array){const cs=new CompressionStream("deflate-raw" as CompressionFormat);const w=cs.writable.getWriter();await w.write(d);await w.close();return new Uint8Array(await new Response(cs.readable).arrayBuffer())}
+async function zipInflate(d:Uint8Array){const cs=new DecompressionStream("deflate-raw" as CompressionFormat);const w=cs.writable.getWriter();await w.write(d);await w.close();return new Uint8Array(await new Response(cs.readable).arrayBuffer())}
+function lh(n:Uint8Array,c:number,s:number){return cat([new Uint8Array([80,75,3,4]),u16(20),u16(0),u16(8),u16(0),u16(0),u32(c),u32(s),u32(s),u16(n.length),u16(0),n])}function ch(n:Uint8Array,c:number,s:number,o:number){return cat([new Uint8Array([80,75,1,2]),u16(20),u16(20),u16(0),u16(8),u16(0),u16(0),u32(c),u32(s),u32(s),u16(n.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(o),n])}function end(n:number,s:number,o:number){return cat([new Uint8Array([80,75,5,6]),u16(0),u16(0),u16(n),u16(n),u32(s),u32(o),u16(0)])}
+export async function saveWegra(document:GraphicsDocument):Promise<Blob>{const p=createWegraPackage(document);const fs=[{n:"manifest.json",d:enc.encode(JSON.stringify(p.manifest,null,2))},{n:"document.json",d:enc.encode(JSON.stringify(p.document,null,2))},...p.objects.map(x=>({n:`objects/${x.id}.json`,d:enc.encode(JSON.stringify(x,null,2))})),...p.scenes.map(x=>({n:`scenes/${x.id}.json`,d:enc.encode(JSON.stringify(x,null,2))})),...(p.timeline?[{n:"timelines/main.json",d:enc.encode(JSON.stringify(p.timeline,null,2))}]:[])];const local:Uint8Array[]=[],central:Uint8Array[]=[];let off=0;for(const f of fs){const n=enc.encode(f.n),d=await zipDeflate(f.d),c=crc32(f.d),h=lh(n,c,f.d.length);local.push(h,d);central.push(ch(n,c,f.d.length,off));off+=h.length+d.length}const cd=cat(central);return new Blob([cat([...local,cd,end(fs.length,cd.length,off)])],{type:"application/x-wegra"});}
+export async function openWegra(blob:Blob):Promise<GraphicsDocument>{const b=new Uint8Array(await blob.arrayBuffer()),v=new DataView(b.buffer),entries=new Map<string,Uint8Array>();let p=0;while(p+4<=b.length){const sig=v.getUint32(p,true);if(sig===0x04034b50){const method=v.getUint16(p+8,true),cs=v.getUint32(p+18,true),nl=v.getUint16(p+26,true),el=v.getUint16(p+28,true),name=dec.decode(b.subarray(p+30,p+30+nl)),start=p+30+nl+el,raw=b.subarray(start,start+cs);entries.set(name,method===8?await zipInflate(raw):raw);p=start+cs}else if(sig===0x06054b50)break;else throw new Error("Invalid WEGRA package")}const manifest=JSON.parse(dec.decode(entries.get("manifest.json")??new Uint8Array())) as WegraManifest;if(manifest.format!==WEGRA_FORMAT)throw new Error("Not a WEGRA project");if(manifest.version>WEGRA_VERSION)throw new Error(`Unsupported WEGRA version ${manifest.version}`);const read=(n:string)=>JSON.parse(dec.decode(entries.get(n)??new Uint8Array()));const document=read("document.json");const objects=[...entries].filter(([n])=>n.startsWith("objects/")).map(([,d])=>JSON.parse(dec.decode(d))) as Layer[];const scenes=[...entries].filter(([n])=>n.startsWith("scenes/")).map(([,d])=>JSON.parse(dec.decode(d))) as Scene[];const main=entries.get("timelines/main.json");const timeline=main?JSON.parse(dec.decode(main)):undefined;if(timeline&&scenes.length)timeline.scenes=scenes;return restoreWegraPackage({manifest,document,objects,scenes,timeline});}
