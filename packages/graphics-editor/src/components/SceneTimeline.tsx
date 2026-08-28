@@ -1,14 +1,14 @@
 import type { FC } from "react";
-import type { Scene, SceneTimeline } from "../timeline";
-import { timelineDuration } from "../timeline";
-export const SceneTimelinePanel: FC<{ timeline: SceneTimeline; onChange:(timeline:SceneTimeline)=>void }> = ({ timeline, onChange }) => {
-  const total = Math.max(1, timelineDuration(timeline)); const current = timeline.currentTime;
-  const selectScene = (scene:Scene) => onChange({ ...timeline, currentSceneId:scene.id, currentTime:scene.start });
-  return <section className="ge-timeline" aria-label="Scene timeline">
-    <div className="ge-timeline-head"><b>Scenes</b><button onClick={()=>{const n=timeline.scenes.length+1; const start=total; const scene={id:`scene-${Date.now()}`,name:`Scene ${n}`,start,duration:5}; onChange({...timeline,scenes:[...timeline.scenes,scene],currentSceneId:scene.id,currentTime:start});}}>＋ Scene</button></div>
-    <div className="ge-timeline-ruler" style={{gridTemplateColumns:`repeat(${Math.max(1,Math.ceil(total))},1fr)`}}>{Array.from({length:Math.ceil(total)+1},(_,i)=><span key={i}>{i}s</span>)}</div>
-    <div className="ge-timeline-body">{timeline.scenes.map(scene=><button key={scene.id} className={scene.id===timeline.currentSceneId?"ge-scene ge-scene-active":"ge-scene"} onClick={()=>selectScene(scene)} style={{left:`${scene.start/total*100}%`,width:`${scene.duration/total*100}%`}} title={`${scene.name}: ${scene.duration.toFixed(1)}s`}><span>{scene.name}</span><small>{scene.duration.toFixed(1)}s</small></button>)}</div>
-    <div className="ge-playhead" style={{left:`${Math.min(100,current/total*100)}%`}} />
-    <div className="ge-timeline-controls">{timeline.scenes.map(scene=><label key={scene.id}>{scene.name}<input type="number" min="0.1" step="0.1" value={scene.duration} onChange={e=>{const duration=Math.max(.1,Number(e.target.value)||.1); let cursor=0; const scenes=timeline.scenes.map(s=>{const next={...s,start:cursor,duration:s.id===scene.id?duration:s.duration};cursor+=next.duration;return next}); onChange({...timeline,scenes})}}/> s</label>)}</div>
-  </section>;
+import type { AnimatedProperty, Keyframe, Layer } from "../types";
+import type { SceneTimeline as Timeline } from "../types";
+import { createKeyframe, createTrack, interpolateKeyframes, timelineDuration, upsertKeyframe } from "../timeline";
+const PROPERTIES: AnimatedProperty[]=["x","y","width","height","rotation","opacity"];
+export const SceneTimelinePanel:FC<{timeline:Timeline;layers:Layer[];onChange:(timeline:Timeline)=>void;onSeek:(time:number)=>void}> = ({timeline,layers,onChange,onSeek})=>{
+ const total=Math.max(1,timelineDuration(timeline)); const addTrack=(layerId:string,property:AnimatedProperty)=>{const existing=timeline.tracks.find(t=>t.layerId===layerId&&t.property===property);if(existing)return;onChange({...timeline,tracks:[...timeline.tracks,createTrack(layerId,property)]});};
+ const addKey=(layer:Layer,property:AnimatedProperty)=>{const t=timeline.tracks.find(x=>x.layerId===layer.id&&x.property===property);if(!t)return;const value=property==="rotation"?(layer.rotation??0):property==="opacity"?Number(layer.style?.opacity??1):Number(layer[property]);const scene=timeline.scenes.find(s=>timeline.currentTime>=s.start&&timeline.currentTime<=s.start+s.duration)??timeline.scenes[0];const time=Math.max(scene.start,Math.min(timeline.currentTime,scene.start+scene.duration));const key=createKeyframe(time,value);onChange({...timeline,tracks:timeline.tracks.map(x=>x.id===t.id?upsertKeyframe(x,key):x)});};
+ return <section className="ge-timeline" aria-label="Scene timeline"><div className="ge-timeline-head"><b>Timeline</b><button onClick={()=>onSeek(Math.max(0,timeline.currentTime-.5))}>◀</button><button onClick={()=>onSeek(Math.min(total,timeline.currentTime+.5))}>▶</button><button onClick={()=>onSeek(0)}>● 0</button></div>
+ <div className="ge-timeline-ruler" style={{gridTemplateColumns:`repeat(${Math.max(1,Math.ceil(total))},1fr)`}}>{Array.from({length:Math.ceil(total)+1},(_,i)=><span key={i}>{i}s</span>)}</div>
+ <div className="ge-timeline-body" onPointerDown={e=>{const r=e.currentTarget.getBoundingClientRect();onSeek(Math.max(0,Math.min(total,(e.clientX-r.left)/r.width*total)));}}>{timeline.scenes.map(s=><div key={s.id} className="ge-scene" style={{left:`${s.start/total*100}%`,width:`${s.duration/total*100}%`}}>{s.name}</div>)}{timeline.tracks.map(t=>t.keyframes.map(k=><button key={k.id} className="ge-key" style={{left:`${k.time/total*100}%`}} title={`${t.property}: ${k.value}`}>◆</button>))}</div>
+ <div className="ge-track-list">{layers.filter(l=>l.type!=="group").map(layer=><div className="ge-track-row" key={layer.id}><b>{layer.text||layer.id}</b>{PROPERTIES.map(p=>{const t=timeline.tracks.find(x=>x.layerId===layer.id&&x.property===p);return <span key={p}><button onClick={()=>t?addKey(layer,p):addTrack(layer.id,p)}>{p}{t?` · ${t.keyframes.length}`:" +"}</button></span>})}</div>)}</div>
+ <div className="ge-playhead" style={{left:`${Math.min(100,timeline.currentTime/total*100)}%`}} /></section>;
 };
