@@ -11,7 +11,7 @@ export interface LayerClip{id:string;layerId:string;start:number;duration:number
 export type SceneTransitionType="cut"|"fade"|"dissolve"|"slide-left"|"slide-right"|"slide-up"|"slide-down";
 export interface SceneTransition{type:SceneTransitionType;duration:number}
 export interface Scene{id:string;name:string;start:number;duration:number;transition?:SceneTransition}
-export interface SceneTimeline{scenes:Scene[];currentSceneId:string;currentTime:number;tracks:Track[];clips?:LayerClip[]}
+export interface SceneTimeline{scenes:Scene[];currentSceneId:string;currentTime:number;tracks:Track[];clips?:LayerClip[];loop?:boolean}
 export interface GraphicsDocument{width:number;height:number;background?:string;layers:Layer[];timeline?:SceneTimeline}
 export interface GraphicsAsset{id:string;name:string;url:string;type:"image"|"video"|"other"}
 export interface GraphicsEditorProps{document:GraphicsDocument;assets?:GraphicsAsset[];onChange:(document:GraphicsDocument)=>void}
