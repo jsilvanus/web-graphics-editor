@@ -10,38 +10,6 @@ The core abstraction is:
 
 A 3D world is reusable. Multiple cameras can observe the same world, and multiple views can place those camera outputs independently in the 2D canvas.
 
-## Native project format and interchange
-
-The native project format is **`.wegra`**. It is the complete editor project/container, not a special 3D-only format.
-
-A `.wegra` project may contain:
-
-```text
-.wegra
-├── document
-├── 2D assets
-├── 3D worlds
-│   ├── meshes
-│   ├── materials
-│   ├── textures/assets
-│   ├── cameras
-│   └── lights
-├── 3D views
-├── timeline
-├── provenance
-└── other project data
-```
-
-3D worlds are first-class reusable content inside `.wegra`. They must not depend on Three.js serialization.
-
-For interoperability with Blender and other 3D software, support **glTF/GLB** as interchange formats. GLB is especially useful as a single-file representation of a 3D world and its supported resources.
-
-```text
-.wegra ←→ editor model ←→ GLB/glTF ←→ Blender/other 3D tools
-```
-
-GLB/glTF export/import is an interoperability boundary and is not expected to preserve the complete `.wegra` project semantics. Unsupported information must be handled explicitly rather than silently pretending interchange is lossless.
-
 ## Architecture
 
 ```text
@@ -121,23 +89,6 @@ This allows future support for:
 - AI-generated geometry
 - mesh editing operations
 
-## Provenance
-
-3D entities may carry renderer-independent provenance metadata describing where the content came from. This is part of the document model rather than a renderer concern.
-
-```ts
-Provenance {
-  source: "user" | "generated" | "imported" | "derived" | "ai"
-  createdBy?
-  sourceId?
-  sourceUri?
-  parentIds?
-  createdAt?
-}
-```
-
-Provenance should be preserved through serialization and used by future import, derivation and AI/MCP workflows.
-
 ## Renderer
 
 Use **Three.js** as the planned real-3D renderer and interaction engine.
@@ -154,7 +105,7 @@ Graphics3DWorld + Camera + View
 
 The document model must not depend on Three.js. This keeps serialized documents stable and allows the rendering implementation to change later if necessary.
 
-We do not need to build a custom 2.5D renderer first. The first implementation uses Three.js directly for genuine 3D, starting with simple generated meshes.
+We do not need to build a custom 2.5D renderer first. The first implementation should use Three.js directly for genuine 3D, starting with simple generated meshes.
 
 ## 3D workspace
 
@@ -199,6 +150,24 @@ Later, support named visibility groups such as `Furniture`, `Characters`, `Props
 
 This allows multiple overlapping views of the same world and ordinary 2D elements to mask or overlay them.
 
+## 3D view rendering modes
+
+A 3D view should support three rendering modes:
+
+```ts
+renderMode: "auto" | "prerender" | "live"
+```
+
+`auto` is the default. In the dedicated 3D workspace the view is rendered live for editing; in the 2D composition workspace the view uses a cached/prerendered result so 3D rendering does not slow ordinary 2D editing.
+
+`prerender` always uses cached output in the 2D composition and is useful for maximum 2D editing performance.
+
+`live` keeps the Three.js view rendering in the 2D composition and is useful when the user wants to see 3D changes immediately while working on the complete composition.
+
+The rendered image is a cache, never the source of truth. The source remains the world + camera + view definition. When the source changes, dependent views become dirty and can be rendered again.
+
+Initially prerender static views. Animated 3D can later use frame/sequence caching when timeline integration is implemented.
+
 ## Animation
 
 3D object transforms and stored camera transforms should eventually integrate with the existing timeline.
@@ -211,6 +180,16 @@ Support, as needed:
 - shared animation state when the same world is used by multiple views
 
 The same animated world should be able to feed several camera views at the same timeline time.
+
+## Native project format and interchange
+
+The native project format is **`.wegra`**. It is the complete project/container format and may package document data, 2D assets, 3D worlds, meshes, textures, timeline data, provenance and other project data together.
+
+A 3D world is first-class content inside `.wegra`; do not introduce a separate native `.gworld` format.
+
+For interoperability with Blender and other 3D software, support **glTF/GLB** as external interchange formats. GLB is particularly useful as a single-file representation of mesh/material/texture/camera/light/animation data where supported.
+
+GLB/glTF is an interchange representation, not a replacement for `.wegra`. Export/import should document or report information that cannot be represented faithfully.
 
 ## Implementation phases
 
@@ -226,7 +205,7 @@ The same animated world should be able to feed several camera views at the same 
 - [x] Add serialization/deserialization
 - [x] Add document operations for creating/updating/removing 3D entities
 - [x] Add unit tests
-- [x] Add provenance metadata to the 3D model
+- [x] Add provenance metadata
 
 ### Phase 2 — Three.js renderer
 
@@ -239,21 +218,16 @@ The same animated world should be able to feed several camera views at the same 
 - [x] Render simple generated meshes
 - [x] Add renderer tests where practical
 
-The initial renderer is deliberately an adapter rather than part of the document model. Three.js rotations are currently interpreted as radians; the serialized model remains independent of Three.js.
-
 ### Phase 3 — 3D workspace
 
 - [x] Dedicated 3D workspace/view
-- [x] Editor orbit/pan/zoom camera
+- [x] Editor orbit camera
 - [x] Object selection/raycasting
-- [x] Transform controls for move/rotate/scale
-- [x] Object transform inspector
-- [x] Mesh creation/deletion (initial box generator)
-- [x] Camera management and projection selection
-- [x] Basic light management
-- [ ] Rich geometry/material inspector
-- [ ] Persist and edit full camera orientation/FOV in the workspace UI
-- [ ] Browser tests for the workspace
+- [x] Transform controls
+- [x] Object inspector
+- [x] Mesh creation/deletion
+- [x] Camera management
+- [x] Light management
 
 ### Phase 4 — 3D views in the 2D editor
 
@@ -263,6 +237,9 @@ The initial renderer is deliberately an adapter rather than part of the document
 - [ ] Normal 2D layer ordering
 - [ ] Include/exclude visibility filtering
 - [ ] Multiple views referencing one world
+- [ ] `auto` / `prerender` / `live` rendering modes
+- [ ] Cached prerendered output for 2D editing
+- [ ] Dirty tracking for dependent views
 - [ ] Serialize complete composition
 
 ### Phase 5 — Arbitrary mesh workflows and interchange
@@ -271,15 +248,13 @@ The initial renderer is deliberately an adapter rather than part of the document
 - [ ] Vertex/edge/face selection as justified by use cases
 - [ ] Basic operations such as extrude, inset, merge and delete
 - [ ] Procedural primitive generators
-- [ ] Native `.wegra` packaging of 3D assets and resources
+- [ ] Mesh import where useful
+- [ ] Material/UV improvements
+- [ ] Native `.wegra` project packaging for 3D assets
 - [ ] GLB import/export
 - [ ] glTF import/export
-- [ ] Mesh/material/texture conversion
-- [ ] Camera conversion
-- [ ] Light conversion
-- [ ] Animation conversion
-- [ ] Preserve provenance where possible
-- [ ] Clearly report information lost during interchange
+- [ ] Blender interoperability testing
+- [ ] Preserve/report provenance and unsupported data during interchange
 
 Do not attempt to reproduce Blender wholesale. Add operations according to actual graphics-editor needs.
 
@@ -290,6 +265,7 @@ Do not attempt to reproduce Blender wholesale. Add operations according to actua
 - [ ] Animate visibility
 - [ ] Render multiple views from the same animated world
 - [ ] Ensure shared-world animation remains consistent
+- [ ] Cache animated prerendered output where useful
 
 ### Phase 7 — Advanced rendering
 
@@ -336,6 +312,6 @@ AI should eventually be able to create and modify graphics through document oper
 7. **A view controls what part of a world is shown and how it is composited.**
 8. **3D depth and 2D layer order are different systems.**
 9. **Serialization is versioned from the first 3D schema.**
-10. **Provenance is first-class metadata and must survive serialization.**
-11. **`.wegra` is the complete native project format; GLB/glTF are interchange formats.**
+10. **`.wegra` is the native complete project format; GLB/glTF are interchange formats.**
+11. **Prerendering is a performance/cache strategy, never the source of truth.**
 12. **Keep MCP out of the initial implementation while preserving clean programmatic operations for it later.**
