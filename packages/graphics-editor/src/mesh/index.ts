@@ -5,3 +5,4 @@ export * from "./validate";
 export * from "./geometry";
 export * from "./split-edge";
 export * from "./split-face";
+export * from "./inset-face";
