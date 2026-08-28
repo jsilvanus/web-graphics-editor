@@ -1,11 +1,22 @@
 import type { FC, PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useRef } from "react";
+import * as THREE from "three";
 import { ResizeHandles } from "./ResizeHandles";
 import { RotateHandle } from "./RotateHandle";
 import { layerStyle } from "../../geometry";
 import { VectorLayer } from "./VectorLayer";
-import type { Layer } from "../../types";
+import { createThreeCamera, createThreeScene } from "../../3d-renderer";
+import type { Graphics3DView, Graphics3DWorld, Layer } from "../../types";
 
-export const CanvasLayer: FC<{layer:Layer;selected:boolean;multiSelected:boolean;onPointerDown:(event:ReactPointerEvent,kind:"move"|"resize"|"rotate",handle?:string)=>void}> = ({layer,selected,multiSelected,onPointerDown}) => {
+const ThreeDCanvasContent: FC<{view:Graphics3DView;world:Graphics3DWorld}> = ({view,world}) => {
+ const hostRef=useRef<HTMLDivElement>(null);
+ const sourceKey=JSON.stringify({world,view});
+ useEffect(()=>{const host=hostRef.current;if(!host)return;const cameraData=world.cameras.find(c=>c.id===view.cameraId)??world.cameras[0];if(!cameraData)return;const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.setSize(Math.max(1,view.width),Math.max(1,view.height),false);host.replaceChildren(renderer.domElement);const scene=createThreeScene(world,view),camera=createThreeCamera(cameraData,view.width/Math.max(1,view.height)),render=()=>renderer.render(scene,camera);render();let frame=0;if((view.renderMode??"auto")==="live"){const animate=()=>{frame=requestAnimationFrame(animate);render()};animate()}return()=>{cancelAnimationFrame(frame);scene.traverse(object=>{const mesh=object as THREE.Mesh;if(mesh.geometry)mesh.geometry.dispose();if(mesh.material){const ms=Array.isArray(mesh.material)?mesh.material:[mesh.material];ms.forEach(m=>m.dispose())}});renderer.dispose();host.replaceChildren()}},[sourceKey,view.renderMode]);
+ return <div ref={hostRef} style={{position:"absolute",inset:0,overflow:"hidden",pointerEvents:"none"}}/>;
+};
+
+export const CanvasLayer: FC<{layer:Layer;selected:boolean;multiSelected:boolean;onPointerDown:(event:ReactPointerEvent,kind:"move"|"resize"|"rotate",handle?:string)=>void;worlds3d?:Graphics3DWorld[];views3d?:Graphics3DView[]}> = ({layer,selected,multiSelected,onPointerDown,worlds3d=[],views3d=[]}) => {
+ if(layer.type==="3d-view") { const view=views3d.find(v=>v.id===layer.view3dId); const world=view&&worlds3d.find(w=>w.id===view.worldId); if(!view||!world)return null; return <div style={layerStyle(layer,selected)} onPointerDown={event=>onPointerDown(event,"move")}><ThreeDCanvasContent view={{...view,x:layer.x,y:layer.y,width:layer.width,height:layer.height,rotation:layer.rotation,opacity:layer.opacity}} world={world}/>{selected&&!multiSelected&&<><ResizeHandles layer={layer} onPointerDown={(event,handle)=>onPointerDown(event,"resize",handle)}/><RotateHandle layer={layer} onPointerDown={event=>onPointerDown(event,"rotate")}/></>}</div>; }
  if(layer.type==="line"||layer.type==="path")return <VectorLayer layer={layer} selected={selected} multiSelected={multiSelected} onPointerDown={onPointerDown}/>;
  const t=layer.textStyle??{}; const align=t.textAlign??String(layer.style?.["text-align"]??"left");
  return <div style={layerStyle(layer,selected)} onPointerDown={event=>onPointerDown(event,"move")}>
