@@ -10,34 +10,38 @@ export interface ThreeDTimelineTreeProps {
   renderTrack: (targetType: Graphics3DAnimationTarget, targetId: string, property: Graphics3DAnimatedProperty) => ReactNode;
 }
 
-const TRANSFORM_PROPERTIES: Graphics3DAnimatedProperty[] = ["positionX", "positionY", "positionZ", "rotationX", "rotationY", "rotationZ", "scaleX", "scaleY", "scaleZ"];
+const MESH_PROPERTIES: Graphics3DAnimatedProperty[] = ["positionX", "positionY", "positionZ", "rotationX", "rotationY", "rotationZ", "scaleX", "scaleY", "scaleZ"];
 const CAMERA_PROPERTIES: Graphics3DAnimatedProperty[] = ["positionX", "positionY", "positionZ", "rotationX", "rotationY", "rotationZ", "fov"];
 
-/** 3D timeline hierarchy is derived from world contents, so unanimated entities are visible. */
+/** The 3D timeline tree is world-driven: unanimated entities are visible immediately. */
 export const ThreeDTimelineTree: FC<ThreeDTimelineTreeProps> = ({ views, viewData, worlds, expanded, toggle, renderTrack }) => (
   <>
-    {views.map(viewLayer => {
-      const viewId = viewLayer.view3dId ?? viewLayer.id;
+    {views.map(layer => {
+      const viewId = layer.view3dId ?? layer.id;
       const view = viewData.find(candidate => candidate.id === viewId);
       const world = view ? worlds.find(candidate => candidate.id === view.worldId) : undefined;
-      const viewKey = `view:${viewId}`;
-      return <div className="ge-3d-tree" key={viewLayer.id}>
-        <button className="ge-tree-row ge-tree-view" onClick={() => toggle(viewKey)}>{expanded.has(viewKey) ? "▾" : "▸"} ◈ {viewLayer.text || view?.name || "3D View"}</button>
-        {expanded.has(viewKey) && <div className="ge-3d-children">
-          <div className="ge-tree-label">View</div>
-          {(["opacity", "visibility"] as Graphics3DAnimatedProperty[]).map(property => renderTrack("view", viewId, property))}
-          <div className="ge-tree-label">Objects</div>
-          {world?.meshes.length ? world.meshes.map(mesh => <div className="ge-3d-object" key={mesh.id}>
-            <b>◆ {mesh.name || mesh.id}</b>
-            {TRANSFORM_PROPERTIES.map(property => renderTrack("mesh", mesh.id, property))}
-          </div>) : <div className="ge-tree-empty">No 3D objects</div>}
-          <div className="ge-tree-label">Cameras</div>
-          {world?.cameras.length ? world.cameras.map(camera => <div className="ge-3d-object" key={camera.id}>
-            <b>◉ {camera.name || camera.id}</b>
-            {CAMERA_PROPERTIES.map(property => renderTrack("camera", camera.id, property))}
-          </div>) : <div className="ge-tree-empty">No 3D cameras</div>}
-        </div>}
-      </div>;
+      const key = `view:${viewId}`;
+      return (
+        <div className="ge-3d-tree" key={layer.id}>
+          <button className="ge-tree-row ge-tree-view" onClick={() => toggle(key)}>
+            {expanded.has(key) ? "▾" : "▸"} ◈ {layer.text || view?.name || "3D View"}
+          </button>
+          {expanded.has(key) && <div className="ge-3d-children">
+            <div className="ge-tree-label">View</div>
+            {(["opacity", "visibility"] as Graphics3DAnimatedProperty[]).map(p => renderTrack("view", viewId, p))}
+            <div className="ge-tree-label">Objects</div>
+            {world?.meshes.length ? world.meshes.map(mesh => <div className="ge-3d-object" key={mesh.id}>
+              <b>◆ {mesh.name || mesh.id}</b>
+              {MESH_PROPERTIES.map(p => renderTrack("mesh", mesh.id, p))}
+            </div>) : <div className="ge-tree-empty">No 3D objects</div>}
+            <div className="ge-tree-label">Cameras</div>
+            {world?.cameras.length ? world.cameras.map(camera => <div className="ge-3d-object" key={camera.id}>
+              <b>◉ {camera.name || camera.id}</b>
+              {CAMERA_PROPERTIES.map(p => renderTrack("camera", camera.id, p))}
+            </div>) : <div className="ge-tree-empty">No 3D cameras</div>}
+          </div>}
+        </div>
+      );
     })}
   </>
 );
