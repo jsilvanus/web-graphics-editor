@@ -3,7 +3,9 @@ export type PathNodeKind="corner"|"smooth"; export interface PathNode{x:number;y
 export type LayerType="text"|"image"|"rectangle"|"ellipse"|"line"|"path"|"group";
 export type PathCommand={type:"M"|"L";x:number;y:number}|{type:"H";x:number}|{type:"V";y:number}|{type:"C";x1:number;y1:number;x2:number;y2:number;x:number;y:number}|{type:"Q";x1:number;y1:number;x:number;y:number}|{type:"Z"};
 export type TextAlign="left"|"center"|"right"; export type VerticalAlign="top"|"middle"|"bottom";
-export interface Layer{id:string;type:LayerType;x:number;y:number;width:number;height:number;rotation?:number;text?:string;src?:string;path?:string;pathCommands?:PathCommand[];nodes?:PathNode[];closed?:boolean;children?:string[];parentId?:string;animation?:string;style?:Record<string,string|number>;textStyle?:{fontFamily?:string;fontSize?:number;fontWeight?:number|string;fontStyle?:"normal"|"italic";textAlign?:TextAlign;verticalAlign?:VerticalAlign;lineHeight?:number|string;letterSpacing?:number|string;whiteSpace?:"nowrap"|"pre-wrap";wrap?:"none"|"word"|"character";fontAssetId?:string}};
+export interface GradientStop{offset:number;color:string;opacity?:number}
+export interface Gradient{type:"linear"|"radial";angle?:number;cx?:number;cy?:number;stops:GradientStop[]}
+export interface Layer{id:string;type:LayerType;x:number;y:number;width:number;height:number;rotation?:number;text?:string;src?:string;path?:string;pathCommands?:PathCommand[];nodes?:PathNode[];closed?:boolean;children?:string[];parentId?:string;animation?:string;style?:Record<string,string|number>;gradient?:Gradient;textStyle?:{fontFamily?:string;fontSize?:number;fontWeight?:number|string;fontStyle?:"normal"|"italic";textAlign?:TextAlign;verticalAlign?:VerticalAlign;lineHeight?:number|string;letterSpacing?:number|string;whiteSpace?:"nowrap"|"pre-wrap";wrap?:"none"|"word"|"character";fontAssetId?:string}};
 export type AnimatedProperty="x"|"y"|"width"|"height"|"rotation"|"opacity"|"scaleX"|"scaleY";
 export type Easing="linear"|"ease-in"|"ease-out"|"ease-in-out";
 export interface Keyframe{id:string;time:number;value:number;easing?:Easing}
