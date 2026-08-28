@@ -1,0 +1,9 @@
+import { useCallback } from "react";
+import { createBoxMesh } from "../3d-primitives";
+import type { Graphics3DView, Graphics3DWorld, GraphicsDocument, Layer } from "../types";
+
+export function use3DViews(document:GraphicsDocument,commit:(next:GraphicsDocument)=>void,select:(id:string)=>void){
+ const add3DView=useCallback(()=>{const now=Date.now(),worldId=document.worlds3d?.[0]?.id??`world-${now}`,viewId=`view-${now}`,cameraId=`camera-${now}`;const existing=document.worlds3d?.find(w=>w.id===worldId);const world:Graphics3DWorld=existing??{id:worldId,name:"3D World",meshes:[createBoxMesh(`box-${now}`,2,2,2,{position:[0,1,0],rotation:[0,0,0],scale:[1,1,1]})],lights:[{id:`light-${now}`,type:"ambient",intensity:1.2}],cameras:[{id:cameraId,name:"Main camera",position:[5,4,8],rotation:[0,0,0],projection:"perspective",fov:50,near:0.1,far:2000}],provenance:{source:"user",createdAt:new Date().toISOString()}};const activeCamera=world.cameras[0];const view:Graphics3DView={id:viewId,name:"3D View",worldId,cameraId:activeCamera.id,visibility:{mode:"all",objects:[]},renderMode:"auto",x:200,y:150,width:800,height:450,rotation:0,opacity:1,provenance:{source:"user",parentIds:[worldId],createdAt:new Date().toISOString()}};const layer:Layer={id:viewId,type:"3d-view",x:view.x,y:view.y,width:view.width,height:view.height,rotation:0,style:{opacity:1},view3dId:viewId,provenance:view.provenance};commit({...document,worlds3d:existing?document.worlds3d:[...(document.worlds3d??[]),world],views3d:[...(document.views3d??[]),view],layers:[...document.layers,layer]});select(layer.id)},[document,commit,select]);
+ const update3DView=useCallback((id:string,patch:Partial<Graphics3DView>)=>commit({...document,views3d:(document.views3d??[]).map(v=>v.id===id?{...v,...patch}:v)}),[document,commit]);
+ return {add3DView,update3DView};
+}
