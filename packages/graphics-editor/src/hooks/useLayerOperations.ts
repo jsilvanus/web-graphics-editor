@@ -13,19 +13,19 @@ function createLayer(type: LayerType): Layer {
   return{id,type,x:460,y:300,width:1000,height:type==="ellipse"?440:500,style:{background:type==="ellipse"?"#fff":"#111"}};
 }
 type RecordOperation=(operation:DocumentOperation,options?:{actorId?:string;label?:string})=>GraphicsDocument|undefined;
-export function useLayerOperations(setDocument:(next:GraphicsDocument|((current:GraphicsDocument)=>GraphicsDocument),history?:boolean)=>void,recordOperation?:RecordOperation){
+export function useLayerOperations(setDocument:(next:GraphicsDocument|((current:GraphicsDocument)=>GraphicsDocument),history?:boolean)=>void,recordOperation?:RecordOperation,document?:GraphicsDocument){
  const updateLayer=useCallback((id:string,patch:Partial<Layer>)=>{
-  if(!recordOperation)return setDocument(d=>({...d,layers:d.layers.map(l=>l.id===id?{...l,...patch}:l)}));
-  for(const[property,to]of Object.entries(patch))setDocument(d=>{const layer=d.layers.find(l=>l.id===id);if(!layer||Object.is(layer[property as keyof Layer],to))return d;recordOperation({type:"set-layer-property",layerId:id,property,from:layer[property as keyof Layer],to},{label:`Set ${property}`});return d},false);
- },[recordOperation,setDocument]);
+  if(!recordOperation||!document)return setDocument(d=>({...d,layers:d.layers.map(l=>l.id===id?{...l,...patch}:l)}));
+  for(const[property,to]of Object.entries(patch)){const from=document.layers.find(l=>l.id===id)?.[property as keyof Layer];if(Object.is(from,to))continue;recordOperation({type:"set-layer-property",layerId:id,property,from,to},{label:`Set ${property}`});}
+ },[recordOperation,setDocument,document]);
  const updateStyle=useCallback((id:string,key:string,value:string|number)=>{
-  if(!recordOperation)return setDocument(d=>({...d,layers:d.layers.map(l=>{if(l.id!==id)return l;const style={...(l.style??{})};if(value==="")delete style[key];else style[key]=value;return{...l,style}})}));
-  setDocument(d=>{const layer=d.layers.find(l=>l.id===id);if(!layer)return d;const from=layer.style?.[key];if(Object.is(from,value))return d;recordOperation({type:"set-layer-style",layerId:id,property:key,from,to:value},{label:`Set ${key}`});return d},false);
- },[recordOperation,setDocument]);
+  if(!recordOperation||!document)return setDocument(d=>({...d,layers:d.layers.map(l=>{if(l.id!==id)return l;const style={...(l.style??{})};if(value==="")delete style[key];else style[key]=value;return{...l,style}})}));
+  const from=document.layers.find(l=>l.id===id)?.style?.[key];if(Object.is(from,value))return;recordOperation({type:"set-layer-style",layerId:id,property:key,from,to:value},{label:`Set ${key}`});
+ },[recordOperation,setDocument,document]);
  const add=useCallback((type:LayerType)=>{const layer=createLayer(type);if(recordOperation)recordOperation({type:"add-layer",layer},{label:`Add ${type}`});else setDocument(d=>({...d,layers:[...d.layers,layer]}));return layer.id},[recordOperation,setDocument]);
- const remove=useCallback((ids:Set<string>)=>{if(!recordOperation)return setDocument(d=>({...d,layers:d.layers.filter(l=>!ids.has(l.id))}));setDocument(d=>{let next=d;for(const layer of d.layers.filter(l=>ids.has(l.id)).reverse()){const index=next.layers.findIndex(l=>l.id===layer.id);next=recordOperation({type:"remove-layer",layer,index},{label:`Remove ${layer.type}`})??next}return next},false)},[recordOperation,setDocument]);
- const duplicate=useCallback((ids:Set<string>)=>{let copyIds:string[]=[];setDocument(d=>{const selected=d.layers.filter(l=>ids.has(l.id));const copies=selected.map(layer=>({...layer,id:`${layer.type}-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,x:layer.x+30,y:layer.y+30,style:layer.style?{...layer.style}:undefined,pathCommands:layer.pathCommands?.map(command=>({...command})),nodes:layer.nodes?.map(node=>({...node,handleIn:node.handleIn&&{...node.handleIn},handleOut:node.handleOut&&{...node.handleOut}})}));copyIds=copies.map(l=>l.id);return{...d,layers:[...d.layers,...copies]}});return copyIds},[setDocument]);
- const mutateOrdering=useCallback((id:string,fn:(document:GraphicsDocument)=>GraphicsDocument)=>setDocument(d=>fn(d)),[setDocument]);
+ const remove=useCallback((ids:Set<string>)=>{if(!recordOperation||!document)return setDocument(d=>({...d,layers:d.layers.filter(l=>!ids.has(l.id))}));for(const layer of document.layers.filter(l=>ids.has(l.id)).reverse()){const index=document.layers.findIndex(l=>l.id===layer.id);recordOperation({type:"remove-layer",layer,index},{label:`Remove ${layer.type}`})}},[recordOperation,setDocument,document]);
+ const duplicate=useCallback((ids:Set<string>)=>{const selected=(document?.layers??[]).filter(l=>ids.has(l.id));const copies=selected.map(layer=>({...layer,id:`${layer.type}-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,x:layer.x+30,y:layer.y+30,style:layer.style?{...layer.style}:undefined,pathCommands:layer.pathCommands?.map(command=>({...command})),nodes:layer.nodes?.map(node=>({...node,handleIn:node.handleIn&&{...node.handleIn},handleOut:node.handleOut&&{...node.handleOut}}))}));if(recordOperation)copies.forEach(layer=>recordOperation({type:"add-layer",layer},{label:"Duplicate layer"}));else setDocument(d=>({...d,layers:[...d.layers,...copies]}));return copies.map(l=>l.id)},[recordOperation,setDocument,document]);
+ const mutateOrdering=useCallback((id:string,fn:(d:GraphicsDocument)=>GraphicsDocument)=>setDocument(d=>fn(d)),[setDocument]);
  const bringForward=useCallback((id:string)=>mutateOrdering(id,d=>bringLayerForward(d,id)),[mutateOrdering]);
  const sendBackward=useCallback((id:string)=>mutateOrdering(id,d=>sendLayerBackward(d,id)),[mutateOrdering]);
  const bringToFront=useCallback((id:string)=>mutateOrdering(id,d=>bringLayerToFront(d,id)),[mutateOrdering]);
