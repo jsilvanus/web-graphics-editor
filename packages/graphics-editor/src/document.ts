@@ -15,4 +15,14 @@ export function groupLayers(document: GraphicsDocument, ids: Set<string>): { doc
 export function ungroupLayer(document: GraphicsDocument, id: string): GraphicsDocument {
   const group = document.layers.find(l => l.id === id && l.type === "group"); if (!group?.children?.length) return document; const set = new Set(group.children); const children = document.layers.filter(l => set.has(l.id)).map(l => ({ ...l, parentId: undefined })); const others = document.layers.filter(l => l.id !== id && !set.has(l.id)); const index = document.layers.findIndex(l => l.id === id); others.splice(Math.min(index, others.length), 0, ...children); return { ...document, layers: others };
 }
+export function getLayerTreeIds(document: GraphicsDocument, id: string): Set<string> {
+  const result = new Set<string>();
+  const visit = (layerId: string) => { if (result.has(layerId)) return; result.add(layerId); const layer = document.layers.find(l => l.id === layerId); if (layer?.type === "group") layer.children?.forEach(visit); };
+  visit(id);
+  return result;
+}
+export function moveLayersByDelta(document: GraphicsDocument, ids: Set<string>, dx: number, dy: number): GraphicsDocument {
+  if (!ids.size || (dx === 0 && dy === 0)) return document;
+  return { ...document, layers: document.layers.map(layer => ids.has(layer.id) ? { ...layer, x: Math.round(layer.x + dx), y: Math.round(layer.y + dy) } : layer) };
+}
 export function documentsEqual(a: GraphicsDocument, b: GraphicsDocument): boolean { return JSON.stringify(a) === JSON.stringify(b); }
