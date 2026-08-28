@@ -10,11 +10,14 @@ export type AnimatedProperty="x"|"y"|"width"|"height"|"rotation"|"opacity"|"scal
 export type Easing="linear"|"ease-in"|"ease-out"|"ease-in-out";
 export interface Keyframe{id:string;time:number;value:number;easing?:Easing}
 export interface Track{id:string;layerId:string;property:AnimatedProperty;keyframes:Keyframe[]}
+export type Graphics3DAnimatedProperty="positionX"|"positionY"|"positionZ"|"rotationX"|"rotationY"|"rotationZ"|"scaleX"|"scaleY"|"scaleZ"|"fov"|"visibility";
+export type Graphics3DAnimationTarget="mesh"|"camera"|"view";
+export interface Graphics3DTrack{id:string;targetType:Graphics3DAnimationTarget;targetId:string;property:Graphics3DAnimatedProperty;keyframes:Keyframe[]}
 export interface LayerClip{id:string;layerId:string;start:number;duration:number}
 export type SceneTransitionType="cut"|"fade"|"dissolve"|"slide-left"|"slide-right"|"slide-up"|"slide-down";
 export interface SceneTransition{type:SceneTransitionType;duration:number}
 export interface Scene{id:string;name:string;start:number;duration:number;transition?:SceneTransition}
-export interface SceneTimeline{scenes:Scene[];currentSceneId:string;currentTime:number;tracks:Track[];clips?:LayerClip[];loop?:boolean}
+export interface SceneTimeline{scenes:Scene[];currentSceneId:string;currentTime:number;tracks:Track[];tracks3d?:Graphics3DTrack[];clips?:LayerClip[];loop?:boolean}
 
 export type ProvenanceSource="user"|"generated"|"imported"|"derived"|"ai";
 export interface Provenance{source:ProvenanceSource;createdBy?:string;sourceId?:string;sourceUri?:string;parentIds?:string[];createdAt?:string}
