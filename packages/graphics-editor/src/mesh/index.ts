@@ -4,6 +4,7 @@ export * from "./topology";
 export * from "./validate";
 export * from "./geometry";
 export * from "./graphics-mesh";
+export * from "./graphics-mesh-inset";
 export * from "./split-edge";
 export * from "./split-face";
 export * from "./inset-face";
