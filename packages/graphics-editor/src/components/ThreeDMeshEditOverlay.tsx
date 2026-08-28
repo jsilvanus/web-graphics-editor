@@ -6,6 +6,7 @@ export type MeshEditMode = "object" | "vertices" | "faces";
 
 export interface ThreeDMeshEditController {
   setMesh: (mesh: THREE.Mesh | undefined, data: Graphics3DMesh | undefined) => void;
+  updateData: (data: Graphics3DMesh | undefined) => void;
   setMode: (mode: MeshEditMode) => void;
   dispose: () => void;
 }
@@ -25,20 +26,18 @@ export function createThreeDMeshEditController(scene: THREE.Scene, camera: THREE
   let selectedVertex: number | null = null;
   let faceSelection: THREE.Mesh | undefined;
   let faceIndex: number | null = null;
-  let suppress = false;
 
   const rebuildHandles = () => {
-    while (handles.children.length) handles.remove(handles.children[0]);
+    while (handles.children.length) { const child = handles.children.pop(); if (child) { (child as THREE.Mesh).geometry?.dispose(); ((child as THREE.Mesh).material as THREE.Material)?.dispose(); } }
     if (!mesh || !data || mode !== "vertices") return;
-    const geometry = new THREE.SphereGeometry(0.075, 10, 6);
     for (let i = 0; i < data.geometry.vertices.length / 3; i++) {
-      const handle = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: i === selectedVertex ? "#ffcc00" : "#ffffff" }));
+      const handle = new THREE.Mesh(new THREE.SphereGeometry(0.075, 10, 6), new THREE.MeshBasicMaterial({ color: i === selectedVertex ? "#ffcc00" : "#ffffff" }));
       handle.position.fromArray(data.geometry.vertices, i * 3);
       handle.userData.vertexIndex = i;
       handles.add(handle);
     }
   };
-  const clearFaceSelection = () => { if (faceSelection) { scene.remove(faceSelection); (faceSelection.material as THREE.Material).dispose(); faceSelection = undefined; } faceIndex = null; };
+  const clearFaceSelection = () => { if (faceSelection) { mesh?.remove(faceSelection); faceSelection.geometry.dispose(); (faceSelection.material as THREE.Material).dispose(); faceSelection = undefined; } faceIndex = null; };
   const rebuildFaceSelection = () => {
     clearFaceSelection();
     if (!mesh || !data || mode !== "faces" || faceIndex == null) return;
@@ -48,7 +47,6 @@ export function createThreeDMeshEditController(scene: THREE.Scene, camera: THREE
     const vertices = new Float32Array(ids.flatMap(i => [positions.getX(i), positions.getY(i), positions.getZ(i)]));
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
-    geometry.computeVertexNormals();
     faceSelection = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: "#ffcc00", transparent: true, opacity: 0.35, side: THREE.DoubleSide, depthWrite: false }));
     faceSelection.renderOrder = 10;
     mesh.add(faceSelection);
@@ -63,7 +61,6 @@ export function createThreeDMeshEditController(scene: THREE.Scene, camera: THREE
       if (!hit) return;
       selectedVertex = hit.object.userData.vertexIndex as number;
       transform.attach(hit.object);
-      rebuildHandles();
       return;
     }
     if (mode === "faces") {
@@ -74,34 +71,22 @@ export function createThreeDMeshEditController(scene: THREE.Scene, camera: THREE
     }
   };
   const onObjectChange = () => {
-    if (suppress || mode !== "vertices" || selectedVertex == null || !data) return;
+    if (mode !== "vertices" || selectedVertex == null || !data) return;
     const handle = handles.children.find(child => child.userData.vertexIndex === selectedVertex);
     if (!handle) return;
     const vertices = [...data.geometry.vertices];
     vertices[selectedVertex * 3] = handle.position.x;
     vertices[selectedVertex * 3 + 1] = handle.position.y;
     vertices[selectedVertex * 3 + 2] = handle.position.z;
-    suppress = true;
     onChange({ ...data.geometry, vertices });
-    suppress = false;
   };
   renderer.domElement.addEventListener("pointerdown", onPointerDown);
   transform.addEventListener("objectChange", onObjectChange);
 
   return {
-    setMesh(nextMesh, nextData) {
-      mesh = nextMesh; data = nextData;
-      transform.detach(); selectedVertex = null; faceIndex = null; clearFaceSelection(); rebuildHandles();
-    },
-    setMode(nextMode) {
-      mode = nextMode; transform.detach(); selectedVertex = null; faceIndex = null; clearFaceSelection(); rebuildHandles();
-    },
-    dispose() {
-      renderer.domElement.removeEventListener("pointerdown", onPointerDown);
-      transform.removeEventListener("objectChange", onObjectChange);
-      transform.detach(); transform.dispose(); scene.remove(transform.getHelper()); clearFaceSelection();
-      for (const child of handles.children) { (child as THREE.Mesh).geometry.dispose(); ((child as THREE.Mesh).material as THREE.Material).dispose(); }
-      scene.remove(handles);
-    }
+    setMesh(nextMesh, nextData) { mesh = nextMesh; data = nextData; transform.detach(); selectedVertex = null; faceIndex = null; clearFaceSelection(); rebuildHandles(); },
+    updateData(nextData) { data = nextData; rebuildHandles(); if (mode === "faces") rebuildFaceSelection(); },
+    setMode(nextMode) { mode = nextMode; transform.detach(); selectedVertex = null; faceIndex = null; clearFaceSelection(); rebuildHandles(); },
+    dispose() { renderer.domElement.removeEventListener("pointerdown", onPointerDown); transform.removeEventListener("objectChange", onObjectChange); transform.detach(); transform.dispose(); scene.remove(transform.getHelper()); clearFaceSelection(); while (handles.children.length) { const child = handles.children.pop() as THREE.Mesh; child.geometry.dispose(); (child.material as THREE.Material).dispose(); } scene.remove(handles); }
   };
 }
