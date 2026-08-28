@@ -1,6 +1,6 @@
 import type { GraphicsDocument, Layer } from "./types";
 
-export const GRAPHICS_DOCUMENT_VERSION = 1;
+export const GRAPHICS_DOCUMENT_VERSION = 2;
 
 type SerializedLayer = Omit<Layer, "type"> & { type: Layer["type"] | "rect" };
 
@@ -14,10 +14,7 @@ export function serializeGraphicsDocument(document: GraphicsDocument): string {
   return JSON.stringify({ version: GRAPHICS_DOCUMENT_VERSION, ...document });
 }
 
-/**
- * Deserialize a graphics document and normalize the legacy Saarnavideo
- * rectangle type (`rect`) to the canonical `rectangle` type.
- */
+/** Deserialize a graphics document and normalize legacy layer data. */
 export function deserializeGraphicsDocument(input: string | SerializedDocument): GraphicsDocument {
   const value: SerializedDocument = typeof input === "string" ? JSON.parse(input) as SerializedDocument : input;
   if (!value || typeof value !== "object") throw new Error("Invalid graphics document");
@@ -33,5 +30,9 @@ export function deserializeGraphicsDocument(input: string | SerializedDocument):
       ...layer,
       type: layer.type === "rect" ? "rectangle" : layer.type,
     })),
+    timeline: value.timeline,
+    assets: value.assets,
+    worlds3d: value.worlds3d,
+    views3d: value.views3d,
   };
 }
