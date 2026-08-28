@@ -2,6 +2,7 @@ import type { FC } from "react";
 import type { GraphicsAsset, Layer } from "../../types";
 import { AnimationProperties } from "./AnimationProperties";
 import { ImageProperties } from "./ImageProperties";
+import { PathProperties } from "./PathProperties";
 import { ShapeProperties } from "./ShapeProperties";
 import { TextProperties } from "./TextProperties";
 import { TransformProperties } from "./TransformProperties";
@@ -26,6 +27,7 @@ export const LayerProperties: FC<{
     <div className="ge-section"><label>Opacity<input type="range" min="0" max="1" step="0.01" value={Number(layer.style?.opacity ?? 1)} onChange={event => style("opacity", event.target.value)} /></label></div>
     {layer.type === "text" && <TextProperties layer={layer} onStyle={style} onText={text => patch({ text })} />}
     {(layer.type === "rectangle" || layer.type === "ellipse") && <ShapeProperties layer={layer} onStyle={style} />}
+    {(layer.type === "line" || layer.type === "path") && <PathProperties layer={layer} onStyle={style} />}
     {layer.type === "image" && <ImageProperties layer={layer} assets={assets} onLayer={patch} onTogglePicker={onToggleAssetPicker} onChooseAsset={onChooseAsset} pickerOpen={assetPicker} />}
     <AnimationProperties layer={layer} onAnimation={animation => patch({ animation })} />
   </>;
