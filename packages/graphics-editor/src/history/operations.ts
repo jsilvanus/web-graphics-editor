@@ -1,61 +1,33 @@
 import type { GraphicsDocument } from "../types";
-
 export type ActorType = "human" | "ai" | "automation";
-
-/** A document-local actor reference. Identity resolution belongs to the host application. */
-export interface Actor {
-  type: ActorType;
-  userId?: string;
-  source?: string;
-}
-
-/** Stable document-local pseudonymous identity used by history entries. */
-export interface ActorVocabularyEntry {
-  type: ActorType;
-  userId?: string;
-  pseudonym: string;
-}
-
-export interface ActorVocabulary {
-  actors: Record<string, ActorVocabularyEntry>;
-}
-
+export interface Actor { type: ActorType; userId?: string; source?: string }
+export interface ActorVocabularyEntry { type: ActorType; userId?: string; pseudonym: string }
+export interface ActorVocabulary { actors: Record<string, ActorVocabularyEntry> }
 export type DocumentOperation =
   | { type: "set-layer-property"; layerId: string; property: string; from: unknown; to: unknown }
+  | { type: "set-layer-style"; layerId: string; property: string; from: unknown; to: unknown }
   | { type: "move-layer"; layerId: string; from: { x: number; y: number }; to: { x: number; y: number } }
   | { type: "resize-layer"; layerId: string; from: { x:number;y:number;width:number;height:number }; to: { x:number;y:number;width:number;height:number } }
   | { type: "rotate-layer"; layerId: string; from: number; to: number }
   | { type: "add-layer"; layer: GraphicsDocument["layers"][number]; index?: number }
   | { type: "remove-layer"; layer: GraphicsDocument["layers"][number]; index: number };
-
-export interface HistoryEntry { id: string; timestamp: number; label: string; actor: string; operation: DocumentOperation; }
-
+export interface HistoryEntry { id: string; timestamp: number; label: string; actor: string; operation: DocumentOperation }
 export function applyOperation(document: GraphicsDocument, operation: DocumentOperation, reverse = false): GraphicsDocument {
   const value = (reverse && "from" in operation) ? operation.from : ("to" in operation ? operation.to : undefined);
-  if (operation.type === "add-layer") {
-    if (reverse) return { ...document, layers: document.layers.filter(l => l.id !== operation.layer.id) };
-    const layers = [...document.layers]; layers.splice(operation.index ?? layers.length, 0, operation.layer); return { ...document, layers };
-  }
-  if (operation.type === "remove-layer") {
-    if (reverse) { const layers=[...document.layers]; layers.splice(operation.index,0,operation.layer); return {...document,layers}; }
-    return {...document,layers:document.layers.filter(l=>l.id!==operation.layer.id)};
-  }
-  const layers = document.layers.map(layer => {
-    if (layer.id !== operation.layerId) return layer;
-    if (operation.type === "move-layer") return {...layer,...(value as {x:number;y:number})};
-    if (operation.type === "resize-layer") return {...layer,...(value as {x:number;y:number;width:number;height:number})};
-    if (operation.type === "rotate-layer") return {...layer,rotation:value as number};
-    if (operation.type === "set-layer-property") return {...layer,[operation.property]:value};
+  if (operation.type === "add-layer") { if (reverse) return {...document,layers:document.layers.filter(l=>l.id!==operation.layer.id)}; const layers=[...document.layers]; layers.splice(operation.index??layers.length,0,operation.layer); return {...document,layers}; }
+  if (operation.type === "remove-layer") { if (reverse) {const layers=[...document.layers];layers.splice(operation.index,0,operation.layer);return {...document,layers};} return {...document,layers:document.layers.filter(l=>l.id!==operation.layer.id)}; }
+  return {...document,layers:document.layers.map(layer=>{
+    if(layer.id!==operation.layerId)return layer;
+    if(operation.type==="set-layer-style") { const style={...(layer.style??{})}; if(value===undefined||value==="") delete style[operation.property]; else style[operation.property]=value as string|number; return {...layer,style}; }
+    if(operation.type==="move-layer")return {...layer,...(value as {x:number;y:number})};
+    if(operation.type==="resize-layer")return {...layer,...(value as {x:number;y:number;width:number;height:number})};
+    if(operation.type==="rotate-layer")return {...layer,rotation:value as number};
+    if(operation.type==="set-layer-property")return {...layer,[operation.property]:value};
     return layer;
-  });
-  return {...document,layers};
+  })};
 }
-
 export function invertOperation(operation: DocumentOperation): DocumentOperation {
-  if (operation.type === "add-layer") return {type:"remove-layer",layer:operation.layer,index:operation.index ?? 0};
-  if (operation.type === "remove-layer") return {type:"add-layer",layer:operation.layer,index:operation.index};
-  if (operation.type === "move-layer") return {...operation,from:operation.to,to:operation.from};
-  if (operation.type === "resize-layer") return {...operation,from:operation.to,to:operation.from};
-  if (operation.type === "rotate-layer") return {...operation,from:operation.to,to:operation.from};
-  return {...operation,from:operation.to,to:operation.from};
+  if(operation.type==="add-layer")return{type:"remove-layer",layer:operation.layer,index:operation.index??0};
+  if(operation.type==="remove-layer")return{type:"add-layer",layer:operation.layer,index:operation.index};
+  return{...operation,from:operation.to,to:operation.from};
 }
