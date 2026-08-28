@@ -9,3 +9,6 @@ export { exportSvg, importSvg } from "./svg";
 export { snapPosition, guidesForPosition } from "./snapping";
 export type { SnapResult, SnapGuides } from "./snapping";
 export { create3DWorld, update3DWorld, remove3DWorld, add3DMesh, update3DMesh, remove3DMesh, add3DCamera, update3DCamera, remove3DCamera, add3DLight, remove3DLight, create3DView, update3DView, remove3DView, set3DViewVisibility, setProvenance } from "./3d";
+export { ThreeGraphics3DRenderer, createThreeCamera, createThreeGeometry, createThreeScene } from "./3d-renderer";
+export type { Graphics3DRenderer, Graphics3DRenderOptions } from "./3d-renderer";
+export { createBoxMesh } from "./3d-primitives";
