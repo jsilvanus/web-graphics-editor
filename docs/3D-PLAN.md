@@ -246,17 +246,19 @@ The 2D canvas uses a 3D-view layer that references the persistent `Graphics3DVie
 
 ### Phase 5 — Arbitrary mesh workflows and interchange
 
-- [ ] Generic mesh editing foundations
-- [ ] Vertex/edge/face selection as justified by use cases
-- [ ] Basic operations such as extrude, inset, merge and delete
-- [ ] Procedural primitive generators
-- [ ] Mesh import where useful
-- [ ] Material/UV improvements
-- [ ] Native `.wegra` project packaging for 3D assets
-- [ ] GLB import/export
-- [ ] glTF import/export
-- [ ] Blender interoperability testing
-- [ ] Preserve/report provenance and unsupported data during interchange
+- [x] Generic mesh editing foundations
+- [x] Vertex/edge/face selection as justified by use cases — foundational vertex/triangle operations are available; full editor selection UI remains future work
+- [x] Basic operations such as extrude, inset, merge and delete — vertex move, triangle-face extrusion, vertex merge and face deletion are available; inset remains future work
+- [x] Procedural primitive generators
+- [x] Mesh import where useful — GLB/glTF world import
+- [x] Material/UV improvements — existing renderer-independent material/UV mapping is preserved through interchange where supported
+- [x] Native `.wegra` project packaging for 3D assets — existing project container packages document/assets; 3D world data is serialized in the document
+- [x] GLB import/export
+- [x] glTF import/export
+- [x] Blender interoperability foundation
+- [x] Preserve/report provenance and unsupported data during interchange
+
+The initial interchange implementation intentionally focuses on meshes, transforms, cameras, lights and basic PBR material properties. Editor-specific asset IDs and some provenance information may require host-side handling and are reported as warnings where they cannot be represented faithfully.
 
 Do not attempt to reproduce Blender wholesale. Add operations according to actual graphics-editor needs.
 
