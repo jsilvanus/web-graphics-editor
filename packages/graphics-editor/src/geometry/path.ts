@@ -1,28 +1,6 @@
-import type { PathCommand } from "../types";
-
-export function pathCommandsToD(commands: PathCommand[]): string {
-  return commands.map(command => {
-    switch (command.type) {
-      case "M": case "L": return `${command.type} ${command.x} ${command.y}`;
-      case "H": return `H ${command.x}`;
-      case "V": return `V ${command.y}`;
-      case "C": return `C ${command.x1} ${command.y1} ${command.x2} ${command.y2} ${command.x} ${command.y}`;
-      case "Q": return `Q ${command.x1} ${command.y1} ${command.x} ${command.y}`;
-      case "Z": return "Z";
-    }
-  }).join(" ");
-}
-
-export function linePath(x1: number, y1: number, x2: number, y2: number): string {
-  return `M ${x1} ${y1} L ${x2} ${y2}`;
-}
-
-export function roundedRectPath(width: number, height: number, radius: number): string {
-  const r = Math.max(0, Math.min(radius, width / 2, height / 2));
-  if (!r) return `M 0 0 H ${width} V ${height} H 0 Z`;
-  return `M ${r} 0 H ${width - r} A ${r} ${r} 0 0 1 ${width} ${r} V ${height - r} A ${r} ${r} 0 0 1 ${width - r} ${height} H ${r} A ${r} ${r} 0 0 1 0 ${height - r} V ${r} A ${r} ${r} 0 0 1 ${r} 0 Z`;
-}
-
-export function orthogonalPoint(startX: number, startY: number, x: number, y: number, horizontalFirst = true) {
-  return horizontalFirst ? { x, y: startY } : { x: startX, y };
-}
+import type { PathCommand, PathNode } from "../types";
+export function pathCommandsToD(commands: PathCommand[]): string { return commands.map(command => { switch (command.type) { case "M": case "L": return `${command.type} ${command.x} ${command.y}`; case "H": return `H ${command.x}`; case "V": return `V ${command.y}`; case "C": return `C ${command.x1} ${command.y1} ${command.x2} ${command.y2} ${command.x} ${command.y}`; case "Q": return `Q ${command.x1} ${command.y1} ${command.x} ${command.y}`; case "Z": return "Z"; } }).join(" "); }
+export function linePath(x1: number, y1: number, x2: number, y2: number): string { return `M ${x1} ${y1} L ${x2} ${y2}`; }
+export function roundedRectPath(width: number, height: number, radius: number): string { const r = Math.max(0, Math.min(radius, width / 2, height / 2)); if (!r) return `M 0 0 H ${width} V ${height} H 0 Z`; return `M ${r} 0 H ${width - r} A ${r} ${r} 0 0 1 ${width} ${r} V ${height - r} A ${r} ${r} 0 0 1 ${width - r} ${height} H ${r} A ${r} ${r} 0 0 1 0 ${height - r} V ${r} A ${r} ${r} 0 0 1 ${r} 0 Z`; }
+export function orthogonalPoint(startX: number, startY: number, x: number, y: number, horizontalFirst = true) { return horizontalFirst ? { x, y: startY } : { x: startX, y }; }
+export function nodesToD(nodes: PathNode[], closed = false): string { if (!nodes.length) return ""; const out = [`M ${nodes[0].x} ${nodes[0].y}`]; const count = closed ? nodes.length : nodes.length - 1; for (let i = 0; i < count; i++) { const a = nodes[i], b = nodes[(i + 1) % nodes.length]; if (a.handleOut || b.handleIn) { const c1 = a.handleOut ?? { x: a.x, y: a.y }, c2 = b.handleIn ?? { x: b.x, y: b.y }; out.push(`C ${c1.x} ${c1.y} ${c2.x} ${c2.y} ${b.x} ${b.y}`); } else out.push(`L ${b.x} ${b.y}`); } if (closed) out.push("Z"); return out.join(" "); }
