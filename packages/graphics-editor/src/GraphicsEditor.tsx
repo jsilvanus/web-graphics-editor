@@ -1,39 +1,181 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { GraphicsEditorCanvas, type DrawingPreview } from "./components/GraphicsEditorCanvas";
+import { GraphicsEditorCanvas } from "./components/GraphicsEditorCanvas";
 import { GraphicsEditorToolbar } from "./components/GraphicsEditorToolbar";
 import { SceneTimelinePanel } from "./components/SceneTimeline";
 import { LayerList } from "./components/LayerList";
 import { LayerProperties } from "./components/properties/LayerProperties";
-import { HEIGHT, KEYFRAMES, WIDTH } from "./constants";
-import { alignLayers, distributeLayers, type AlignMode, type AlignReference, type DistributeMode } from "./alignment";
-import { orthogonalPoint, pathCommandsToD } from "./geometry";
+import { KEYFRAMES } from "./constants";
 import { useCanvasInteraction } from "./hooks/useCanvasInteraction";
 import { useCanvasViewport } from "./hooks/useCanvasViewport";
 import { useEditorHistory } from "./hooks/useEditorHistory";
 import { useEditorSelection } from "./hooks/useEditorSelection";
 import { useEditorTransaction } from "./hooks/useEditorTransaction";
 import { useLayerOperations } from "./hooks/useLayerOperations";
-import { serializeWegra, deserializeWegra } from "./wegra";
-import { createBoxMesh } from "./3d-primitives";
-import type { AnimatedProperty } from "./timeline";
-import { createKeyframe, createScene, createTrack, interpolateKeyframes, timelineDuration, upsertKeyframe, transitionType } from "./timeline";
-import type { GraphicsAsset, GraphicsEditorProps, GraphicsDocument, Graphics3DView, Graphics3DWorld, Graphics3DCamera, Layer, PathCommand, PathNode, SceneTimeline } from "./types";
-const ANIMATED_PROPERTIES:AnimatedProperty[]=["x","y","width","height","rotation","opacity"];
-function transitionStyle(type:string,progress:number){if(progress<=0)return{};switch(type){case"slide-left":return{transform:`translateX(${-100*progress}%)`};case"slide-right":return{transform:`translateX(${100*progress}%)`};case"slide-up":return{transform:`translateY(${-100*progress}%)`};case"slide-down":return{transform:`translateY(${100*progress}%)`};case"dissolve":return{opacity:Math.max(0,1-progress),filter:`blur(${progress*2}px)`};case"fade":return{opacity:Math.max(0,1-progress)};default:return{}}}
-export function GraphicsEditor({document:initialDocument,assets=[],onChange}:GraphicsEditorProps){const{document,setDocument,undo,redo,canUndo,canRedo,resetHistory,history}=useEditorHistory(initialDocument);const initialDocumentRef=useRef(initialDocument);const{selectedIds,primaryId,select,clear}=useEditorSelection(document.layers[0]?.id??null);const[grid,setGrid]=useState(false),[safe,setSafe]=useState(false),[aspectLock,setAspectLock]=useState(true),[assetPicker,setAssetPicker]=useState(false);const[activeTool,setActiveTool]=useState<"select"|"line"|"path"|"orthogonal">("select");const[drawing,setDrawing]=useState<DrawingPreview|null>(null);const drawingRef=useRef<DrawingPreview|null>(null);const artboardRef=useRef<HTMLDivElement>(null);const viewport=useCanvasViewport(document.width,document.height);const[timeline,setTimeline]=useState<SceneTimeline>(()=>initialDocument.timeline??(()=>{const scene=createScene("Scene 1");return{scenes:[scene],currentSceneId:scene.id,currentTime:0,tracks:[],clips:[]}})());const[playing,setPlaying]=useState(false);const lastFrame=useRef<number|null>(null);const projectAssets=[...assets,...(document.assets??[])].filter((a,i,all)=>all.findIndex(x=>x.id===a.id)===i);
-useEffect(()=>{for(const asset of projectAssets.filter(a=>a.type==="font"&&a.url)){const family=String(asset.metadata?.family??asset.name);const font=new FontFace(family,`url(${asset.url})`);font.load().then(f=>document.fonts.add(f)).catch(()=>{});}},[projectAssets.map(a=>`${a.id}:${a.url}`).join("|")]);
-useEffect(()=>{if(!playing)return;const tick=(now:number)=>{const last=lastFrame.current??now,dt=(now-last)/1000,total=timelineDuration(timeline),next=timeline.currentTime+dt;if(next>=total){if(timeline.loop){setTimeline(t=>({...t,currentTime:total>0?next%total:0}));requestAnimationFrame(tick);return}setPlaying(false);setTimeline(t=>({...t,currentTime:total}));lastFrame.current=null;return}setTimeline(t=>({...t,currentTime:next}));requestAnimationFrame(tick)};const id=requestAnimationFrame(tick);return()=>{cancelAnimationFrame(id);lastFrame.current=null}},[playing,timeline.loop]);
-useEffect(()=>{onChange?.({...document,timeline})},[document,timeline,onChange]);
-useEffect(()=>{if(initialDocumentRef.current!==initialDocument){initialDocumentRef.current=initialDocument;setTimeline(initialDocument.timeline??(()=>{const scene=createScene("Scene 1");return{scenes:[scene],currentSceneId:scene.id,currentTime:0,tracks:[],clips:[]}})());resetHistory(initialDocument)}},[initialDocument,resetHistory]);
-const commit=useCallback((next:GraphicsDocument)=>setDocument(next,true),[setDocument]);const transientChange=useCallback((next:GraphicsDocument)=>setDocument(next,false),[setDocument]);const transaction=useEditorTransaction(commit);const{updateLayer,updateStyle,add,remove,duplicate,bringForward,sendBackward,bringToFront,sendToBack,group,ungroup}=useLayerOperations(setDocument);const interaction=useCanvasInteraction(document,artboardRef,grid,aspectLock,transientChange,selectedIds);
-const saveWegra=useCallback(async()=>{try{const bytes=await serializeWegra({document:{...document,timeline},history,actors:{actors:{}}});const blob=new Blob([bytes],{type:"application/zip"});const url=URL.createObjectURL(blob);const a=window.document.createElement("a");a.href=url;a.download="graphics.wegra";a.click();setTimeout(()=>URL.revokeObjectURL(url),0)}catch(error){console.error("Failed to save .wegra",error);window.alert("Could not save this .wegra file.")}},[document,timeline,history]);
-const openWegra=useCallback(async(file:File)=>{try{const project=deserializeWegra(new Uint8Array(await file.arrayBuffer()));resetHistory(project.document);setTimeline(project.document.timeline??(()=>{const scene=createScene("Scene 1");return{scenes:[scene],currentSceneId:scene.id,currentTime:0,tracks:[],clips:[]}})());clear()}catch(error){console.error("Failed to open .wegra",error);window.alert("Could not open this .wegra file.")}},[resetHistory,clear]);
-const add3DView=()=>{const now=Date.now(),worldId=document.worlds3d?.[0]?.id??`world-${now}`,viewId=`view-${now}`,cameraId=`camera-${now}`;const existing=document.worlds3d?.find(w=>w.id===worldId);const world:Graphics3DWorld=existing??{id:worldId,name:"3D World",meshes:[createBoxMesh(`box-${now}`,2,2,2,{position:[0,1,0],rotation:[0,0,0],scale:[1,1,1]})],lights:[{id:`light-${now}`,type:"ambient",intensity:1.2}],cameras:[{id:cameraId,name:"Main camera",position:[5,4,8],rotation:[0,0,0],projection:"perspective",fov:50,near:0.1,far:2000}],provenance:{source:"user",createdAt:new Date().toISOString()}};const activeCamera=world.cameras[0];const view:Graphics3DView={id:viewId,name:"3D View",worldId,cameraId:activeCamera.id,visibility:{mode:"all",objects:[]},renderMode:"auto",x:200,y:150,width:800,height:450,rotation:0,opacity:1,provenance:{source:"user",parentIds:[worldId],createdAt:new Date().toISOString()}};const layer:Layer={id:viewId,type:"3d-view",x:view.x,y:view.y,width:view.width,height:view.height,rotation:0,style:{opacity:1},view3dId:viewId,provenance:view.provenance};const next={...document,worlds3d:existing?document.worlds3d:[...(document.worlds3d??[]),world],views3d:[...(document.views3d??[]),view],layers:[...document.layers,layer]};commit(next);select(layer.id)};
-const update3DView=(id:string,patch:Partial<Graphics3DView>)=>{const views=(document.views3d??[]).map(v=>v.id===id?{...v,...patch}:v);commit({...document,views3d:views})};
-const activeScene=timeline.scenes.find(s=>timeline.currentTime>=s.start&&timeline.currentTime<s.start+s.duration)??timeline.scenes.at(-1);const transition=activeScene?.transition;const transitionProgress=transition&&transition.duration>0?Math.max(0,Math.min(1,(timeline.currentTime-(activeScene!.start+activeScene!.duration-transition.duration))/transition.duration)):0;const animatedLayers=document.layers.map(layer=>{let next={...layer};for(const track of timeline.tracks.filter(t=>t.layerId===layer.id)){const value=interpolateKeyframes(track.keyframes,timeline.currentTime);if(value===undefined)continue;if(track.property==="opacity")next.style={...next.style,opacity:value};else if(track.property==="rotation")next.rotation=value;else(next as any)[track.property]=value}const clip=(timeline.clips??[]).find(c=>c.layerId===layer.id);if(clip&&!(timeline.currentTime>=clip.start&&timeline.currentTime<clip.start+clip.duration))next.style={...next.style,opacity:0};if(transition&&transitionProgress>0)next.style={...next.style,...transitionStyle(transitionType(transition.type),transitionProgress)};return next});
-const selectedLayer=animatedLayers.find(l=>l.id===primaryId)??null;const selected3DView=selectedLayer?.type==="3d-view"?document.views3d?.find(v=>v.id===selectedLayer.view3dId):undefined;const selected3DWorld=selected3DView?document.worlds3d?.find(w=>w.id===selected3DView.worldId):undefined;const addLayer=(type:Parameters<typeof add>[0])=>{const id=add(type);select(id)};const deleteSelected=()=>{if(!selectedIds.size)return;const viewIds=document.layers.filter(l=>selectedIds.has(l.id)&&l.type==="3d-view").map(l=>l.view3dId).filter(Boolean) as string[];remove(selectedIds);if(viewIds.length)commit({...document,views3d:(document.views3d??[]).filter(v=>!viewIds.includes(v.id))});clear()};const duplicateSelected=()=>{if(!selectedIds.size)return;const ids=duplicate(selectedIds);if(ids.length)select(ids[0])};const ensureTrackAndKey=(id:string,property:AnimatedProperty,value:number)=>setTimeline(t=>{const existing=t.tracks.find(x=>x.layerId===id&&x.property===property);const track=existing??createTrack(id,property);const nextTrack=upsertKeyframe(track,createKeyframe(t.currentTime,value));return{...t,tracks:existing?t.tracks.map(x=>x.id===track.id?nextTrack:x):[...t.tracks,nextTrack]}});const changeLayer=(id:string,patch:Partial<Layer>)=>{updateLayer(id,patch);for(const[property,value]of Object.entries(patch)){if(!ANIMATED_PROPERTIES.includes(property as AnimatedProperty))continue;const n=Number(value);if(Number.isFinite(n))ensureTrackAndKey(id,property as AnimatedProperty,n)}};const changeStyle=(id:string,key:string,value:string|number)=>{updateStyle(id,key,value);if(key==="opacity"){const n=Number(value);if(Number.isFinite(n))ensureTrackAndKey(id,"opacity",n)}};const addFont=(asset:GraphicsAsset)=>{setDocument(d=>({...d,assets:[...(d.assets??[]).filter(a=>a.id!==asset.id),asset]}));updateLayer(primaryId??"",{textStyle:{...(selectedLayer?.textStyle??{}),fontAssetId:asset.id,fontFamily:String(asset.metadata?.family??asset.name)}})};
-const applyAlign=(mode:AlignMode,reference:AlignReference)=>{if(selectedIds.size<1)return;commit({...document,layers:alignLayers(document.layers,selectedIds,mode,reference,document.width,document.height)})};const applyDistribute=(mode:DistributeMode)=>{if(selectedIds.size<3)return;commit({...document,layers:distributeLayers(document.layers,selectedIds,mode)})};
-const canvasPoint=(e:React.PointerEvent)=>{const r=artboardRef.current?.getBoundingClientRect();return r?{x:(e.clientX-r.left)*WIDTH/r.width,y:(e.clientY-r.top)*HEIGHT/r.height}:null};const finishDrawing=useCallback(()=>{const c=drawingRef.current;if(!c||c.points.length<2){drawingRef.current=null;setDrawing(null);return}const xs=c.points.map(p=>p.x),ys=c.points.map(p=>p.y),minX=Math.min(...xs),minY=Math.min(...ys),maxX=Math.max(...xs),maxY=Math.max(...ys),points=c.points.map(p=>({x:p.x-minX,y:p.y-minY})),nodes:PathNode[]=points.map(p=>({x:p.x,y:p.y,kind:"corner"})),pathCommands:PathCommand[]=nodes.map((p,i)=>i===0?{type:"M",x:p.x,y:p.y}:{type:"L",x:p.x,y:p.y}),id=`${c.tool}-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,layer:Layer={id,type:c.tool==="line"?"line":"path" as "line"|"path",x:minX,y:minY,width:Math.max(1,maxX-minX),height:Math.max(1,maxY-minY),path:pathCommandsToD(pathCommands),pathCommands,...(c.tool==="line"?{}:{nodes}),style:{fill:"none",stroke:"#fff","stroke-width":4,"stroke-linecap":"round","stroke-linejoin":"round"}};commit({...document,layers:[...document.layers,layer]});select(id);drawingRef.current=null;setDrawing(null);setActiveTool("select")},[commit,document,select]);const onCanvasPointerDown=(e:React.PointerEvent)=>{if(activeTool==="select"){clear();return}const p=canvasPoint(e);if(!p)return;if(activeTool==="line"){drawingRef.current={tool:"line",points:[p]};setDrawing(drawingRef.current);return}const c=drawingRef.current;if(!c){drawingRef.current={tool:activeTool,points:[p]};setDrawing(drawingRef.current);return}const last=c.points[c.points.length-1],next=activeTool==="orthogonal"?orthogonalPoint(last.x,last.y,p.x,p.y,Math.abs(p.x-last.x)>=Math.abs(p.y-last.y)):p;drawingRef.current={...c,points:[...c.points,next]};setDrawing(drawingRef.current)};const onCanvasPointerMove=(e:React.PointerEvent)=>{if(drawingRef.current?.tool==="line"&&drawingRef.current.points.length===1){const p=canvasPoint(e);if(p)setDrawing({...drawingRef.current,points:[drawingRef.current.points[0],p]});return}interaction.pointerMove(e)};const onCanvasPointerUp=()=>{if(drawingRef.current?.tool==="line")finishDrawing();else interaction.pointerUp()};const onPointerDown=(e:React.PointerEvent,id:string,kind:string,handle?:string)=>{if(activeTool!=="select")return;if(kind==="move")select(id,e.shiftKey);transaction.begin(document);interaction.pointerDown(e,id,kind,handle)};const seek=(time:number)=>setTimeline(t=>({...t,currentTime:Math.max(0,Math.min(timelineDuration(t),time))}));const changeTimeline=(next:SceneTimeline)=>setTimeline(next);
-return <div className="graphics-editor"><style>{KEYFRAMES}</style><GraphicsEditorToolbar grid={grid} safe={safe} canUndo={canUndo} canRedo={canRedo} onUndo={undo} onRedo={redo} onAdd={addLayer} onAdd3DView={add3DView} onDuplicate={duplicateSelected} onDelete={deleteSelected} onToggleGrid={()=>setGrid(v=>!v)} onToggleSafe={()=>setSafe(v=>!v)} activeTool={activeTool} onTool={tool=>{setActiveTool(tool);drawingRef.current=null;setDrawing(null)}} onGroup={()=>{const id=group(selectedIds);if(id)select(id)}} onUngroup={()=>{if(primaryId)ungroup(primaryId)}} onForward={()=>selectedIds.forEach(bringForward)} onBackward={()=>selectedIds.forEach(sendBackward)} onFront={()=>selectedIds.forEach(bringToFront)} onBack={()=>selectedIds.forEach(sendToBack)} canGroup={selectedIds.size>=2} canUngroup={!!primaryId&&document.layers.some(l=>l.id===primaryId&&l.type==="group")} onAlign={applyAlign} onDistribute={applyDistribute} canAlign={selectedIds.size>=1} canDistribute={selectedIds.size>=3} onSaveWegra={saveWegra} onOpenWegra={openWegra}/><div className="ge-layout"><GraphicsEditorCanvas artboardRef={artboardRef} viewportRef={viewport.hostRef} zoom={viewport.viewport.zoom} panX={viewport.viewport.panX} panY={viewport.viewport.panY} onWheel={viewport.onWheel} onViewportPointerDown={viewport.onPointerDown} onViewportPointerMove={viewport.onPointerMove} onViewportPointerUp={viewport.onPointerUp} onFit={viewport.fit} onZoomIn={viewport.zoomIn} onZoomOut={viewport.zoomOut} layers={animatedLayers} selectedIds={selectedIds} grid={grid} safe={safe} background={document.background??"#111"} worlds3d={document.worlds3d??[]} views3d={document.views3d??[]} onPointerMove={onCanvasPointerMove} onPointerUp={onCanvasPointerUp} onCanvasPointerDown={onCanvasPointerDown} onLayerPointerDown={onPointerDown} drawing={drawing} onDrawingDoubleClick={finishDrawing} onPathNodes={(id,nodes)=>updateLayer(id,{nodes,path:undefined})}/><aside className="ge-properties"><LayerList layers={document.layers} selectedIds={selectedIds} onSelect={id=>select(id)}/>{selected3DView&&selected3DWorld?<div className="ge-section"><strong>{selected3DView.name??"3D View"}</strong><label style={{display:"block",marginTop:8}}>World <select value={selected3DView.worldId} onChange={e=>update3DView(selected3DView.id,{worldId:e.target.value,cameraId:(document.worlds3d??[]).find(w=>w.id===e.target.value)?.cameras[0]?.id??selected3DView.cameraId})}>{(document.worlds3d??[]).map(w=><option key={w.id} value={w.id}>{w.name??w.id}</option>)}</select></label><label style={{display:"block",marginTop:8}}>Camera <select value={selected3DView.cameraId} onChange={e=>update3DView(selected3DView.id,{cameraId:e.target.value})}>{selected3DWorld.cameras.map((c:Graphics3DCamera)=><option key={c.id} value={c.id}>{c.name??c.id}</option>)}</select></label><label style={{display:"block",marginTop:8}}>Render <select value={selected3DView.renderMode??"auto"} onChange={e=>update3DView(selected3DView.id,{renderMode:e.target.value as Graphics3DView["renderMode"]})}><option value="auto">Auto / prerender in 2D</option><option value="prerender">Prerender</option><option value="live">Live</option></select></label><div style={{marginTop:10,fontSize:12,opacity:.75}}>World objects: {selected3DWorld.meshes.length}</div></div>:selectedLayer?<LayerProperties layer={selectedLayer} assets={projectAssets} aspectLock={aspectLock} assetPicker={assetPicker} onLayer={changeLayer} onStyle={changeStyle} onChooseAsset={asset=>{updateLayer(selectedLayer.id,{src:asset.url});setAssetPicker(false)}} onToggleAssetPicker={()=>setAssetPicker(v=>!v)} onAspectLock={setAspectLock} onFont={addFont}/>:<div className="ge-section"><span>Select a layer.</span></div>}</aside></div><SceneTimelinePanel timeline={timeline} layers={document.layers} onChange={changeTimeline} onSeek={seek}/><div className="ge-playback"><button onClick={()=>seek(0)}>⏮</button><button onClick={()=>setPlaying(v=>!v)}>{playing?"⏸":"▶"}</button><span>{timeline.currentTime.toFixed(2)}s / {timelineDuration(timeline).toFixed(2)}s</span></div></div>;
+import { useLayerCommands } from "./hooks/useLayerCommands";
+import { useGraphicsEditorTimeline, createDefaultTimeline } from "./hooks/useGraphicsEditorTimeline";
+import { useTimelinePlayback } from "./hooks/useTimelinePlayback";
+import { useAnimatedLayers } from "./hooks/useAnimatedLayers";
+import { useAnimatedLayerEditing } from "./hooks/useAnimatedLayerEditing";
+import { useEditorDrawing } from "./hooks/useEditorDrawing";
+import { useProjectAssets } from "./hooks/useProjectAssets";
+import { use3DViews } from "./hooks/use3DViews";
+import { useWegraIO } from "./hooks/useWegraIO";
+import { timelineDuration } from "./timeline";
+import type { GraphicsAsset, GraphicsEditorProps, GraphicsDocument, Graphics3DView, Graphics3DCamera, Layer } from "./types";
+
+export function GraphicsEditor({ document: initialDocument, assets = [], onChange }: GraphicsEditorProps) {
+  const { document, setDocument, undo, redo, canUndo, canRedo, resetHistory, history } = useEditorHistory(initialDocument);
+  const initialDocumentRef = useRef(initialDocument);
+  const { selectedIds, primaryId, select, clear } = useEditorSelection(document.layers[0]?.id ?? null);
+  const [grid, setGrid] = useState(false);
+  const [safe, setSafe] = useState(false);
+  const [aspectLock, setAspectLock] = useState(true);
+  const [assetPicker, setAssetPicker] = useState(false);
+  const artboardRef = useRef<HTMLDivElement>(null);
+  const viewport = useCanvasViewport(document.width, document.height);
+  const { timeline, setTimeline, seek, changeTimeline } = useGraphicsEditorTimeline(initialDocument.timeline ?? createDefaultTimeline());
+  const [playing, setPlaying] = useState(false);
+  const projectAssets = useProjectAssets(document, assets);
+  const commit = useCallback((next: GraphicsDocument) => setDocument(next, true), [setDocument]);
+  const transientChange = useCallback((next: GraphicsDocument) => setDocument(next, false), [setDocument]);
+  const transaction = useEditorTransaction(commit);
+  const { updateLayer, updateStyle } = useLayerOperations(setDocument);
+  const commands = useLayerCommands(document, setDocument, commit, selectedIds, primaryId, select, clear);
+  const interaction = useCanvasInteraction(document, artboardRef, grid, aspectLock, transientChange, selectedIds);
+  const drawing = useEditorDrawing(document, commit, select, clear);
+  const { add3DView, update3DView } = use3DViews(document, commit, select);
+  const { saveWegra, openWegra } = useWegraIO(document, timeline, history, resetHistory, setTimeline, clear);
+  useTimelinePlayback(playing, setPlaying, setTimeline, timeline);
+  const animatedLayers = useAnimatedLayers(document, timeline);
+  const { changeLayer, changeStyle } = useAnimatedLayerEditing(updateLayer, updateStyle, setTimeline, timeline.currentTime);
+
+  useEffect(() => {
+    onChange?.({ ...document, timeline });
+  }, [document, timeline, onChange]);
+
+  useEffect(() => {
+    if (initialDocumentRef.current === initialDocument) return;
+    initialDocumentRef.current = initialDocument;
+    setTimeline(initialDocument.timeline ?? createDefaultTimeline());
+    resetHistory(initialDocument);
+  }, [initialDocument, resetHistory, setTimeline]);
+
+  const selectedLayer = animatedLayers.find(layer => layer.id === primaryId) ?? null;
+  const selected3DView = selectedLayer?.type === "3d-view"
+    ? document.views3d?.find(view => view.id === selectedLayer.view3dId)
+    : undefined;
+  const selected3DWorld = selected3DView
+    ? document.worlds3d?.find(world => world.id === selected3DView.worldId)
+    : undefined;
+
+  const addFont = useCallback((asset: GraphicsAsset) => {
+    if (!primaryId) return;
+    setDocument(d => ({ ...d, assets: [...(d.assets ?? []).filter(a => a.id !== asset.id), asset] }));
+    updateLayer(primaryId, {
+      textStyle: {
+        ...(selectedLayer?.textStyle ?? {}),
+        fontAssetId: asset.id,
+        fontFamily: String(asset.metadata?.family ?? asset.name),
+      },
+    });
+  }, [primaryId, selectedLayer, setDocument, updateLayer]);
+
+  const onCanvasPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (drawing.activeTool === "select") return;
+    drawing.onPointerDown(event, artboardRef);
+  }, [drawing, artboardRef]);
+
+  const onCanvasPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    drawing.onPointerMove(event, artboardRef);
+    if (drawing.drawingRef.current?.tool === "line") return;
+    interaction.pointerMove(event);
+  }, [drawing, interaction]);
+
+  const onCanvasPointerUp = useCallback(() => {
+    if (drawing.drawingRef.current?.tool === "line") drawing.finishDrawing();
+    else interaction.pointerUp();
+  }, [drawing, interaction]);
+
+  const onLayerPointerDown = useCallback((event: React.PointerEvent, id: string, kind: string, handle?: string) => {
+    if (drawing.activeTool !== "select") return;
+    if (kind === "move") select(id, event.shiftKey);
+    transaction.begin(document);
+    interaction.pointerDown(event, id, kind, handle);
+  }, [drawing.activeTool, select, transaction, document, interaction]);
+
+  const total = timelineDuration(timeline);
+  const selectedCamera = selected3DView && selected3DWorld
+    ? selected3DWorld.cameras.find((camera: Graphics3DCamera) => camera.id === selected3DView.cameraId)
+    : undefined;
+
+  return <div className="graphics-editor">
+    <style>{KEYFRAMES}</style>
+    <GraphicsEditorToolbar
+      grid={grid} safe={safe} canUndo={canUndo} canRedo={canRedo}
+      onUndo={undo} onRedo={redo} onAdd={commands.addLayer} onAdd3DView={add3DView}
+      onDuplicate={commands.duplicateSelected} onDelete={commands.deleteSelected}
+      onToggleGrid={() => setGrid(value => !value)} onToggleSafe={() => setSafe(value => !value)}
+      activeTool={drawing.activeTool}
+      onTool={drawing.resetTool}
+      onGroup={() => { const id = commands.group(selectedIds); if (id) select(id); }}
+      onUngroup={() => { if (primaryId) commands.ungroup(primaryId); }}
+      onForward={() => selectedIds.forEach(commands.bringForward)}
+      onBackward={() => selectedIds.forEach(commands.sendBackward)}
+      onFront={() => selectedIds.forEach(commands.bringToFront)}
+      onBack={() => selectedIds.forEach(commands.sendToBack)}
+      canGroup={selectedIds.size >= 2}
+      canUngroup={!!primaryId && document.layers.some(layer => layer.id === primaryId && layer.type === "group")}
+      onAlign={commands.applyAlign} onDistribute={commands.applyDistribute}
+      canAlign={selectedIds.size >= 1} canDistribute={selectedIds.size >= 3}
+      onSaveWegra={saveWegra} onOpenWegra={openWegra}
+    />
+    <div className="ge-layout">
+      <GraphicsEditorCanvas
+        artboardRef={artboardRef} viewportRef={viewport.hostRef}
+        zoom={viewport.viewport.zoom} panX={viewport.viewport.panX} panY={viewport.viewport.panY}
+        onWheel={viewport.onWheel} onViewportPointerDown={viewport.onPointerDown}
+        onViewportPointerMove={viewport.onPointerMove} onViewportPointerUp={viewport.onPointerUp}
+        onFit={viewport.fit} onZoomIn={viewport.zoomIn} onZoomOut={viewport.zoomOut}
+        layers={animatedLayers} selectedIds={selectedIds} grid={grid} safe={safe}
+        background={document.background ?? "#111"}
+        worlds3d={document.worlds3d ?? []} views3d={document.views3d ?? []}
+        onPointerMove={onCanvasPointerMove} onPointerUp={onCanvasPointerUp}
+        onCanvasPointerDown={onCanvasPointerDown} onLayerPointerDown={onLayerPointerDown}
+        drawing={drawing.drawing} onDrawingDoubleClick={drawing.finishDrawing}
+        onPathNodes={(id, nodes) => updateLayer(id, { nodes, path: undefined })}
+      />
+      <aside className="ge-properties">
+        <LayerList layers={document.layers} selectedIds={selectedIds} onSelect={id => select(id)} />
+        {selected3DView && selected3DWorld ? <div className="ge-section">
+          <strong>{selected3DView.name ?? "3D View"}</strong>
+          <label style={{ display: "block", marginTop: 8 }}>World <select value={selected3DView.worldId} onChange={event => {
+            const world = document.worlds3d?.find(item => item.id === event.target.value);
+            update3DView(selected3DView.id, { worldId: event.target.value, cameraId: world?.cameras[0]?.id ?? selected3DView.cameraId });
+          }}>{(document.worlds3d ?? []).map(world => <option key={world.id} value={world.id}>{world.name ?? world.id}</option>)}</select></label>
+          <label style={{ display: "block", marginTop: 8 }}>Camera <select value={selected3DView.cameraId} onChange={event => update3DView(selected3DView.id, { cameraId: event.target.value })}>{selected3DWorld.cameras.map((camera: Graphics3DCamera) => <option key={camera.id} value={camera.id}>{camera.name ?? camera.id}</option>)}</select></label>
+          <label style={{ display: "block", marginTop: 8 }}>Render <select value={selected3DView.renderMode ?? "auto"} onChange={event => update3DView(selected3DView.id, { renderMode: event.target.value as Graphics3DView["renderMode"] })}><option value="auto">Auto / prerender in 2D</option><option value="prerender">Prerender</option><option value="live">Live</option></select></label>
+          <div style={{ marginTop: 10, fontSize: 12, opacity: .75 }}>World objects: {selected3DWorld.meshes.length}</div>
+          {selectedCamera && <div style={{ marginTop: 6, fontSize: 12, opacity: .65 }}>Camera FOV: {selectedCamera.fov}°</div>}
+        </div> : selectedLayer ? <LayerProperties
+          layer={selectedLayer} assets={projectAssets} aspectLock={aspectLock} assetPicker={assetPicker}
+          onLayer={changeLayer} onStyle={changeStyle}
+          onChooseAsset={asset => { updateLayer(selectedLayer.id, { src: asset.url }); setAssetPicker(false); }}
+          onToggleAssetPicker={() => setAssetPicker(value => !value)} onAspectLock={setAspectLock} onFont={addFont}
+        /> : <div className="ge-section"><span>Select a layer.</span></div>}
+      </aside>
+    </div>
+    <SceneTimelinePanel timeline={timeline} layers={document.layers} onChange={changeTimeline} onSeek={seek} />
+    <div className="ge-playback">
+      <button onClick={() => seek(0)}>⏮</button>
+      <button onClick={() => setPlaying(value => !value)}>{playing ? "⏸" : "▶"}</button>
+      <span>{timeline.currentTime.toFixed(2)}s / {total.toFixed(2)}s</span>
+    </div>
+  </div>;
 }
-export const defaultGraphicsDocument:GraphicsDocument={width:WIDTH,height:HEIGHT,background:"#111",layers:[{id:"title",type:"text",x:160,y:300,width:1600,height:180,text:"Hello graphics editor",style:{"font-size":"92px","font-weight":700,color:"#fff","text-align":"center"}}]};
+
+export const defaultGraphicsDocument: GraphicsDocument = {
+  width: 1920,
+  height: 1080,
+  background: "#111",
+  layers: [{ id: "title", type: "text", x: 160, y: 300, width: 1600, height: 180, text: "Hello graphics editor", style: { "font-size": "92px", "font-weight": 700, color: "#fff", "text-align": "center" } }],
+};
