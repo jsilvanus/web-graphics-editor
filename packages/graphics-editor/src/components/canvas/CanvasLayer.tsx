@@ -1,29 +1,17 @@
 import type { FC, PointerEvent as ReactPointerEvent } from "react";
-import { useEffect, useRef } from "react";
-import * as THREE from "three";
 import { ResizeHandles } from "./ResizeHandles";
 import { RotateHandle } from "./RotateHandle";
 import { layerStyle } from "../../geometry";
 import { VectorLayer } from "./VectorLayer";
-import { createThreeCamera, createThreeScene } from "../../3d-renderer";
+import { ThreeDViewLayer } from "./ThreeDViewLayer";
 import type { Graphics3DView, Graphics3DWorld, Layer } from "../../types";
-
-const ThreeDCanvasContent: FC<{view:Graphics3DView;world:Graphics3DWorld}> = ({view,world}) => {
- const hostRef=useRef<HTMLDivElement>(null);
- const sourceKey=JSON.stringify({world,view});
- useEffect(()=>{const host=hostRef.current;if(!host)return;const cameraData=world.cameras.find(c=>c.id===view.cameraId)??world.cameras[0];if(!cameraData)return;const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.setSize(Math.max(1,view.width),Math.max(1,view.height),false);host.replaceChildren(renderer.domElement);const scene=createThreeScene(world,view),camera=createThreeCamera(cameraData,view.width/Math.max(1,view.height)),render=()=>renderer.render(scene,camera);render();let frame=0;if((view.renderMode??"auto")==="live"){const animate=()=>{frame=requestAnimationFrame(animate);render()};animate()}return()=>{cancelAnimationFrame(frame);scene.traverse(object=>{const mesh=object as THREE.Mesh;if(mesh.geometry)mesh.geometry.dispose();if(mesh.material){const ms=Array.isArray(mesh.material)?mesh.material:[mesh.material];ms.forEach(m=>m.dispose())}});renderer.dispose();host.replaceChildren()}},[sourceKey,view.renderMode]);
- return <div ref={hostRef} style={{position:"absolute",inset:0,overflow:"hidden",pointerEvents:"none"}}/>;
-};
-
-export const CanvasLayer: FC<{layer:Layer;selected:boolean;multiSelected:boolean;onPointerDown:(event:ReactPointerEvent,kind:"move"|"resize"|"rotate",handle?:string)=>void;worlds3d?:Graphics3DWorld[];views3d?:Graphics3DView[]}> = ({layer,selected,multiSelected,onPointerDown,worlds3d=[],views3d=[]}) => {
- if(layer.type==="3d-view") { const view=views3d.find(v=>v.id===layer.view3dId); const world=view&&worlds3d.find(w=>w.id===view.worldId); if(!view||!world)return null; return <div style={layerStyle(layer,selected)} onPointerDown={event=>onPointerDown(event,"move")}><ThreeDCanvasContent view={{...view,x:layer.x,y:layer.y,width:layer.width,height:layer.height,rotation:layer.rotation,opacity:layer.opacity}} world={world}/>{selected&&!multiSelected&&<><ResizeHandles layer={layer} onPointerDown={(event,handle)=>onPointerDown(event,"resize",handle)}/><RotateHandle layer={layer} onPointerDown={event=>onPointerDown(event,"rotate")}/></>}</div>; }
+export const CanvasLayer:FC<{layer:Layer;selected:boolean;multiSelected:boolean;onPointerDown:(event:ReactPointerEvent,kind:"move"|"resize"|"rotate",handle?:string)=>void;worlds3d?:Graphics3DWorld[];views3d?:Graphics3DView[]}>=({layer,selected,multiSelected,onPointerDown,worlds3d=[],views3d=[]})=>{
+ if(layer.type==="3d-view"){const view=views3d.find(v=>v.id===layer.view3dId),world=view&&worlds3d.find(w=>w.id===view.worldId);if(!view||!world)return null;return <div style={layerStyle(layer,selected)} onPointerDown={event=>onPointerDown(event,"move")}><ThreeDViewLayer layer={layer} view={view} world={world}/>{selected&&!multiSelected&&<><ResizeHandles layer={layer} onPointerDown={(event,handle)=>onPointerDown(event,"resize",handle)}/><RotateHandle layer={layer} onPointerDown={event=>onPointerDown(event,"rotate")}/></>}</div>}
  if(layer.type==="line"||layer.type==="path")return <VectorLayer layer={layer} selected={selected} multiSelected={multiSelected} onPointerDown={onPointerDown}/>;
- const t=layer.textStyle??{}; const align=t.textAlign??String(layer.style?.["text-align"]??"left");
+ const t=layer.textStyle??{};const align=t.textAlign??String(layer.style?.["text-align"]??"left");
  return <div style={layerStyle(layer,selected)} onPointerDown={event=>onPointerDown(event,"move")}>
-  {layer.type==="text"&&<div style={{width:"100%",height:"100%",pointerEvents:"none",overflow:t.wrap==="none"?"visible":"hidden",display:"flex",flexDirection:"column",justifyContent:t.verticalAlign==="middle"?"center":t.verticalAlign==="bottom"?"flex-end":"flex-start",textAlign:align as "left"|"center"|"right",fontFamily:t.fontFamily??String(layer.style?.["font-family"]??"Arial, sans-serif"),fontSize:t.fontSize??parseFloat(String(layer.style?.["font-size"]??"72")),fontWeight:t.fontWeight??String(layer.style?.["font-weight"]??400),fontStyle:t.fontStyle??"normal",lineHeight:t.lineHeight??1.2,letterSpacing:t.letterSpacing??"0px",whiteSpace:t.whiteSpace??"pre-wrap",overflowWrap:t.wrap==="character"?"anywhere":"break-word",color:String(layer.style?.color??"#fff")}}>{layer.text}</div>}
-  {layer.type==="ellipse"&&<div style={{width:"100%",height:"100%",borderRadius:"50%",pointerEvents:"none"}}/>}
-  {layer.type==="rectangle"&&<div style={{width:"100%",height:"100%",pointerEvents:"none"}}/>}
-  {layer.type==="image"&&<img src={layer.src||""} alt="" draggable={false} style={{width:"100%",height:"100%",objectFit:String(layer.style?.["object-fit"]??"contain"),pointerEvents:"none"}}/>}
-  {selected&&!multiSelected&&<><ResizeHandles layer={layer} onPointerDown={(event,handle)=>onPointerDown(event,"resize",handle)}/><RotateHandle layer={layer} onPointerDown={event=>onPointerDown(event,"rotate")}/></>}
+ {layer.type==="text"&&<div style={{width:"100%",height:"100%",pointerEvents:"none",overflow:t.wrap==="none"?"visible":"hidden",display:"flex",flexDirection:"column",justifyContent:t.verticalAlign==="middle"?"center":t.verticalAlign==="bottom"?"flex-end":"flex-start",textAlign:align as "left"|"center"|"right",fontFamily:t.fontFamily??String(layer.style?.["font-family"]??"Arial, sans-serif"),fontSize:t.fontSize??parseFloat(String(layer.style?.["font-size"]??"72")),fontWeight:t.fontWeight??String(layer.style?.["font-weight"]??400),fontStyle:t.fontStyle??"normal",lineHeight:t.lineHeight??1.2,letterSpacing:t.letterSpacing??"0px",whiteSpace:t.whiteSpace??"pre-wrap",overflowWrap:t.wrap==="character"?"anywhere":"break-word",color:String(layer.style?.color??"#fff")}}>{layer.text}</div>}
+ {layer.type==="ellipse"&&<div style={{width:"100%",height:"100%",borderRadius:"50%",pointerEvents:"none"}}/>}{layer.type==="rectangle"&&<div style={{width:"100%",height:"100%",pointerEvents:"none"}}/>}{layer.type==="image"&&<img src={layer.src||""} alt="" draggable={false} style={{width:"100%",height:"100%",objectFit:String(layer.style?.["object-fit"]??"contain"),pointerEvents:"none"}}/>}
+ {selected&&!multiSelected&&<><ResizeHandles layer={layer} onPointerDown={(event,handle)=>onPointerDown(event,"resize",handle)}/><RotateHandle layer={layer} onPointerDown={event=>onPointerDown(event,"rotate")}/></>}
  </div>;
 };
