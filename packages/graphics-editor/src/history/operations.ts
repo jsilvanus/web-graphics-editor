@@ -1,5 +1,8 @@
 import type { GraphicsDocument } from "../types";
 
+export type ActorType = "ui" | "automation" | "mcp";
+export interface Actor { type: ActorType; userId?: string }
+
 export type DocumentOperation =
   | { type: "set-layer-property"; layerId: string; property: string; from: unknown; to: unknown }
   | { type: "move-layer"; layerId: string; from: { x: number; y: number }; to: { x: number; y: number } }
@@ -8,7 +11,7 @@ export type DocumentOperation =
   | { type: "add-layer"; layer: GraphicsDocument["layers"][number]; index?: number }
   | { type: "remove-layer"; layer: GraphicsDocument["layers"][number]; index: number };
 
-export interface HistoryEntry { id: string; timestamp: number; label: string; operation: DocumentOperation; }
+export interface HistoryEntry { id: string; timestamp: number; label: string; actor: Actor; operation: DocumentOperation; }
 
 export function applyOperation(document: GraphicsDocument, operation: DocumentOperation, reverse = false): GraphicsDocument {
   const value = (reverse && "from" in operation) ? operation.from : ("to" in operation ? operation.to : undefined);
