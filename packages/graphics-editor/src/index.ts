@@ -1,4 +1,4 @@
-export type { GraphicsAsset, GraphicsDocument, GraphicsEditorProps, Layer, LayerType, PathCommand, PathNode, Point, Provenance, ProvenanceSource, Graphics3DTransform, Graphics3DMaterial, Graphics3DMeshGeometry, Graphics3DMesh, Graphics3DLight, Graphics3DCamera, Graphics3DWorld, Graphics3DVisibility, Graphics3DView } from "./types";
+export type { GraphicsAsset, GraphicsDocument, GraphicsEditorProps, Layer, LayerType, PathCommand, PathNode, Point, Provenance, ProvenanceSource, Graphics3DTransform, Graphics3DMaterial, Graphics3DMeshGeometry, Graphics3DMesh, Graphics3DLight, Graphics3DCamera, Graphics3DWorld, Graphics3DVisibility, Graphics3DRenderMode, Graphics3DView } from "./types";
 export { GraphicsEditor, defaultGraphicsDocument } from "./GraphicsEditor";
 export { GRAPHICS_DOCUMENT_VERSION, serializeGraphicsDocument, deserializeGraphicsDocument } from "./serialization";
 export { serializeWegra, deserializeWegra } from "./wegra";
@@ -11,6 +11,9 @@ export type { SnapResult, SnapGuides } from "./snapping";
 export { create3DWorld, update3DWorld, remove3DWorld, add3DMesh, update3DMesh, remove3DMesh, add3DCamera, update3DCamera, remove3DCamera, add3DLight, remove3DLight, create3DView, update3DView, remove3DView, set3DViewVisibility, setProvenance } from "./3d";
 export { ThreeGraphics3DRenderer, createThreeCamera, createThreeGeometry, createThreeScene } from "./3d-renderer";
 export type { Graphics3DRenderer, Graphics3DRenderOptions } from "./3d-renderer";
-export { createBoxMesh } from "./3d-primitives";
+export { createBoxMesh, createCylinderMesh, createSphereMesh, createConeMesh } from "./3d-primitives";
+export { moveMeshVertices, deleteMeshFaces, mergeMeshVertices, extrudeMeshFace } from "./3d-mesh";
+export { export3DWorld, import3DWorld } from "./3d-interchange";
+export type { Graphics3DInterchangeResult } from "./3d-interchange";
 export { ThreeDWorkspace } from "./ThreeDWorkspace";
 export type { ThreeDWorkspaceProps } from "./ThreeDWorkspace";
