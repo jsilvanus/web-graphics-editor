@@ -2,6 +2,7 @@ import type { Graphics3DMesh } from "../../types";
 import { edgeKey, meshEdges } from "../../3d-mesh-topology";
 import { buildBevelPatch } from "./bevel-geometry";
 import { buildBoundaryBevel } from "./bevel-boundary";
+import { closeBevelCorners } from "./bevel-corners";
 import { collectBevelEdges, faceCornerForEdge } from "./bevel-topology";
 
 export function bevelOneEdge(mesh: Graphics3DMesh, key: string, amount: number): Graphics3DMesh {
@@ -43,7 +44,7 @@ export function bevelSelectedEdges(mesh: Graphics3DMesh, keys: Set<string>, amou
   if (amount <= 0 || keys.size === 0) return mesh;
   let next = mesh;
   for (const key of [...keys]) next = bevelOneEdge(next, key, amount);
-  return next;
+  return closeBevelCorners(next, keys);
 }
 
 export function hasBevelableEdge(mesh: Graphics3DMesh, key: string): boolean {
