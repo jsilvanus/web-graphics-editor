@@ -6,3 +6,5 @@ export type { WegraManifest, WegraProject } from "./wegra";
 export { linePath, orthogonalPoint, pathCommandsToD, roundedRectPath, nodesToD, mirrorHandle } from "./geometry";
 export { roundedPolygonNodes } from "./geometry/rounded";
 export { exportSvg, importSvg } from "./svg";
+export { snapPosition, guidesForPosition } from "./snapping";
+export type { SnapResult, SnapGuides } from "./snapping";
