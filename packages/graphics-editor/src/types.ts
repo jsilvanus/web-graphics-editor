@@ -1,11 +1,11 @@
 export interface Point{x:number;y:number}
 export type PathNodeKind="corner"|"smooth"; export interface PathNode{x:number;y:number;kind?:PathNodeKind;handleIn?:Point;handleOut?:Point}
-export type LayerType="text"|"image"|"rectangle"|"ellipse"|"line"|"path"|"group";
+export type LayerType="text"|"image"|"rectangle"|"ellipse"|"line"|"path"|"group"|"3d-view";
 export type PathCommand={type:"M"|"L";x:number;y:number}|{type:"H";x:number}|{type:"V";y:number}|{type:"C";x1:number;y1:number;x2:number;y2:number;x:number;y:number}|{type:"Q";x1:number;y1:number;x:number;y:number}|{type:"Z"};
 export type TextAlign="left"|"center"|"right"; export type VerticalAlign="top"|"middle"|"bottom";
 export interface GradientStop{offset:number;color:string;opacity?:number}
 export interface Gradient{type:"linear"|"radial";angle?:number;cx?:number;cy?:number;stops:GradientStop[]}
-export interface Layer{id:string;type:LayerType;x:number;y:number;width:number;height:number;rotation?:number;text?:string;src?:string;path?:string;pathCommands?:PathCommand[];nodes?:PathNode[];closed?:boolean;children?:string[];parentId?:string;animation?:string;style?:Record<string,string|number>;gradient?:Gradient;textStyle?:{fontFamily?:string;fontSize?:number;fontWeight?:number|string;fontStyle?:"normal"|"italic";textAlign?:TextAlign;verticalAlign?:VerticalAlign;lineHeight?:number|string;letterSpacing?:number|string;whiteSpace?:"nowrap"|"pre-wrap";wrap?:"none"|"word"|"character";fontAssetId?:string}}
+export interface Layer{id:string;type:LayerType;x:number;y:number;width:number;height:number;rotation?:number;text?:string;src?:string;path?:string;pathCommands?:PathCommand[];nodes?:PathNode[];closed?:boolean;children?:string[];parentId?:string;animation?:string;style?:Record<string,string|number>;gradient?:Gradient;textStyle?:{fontFamily?:string;fontSize?:number;fontWeight?:number|string;fontStyle?:"normal"|"italic";textAlign?:TextAlign;verticalAlign?:VerticalAlign;lineHeight?:number|string;letterSpacing?:number|string;whiteSpace?:"nowrap"|"pre-wrap";wrap?:"none"|"word"|"character";fontAssetId?:string};view3dId?:string}
 export type AnimatedProperty="x"|"y"|"width"|"height"|"rotation"|"opacity"|"scaleX"|"scaleY";
 export type Easing="linear"|"ease-in"|"ease-out"|"ease-in-out";
 export interface Keyframe{id:string;time:number;value:number;easing?:Easing}
@@ -26,7 +26,8 @@ export interface Graphics3DLight{ id:string;type:"ambient"|"directional"|"point"
 export interface Graphics3DCamera{ id:string;name?:string;position:[number,number,number];rotation:[number,number,number];projection:"perspective"|"orthographic";fov?:number;near?:number;far?:number;zoom?:number }
 export interface Graphics3DWorld{ id:string;name?:string;meshes:Graphics3DMesh[];lights?:Graphics3DLight[];cameras:Graphics3DCamera[];provenance?:Provenance }
 export interface Graphics3DVisibility{mode:"all"|"include"|"exclude";objects:string[]}
-export interface Graphics3DView{ id:string;name?:string;worldId:string;cameraId:string;visibility?:Graphics3DVisibility;x:number;y:number;width:number;height:number;rotation?:number;opacity?:number;provenance?:Provenance }
+export type Graphics3DRenderMode="auto"|"prerender"|"live";
+export interface Graphics3DView{ id:string;name?:string;worldId:string;cameraId:string;visibility?:Graphics3DVisibility;renderMode?:Graphics3DRenderMode;renderAssetId?:string;x:number;y:number;width:number;height:number;rotation?:number;opacity?:number;provenance?:Provenance }
 
 export interface GraphicsDocument{width:number;height:number;background?:string;layers:Layer[];timeline?:SceneTimeline;assets?:GraphicsAsset[];worlds3d?:Graphics3DWorld[];views3d?:Graphics3DView[]}
 export interface GraphicsAsset{id:string;name:string;url:string;type:"image"|"video"|"font"|"other";mimeType?:string;size?:number;metadata?:Record<string,string|number>}
