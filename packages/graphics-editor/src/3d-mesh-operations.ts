@@ -1,7 +1,9 @@
 import type { Graphics3DMesh } from "./types";
+import { fromPolygons } from "./mesh/from-polygons";
+import { assertValidHalfEdgeMesh } from "./mesh/validate";
+import { faceVertices } from "./mesh/topology";
 
 type Vec3 = [number, number, number];
-
 const vertex = (g: Graphics3DMesh["geometry"], index: number): Vec3 => [g.vertices[index * 3], g.vertices[index * 3 + 1], g.vertices[index * 3 + 2]];
 const addVertex = (vertices: number[], v: Vec3) => { const i = vertices.length / 3; vertices.push(...v); return i; };
 const sub = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
@@ -9,10 +11,17 @@ const cross = (a: Vec3, b: Vec3): Vec3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0
 const length = (v: Vec3) => Math.hypot(v[0], v[1], v[2]);
 const normalize = (v: Vec3): Vec3 => { const n = length(v); return n > 1e-8 ? [v[0] / n, v[1] / n, v[2] / n] : [0, 1, 0]; };
 
+function topology(mesh: Graphics3DMesh) {
+  const faces: number[][] = [];
+  for (let i = 0; i + 2 < mesh.geometry.indices.length; i += 3) faces.push([mesh.geometry.indices[i], mesh.geometry.indices[i + 1], mesh.geometry.indices[i + 2]]);
+  const result = fromPolygons({ positions: mesh.geometry.vertices, faces });
+  assertValidHalfEdgeMesh(result);
+  return result;
+}
+
 export function faceVertexIndices(mesh: Graphics3DMesh, faceIndex: number): [number, number, number] | null {
-  const i = faceIndex * 3;
-  if (i < 0 || i + 2 >= mesh.geometry.indices.length) return null;
-  return [mesh.geometry.indices[i], mesh.geometry.indices[i + 1], mesh.geometry.indices[i + 2]];
+  const ids = faceVertices(topology(mesh), faceIndex);
+  return ids.length === 3 ? [ids[0], ids[1], ids[2]] : null;
 }
 
 export function faceNormal(mesh: Graphics3DMesh, faceIndex: number): Vec3 | null {
@@ -27,6 +36,7 @@ export function translateFace(mesh: Graphics3DMesh, faceIndex: number, delta: Ve
   return { ...mesh, geometry: { ...mesh.geometry, vertices } };
 }
 
+/** Extrude one triangle while using the half-edge kernel as the authoritative topology query. */
 export function extrudeFace(mesh: Graphics3DMesh, faceIndex: number, distance: number): Graphics3DMesh {
   const ids = faceVertexIndices(mesh, faceIndex); const normal = faceNormal(mesh, faceIndex); if (!ids || !normal) return mesh;
   const vertices = [...mesh.geometry.vertices];
