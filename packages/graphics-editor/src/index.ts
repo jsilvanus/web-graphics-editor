@@ -13,6 +13,7 @@ export { ThreeGraphics3DRenderer, createThreeCamera, createThreeGeometry, create
 export type { Graphics3DRenderer, Graphics3DRenderOptions } from "./3d-renderer";
 export { createBoxMesh, createCylinderMesh, createSphereMesh, createConeMesh } from "./3d-primitives";
 export { moveMeshVertices, deleteMeshFaces, mergeMeshVertices, extrudeMeshFace } from "./3d-mesh";
+export { graphicsMeshToHalfEdge, halfEdgeToGraphicsMesh, updateGraphicsMeshTopology, graphicsMeshFaces } from "./mesh";
 export { export3DWorld, import3DWorld } from "./3d-interchange";
 export type { Graphics3DInterchangeResult } from "./3d-interchange";
 export { ThreeDWorkspace } from "./ThreeDWorkspace";
