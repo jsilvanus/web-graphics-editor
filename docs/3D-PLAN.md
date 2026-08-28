@@ -89,6 +89,23 @@ This allows future support for:
 - AI-generated geometry
 - mesh editing operations
 
+## Provenance
+
+3D entities may carry renderer-independent provenance metadata describing where the content came from. This is part of the document model rather than a renderer concern.
+
+```ts
+Provenance {
+  source: "user" | "generated" | "imported" | "derived" | "ai"
+  createdBy?
+  sourceId?
+  sourceUri?
+  parentIds?
+  createdAt?
+}
+```
+
+Provenance should be preserved through serialization and used by future import, derivation and AI/MCP workflows.
+
 ## Renderer
 
 Use **Three.js** as the planned real-3D renderer and interaction engine.
@@ -167,16 +184,17 @@ The same animated world should be able to feed several camera views at the same 
 
 ### Phase 1 — 3D data model
 
-- [ ] Define versioned `Graphics3DWorld` data
-- [ ] Define renderer-independent mesh geometry
-- [ ] Define 3D transforms
-- [ ] Define cameras
-- [ ] Define lights
-- [ ] Define 3D views
-- [ ] Define visibility filtering
-- [ ] Add serialization/deserialization
-- [ ] Add document operations for creating/updating/removing 3D entities
-- [ ] Add unit tests
+- [x] Define versioned `Graphics3DWorld` data
+- [x] Define renderer-independent mesh geometry
+- [x] Define 3D transforms
+- [x] Define cameras
+- [x] Define lights
+- [x] Define 3D views
+- [x] Define visibility filtering
+- [x] Add serialization/deserialization
+- [x] Add document operations for creating/updating/removing 3D entities
+- [x] Add unit tests
+- [x] Add provenance metadata to the 3D model
 
 No Three.js dependency is required for this phase.
 
@@ -276,4 +294,5 @@ AI should eventually be able to create and modify graphics through document oper
 7. **A view controls what part of a world is shown and how it is composited.**
 8. **3D depth and 2D layer order are different systems.**
 9. **Serialization is versioned from the first 3D schema.**
-10. **Keep MCP out of the initial implementation while preserving clean programmatic operations for it later.**
+10. **Provenance is first-class metadata and must survive serialization.**
+11. **Keep MCP out of the initial implementation while preserving clean programmatic operations for it later.**
