@@ -1,7 +1,24 @@
 import type { GraphicsDocument } from "../types";
 
-export type ActorType = "ui" | "automation" | "mcp";
-export interface Actor { type: ActorType; userId?: string }
+export type ActorType = "human" | "ai" | "automation";
+
+/** A document-local actor reference. Identity resolution belongs to the host application. */
+export interface Actor {
+  type: ActorType;
+  userId?: string;
+  source?: string;
+}
+
+/** Stable document-local pseudonymous identity used by history entries. */
+export interface ActorVocabularyEntry {
+  type: ActorType;
+  userId?: string;
+  pseudonym: string;
+}
+
+export interface ActorVocabulary {
+  actors: Record<string, ActorVocabularyEntry>;
+}
 
 export type DocumentOperation =
   | { type: "set-layer-property"; layerId: string; property: string; from: unknown; to: unknown }
@@ -11,7 +28,7 @@ export type DocumentOperation =
   | { type: "add-layer"; layer: GraphicsDocument["layers"][number]; index?: number }
   | { type: "remove-layer"; layer: GraphicsDocument["layers"][number]; index: number };
 
-export interface HistoryEntry { id: string; timestamp: number; label: string; actor: Actor; operation: DocumentOperation; }
+export interface HistoryEntry { id: string; timestamp: number; label: string; actor: string; operation: DocumentOperation; }
 
 export function applyOperation(document: GraphicsDocument, operation: DocumentOperation, reverse = false): GraphicsDocument {
   const value = (reverse && "from" in operation) ? operation.from : ("to" in operation ? operation.to : undefined);
