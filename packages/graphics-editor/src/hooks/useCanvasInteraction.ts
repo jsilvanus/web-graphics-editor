@@ -4,6 +4,7 @@ import { WIDTH } from "../constants";
 import { snap } from "../geometry";
 import { referenceSnap } from "../referenceSnapping";
 import { getReferenceId } from "../referenceStore";
+import { getLayerTreeIds } from "../document";
 import type { GraphicsDocument, Layer } from "../types";
 
 export type CanvasDrag={kind:string;layerId:string;selectedIds:string[];handle?:string;startX:number;startY:number;layers:Layer[];scale:number;left:number;top:number;centerX:number;centerY:number};
@@ -11,7 +12,7 @@ function bounds(layers:Layer[]){const x=Math.min(...layers.map(l=>l.x)),y=Math.m
 function rotatePoint(x:number,y:number,cx:number,cy:number,a:number){const r=a*Math.PI/180,dx=x-cx,dy=y-cy;return{x:cx+dx*Math.cos(r)-dy*Math.sin(r),y:cy+dx*Math.sin(r)+dy*Math.cos(r)};}
 export function useCanvasInteraction(document:GraphicsDocument,artboardRef:RefObject<HTMLDivElement|null>,grid:boolean,aspectLock:boolean,onChange:(next:GraphicsDocument)=>void,selectedIds:Set<string>=new Set()){
  const dragRef=useRef<CanvasDrag|null>(null);
- const pointerDown=useCallback((event:ReactPointerEvent,id:string,kind:string,handle?:string)=>{event.stopPropagation();const layer=document.layers.find(x=>x.id===id),rect=artboardRef.current?.getBoundingClientRect();if(!layer||!rect?.width)return;const selected=document.layers.filter(x=>selectedIds.has(x.id));const layers=selected.length>1&&selectedIds.has(id)?selected:[layer],b=bounds(layers);dragRef.current={kind,layerId:id,selectedIds:layers.map(x=>x.id),handle,startX:event.clientX,startY:event.clientY,layers:layers.map(x=>({...x})),scale:rect.width/(document.width||WIDTH),left:rect.left,top:rect.top,centerX:b.x+b.width/2,centerY:b.y+b.height/2};(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)},[artboardRef,document,selectedIds]);
+ const pointerDown=useCallback((event:ReactPointerEvent,id:string,kind:string,handle?:string)=>{event.stopPropagation();const layer=document.layers.find(x=>x.id===id),rect=artboardRef.current?.getBoundingClientRect();if(!layer||!rect?.width)return;const selected=document.layers.filter(x=>selectedIds.has(x.id));const layers=selected.length>1&&selectedIds.has(id)?selected:[layer],b=bounds(layers);const dragIds=new Set<string>();layers.forEach(l=>getLayerTreeIds(document,l.id).forEach(childId=>dragIds.add(childId)));const dragLayers=document.layers.filter(l=>dragIds.has(l.id));dragRef.current={kind,layerId:id,selectedIds:[...dragIds],handle,startX:event.clientX,startY:event.clientY,layers:dragLayers.map(x=>({...x})),scale:rect.width/(document.width||WIDTH),left:rect.left,top:rect.top,centerX:b.x+b.width/2,centerY:b.y+b.height/2};(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)},[artboardRef,document,selectedIds]);
  const pointerMove=useCallback((event:ReactPointerEvent)=>{const d=dragRef.current;if(!d)return;const dx=(event.clientX-d.startX)/d.scale,dy=(event.clientY-d.startY)/d.scale;let next=d.layers.map(l=>({...l}));
   if(d.kind==="move"){let mx=dx,my=dy;if(grid){mx=snap(d.layers[0].x+mx)-d.layers[0].x;my=snap(d.layers[0].y+my)-d.layers[0].y}
    const referenceId=getReferenceId(),referenceLayer=referenceId?document.layers.find(l=>l.id===referenceId):null;
