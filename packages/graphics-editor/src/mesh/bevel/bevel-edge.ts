@@ -1,15 +1,17 @@
 import type { Graphics3DMesh } from "../../types";
 import { edgeKey, meshEdges } from "../../3d-mesh-topology";
 import { buildBevelPatch } from "./bevel-geometry";
+import { buildBoundaryBevel } from "./bevel-boundary";
 import { collectBevelEdges, faceCornerForEdge } from "./bevel-topology";
 
 export function bevelOneEdge(mesh: Graphics3DMesh, key: string, amount: number): Graphics3DMesh {
   const context = collectBevelEdges(mesh, new Set([key]))[0];
-  if (!context || context.faces.length !== 2) return mesh;
+  if (!context) return mesh;
+  if (context.faces.length === 1) return buildBoundaryBevel(mesh, context, amount) ?? mesh;
+  if (context.faces.length !== 2) return mesh;
   const patch = buildBevelPatch(mesh, context, amount);
   if (!patch) return mesh;
-  const [f0, f1] = context.faces;
-  const { a, b } = context.edge;
+  const [f0, f1] = context.faces, { a, b } = context.edge;
   const c0 = faceCornerForEdge(mesh, f0, a, b), c1 = faceCornerForEdge(mesh, f1, a, b);
   if (c0 === undefined || c1 === undefined) return mesh;
   const vertices = [...mesh.geometry.vertices, ...patch.vertices];
@@ -38,7 +40,7 @@ function edgeIsReversed(indices: number[], face: number, a: number, b: number): 
 }
 
 export function bevelSelectedEdges(mesh: Graphics3DMesh, keys: Set<string>, amount: number): Graphics3DMesh {
-  if (amount <= 0) return mesh;
+  if (amount <= 0 || keys.size === 0) return mesh;
   let next = mesh;
   for (const key of [...keys]) next = bevelOneEdge(next, key, amount);
   return next;
@@ -46,5 +48,5 @@ export function bevelSelectedEdges(mesh: Graphics3DMesh, keys: Set<string>, amou
 
 export function hasBevelableEdge(mesh: Graphics3DMesh, key: string): boolean {
   const edge = meshEdges(mesh).find(e => edgeKey(e.a, e.b) === key);
-  return !!edge && edge.faces.length === 2;
+  return !!edge && edge.faces.length >= 1 && edge.faces.length <= 2;
 }
