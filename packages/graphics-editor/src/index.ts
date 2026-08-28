@@ -1,4 +1,4 @@
-export type { GraphicsAsset, GraphicsDocument, GraphicsEditorProps, Layer, LayerType, PathCommand, PathNode, Point } from "./types";
+export type { GraphicsAsset, GraphicsDocument, GraphicsEditorProps, Layer, LayerType, PathCommand, PathNode, Point, Provenance, ProvenanceSource, Graphics3DTransform, Graphics3DMaterial, Graphics3DMeshGeometry, Graphics3DMesh, Graphics3DLight, Graphics3DCamera, Graphics3DWorld, Graphics3DVisibility, Graphics3DView } from "./types";
 export { GraphicsEditor, defaultGraphicsDocument } from "./GraphicsEditor";
 export { GRAPHICS_DOCUMENT_VERSION, serializeGraphicsDocument, deserializeGraphicsDocument } from "./serialization";
 export { serializeWegra, deserializeWegra } from "./wegra";
@@ -8,3 +8,4 @@ export { roundedPolygonNodes } from "./geometry/rounded";
 export { exportSvg, importSvg } from "./svg";
 export { snapPosition, guidesForPosition } from "./snapping";
 export type { SnapResult, SnapGuides } from "./snapping";
+export { create3DWorld, update3DWorld, remove3DWorld, add3DMesh, update3DMesh, remove3DMesh, add3DCamera, update3DCamera, remove3DCamera, add3DLight, remove3DLight, create3DView, update3DView, remove3DView, set3DViewVisibility, setProvenance } from "./3d";
