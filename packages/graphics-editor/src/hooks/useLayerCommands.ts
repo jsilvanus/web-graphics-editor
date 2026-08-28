@@ -3,7 +3,9 @@ import { alignLayers, distributeLayers, type AlignMode, type AlignReference, typ
 import type { GraphicsDocument } from "../types";
 import { useLayerOperations } from "./useLayerOperations";
 
-export function useLayerCommands(document:GraphicsDocument,setDocument:ReturnType<typeof useLayerOperations>["setDocument"],commit:(next:GraphicsDocument)=>void,selectedIds:Set<string>,primaryId:string|null,select:(id:string)=>void,clear:()=>void){
+type SetDocument=(next:GraphicsDocument|((current:GraphicsDocument)=>GraphicsDocument),history?:boolean)=>void;
+
+export function useLayerCommands(document:GraphicsDocument,setDocument:SetDocument,commit:(next:GraphicsDocument)=>void,selectedIds:Set<string>,primaryId:string|null,select:(id:string)=>void,clear:()=>void){
  const {add,remove,duplicate,bringForward,sendBackward,bringToFront,sendToBack,group,ungroup}=useLayerOperations(setDocument);
  const addLayer=useCallback((type:Parameters<typeof add>[0])=>{const id=add(type);select(id)},[add,select]);
  const deleteSelected=useCallback(()=>{if(!selectedIds.size)return;const viewIds=document.layers.filter(l=>selectedIds.has(l.id)&&l.type==="3d-view").map(l=>l.view3dId).filter(Boolean) as string[];remove(selectedIds);if(viewIds.length)commit({...document,views3d:(document.views3d??[]).filter(v=>!viewIds.includes(v.id))});clear()},[selectedIds,document,remove,commit,clear]);
