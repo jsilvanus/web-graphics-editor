@@ -231,16 +231,18 @@ GLB/glTF is an interchange representation, not a replacement for `.wegra`. Expor
 
 ### Phase 4 — 3D views in the 2D editor
 
-- [ ] Add 3D view as a canvas layer
-- [ ] Select world/camera
-- [ ] Place/resize the view
-- [ ] Normal 2D layer ordering
-- [ ] Include/exclude visibility filtering
-- [ ] Multiple views referencing one world
-- [ ] `auto` / `prerender` / `live` rendering modes
-- [ ] Cached prerendered output for 2D editing
-- [ ] Dirty tracking for dependent views
-- [ ] Serialize complete composition
+- [x] Add 3D view as a canvas layer
+- [x] Select world/camera
+- [x] Place/resize the view
+- [x] Normal 2D layer ordering
+- [x] Include/exclude visibility filtering
+- [x] Multiple views referencing one world
+- [x] `auto` / `prerender` / `live` rendering modes
+- [x] Cached prerendered output for 2D editing
+- [x] Dirty tracking for dependent views via source-key invalidation
+- [x] Serialize complete composition
+
+The 2D canvas uses a 3D-view layer that references the persistent `Graphics3DView`; its rendered image is treated as a cache. In `auto`/`prerender` mode there is no animation frame loop in the 2D editor, while `live` explicitly keeps the Three.js render loop active.
 
 ### Phase 5 — Arbitrary mesh workflows and interchange
 
