@@ -45,7 +45,7 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
   const { saveWegra, openWegra } = useWegraIO(document, timeline, history, resetHistory, setTimeline, clear);
   useTimelinePlayback(playing, setPlaying, setTimeline, timeline);
   const animatedLayers = useAnimatedLayers(document, timeline);
-  const { changeLayer, changeStyle } = useAnimatedLayerEditing(updateLayer, updateStyle, setTimeline, timeline.currentTime);
+  const { changeLayer, changeStyle } = useAnimatedLayerEditing(document, executeCommand, timeline.currentTime);
 
   useEffect(() => { onChange?.({ ...document, timeline }); }, [document, timeline, onChange]);
   useEffect(() => { if (initialDocumentRef.current === initialDocument) return; initialDocumentRef.current = initialDocument; setTimeline(initialDocument.timeline ?? createDefaultTimeline()); resetHistory(initialDocument); }, [initialDocument, resetHistory, setTimeline]);
