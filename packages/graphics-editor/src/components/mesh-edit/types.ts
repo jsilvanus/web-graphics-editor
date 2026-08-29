@@ -23,6 +23,7 @@ export interface ThreeDMeshEditController {
   updateData: (data: Graphics3DMesh | undefined) => void;
   setMode: (mode: MeshEditMode) => void;
   setFaceAction: (action: FaceEditAction) => void;
+  moveSelectedVertices: (delta: [number, number, number]) => void;
   extrudeSelectedFace: (distance: number) => void;
   insetSelectedFace: (amount: number) => void;
   insetSelectedFaceLegacy: (amount: number) => void;
