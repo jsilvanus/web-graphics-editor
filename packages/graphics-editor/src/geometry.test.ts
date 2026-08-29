@@ -40,6 +40,21 @@ describe("layer rendering style", () => {
     });
   });
 
+  it("converts a document gradient into CSS backgroundImage", () => {
+    const gradientLayer: Layer = {
+      ...layer,
+      gradient: {
+        type: "linear",
+        angle: 90,
+        stops: [
+          { offset: 0, color: "#000" },
+          { offset: 1, color: "#fff" },
+        ],
+      },
+    };
+    expect(layerStyle(gradientLayer, false).backgroundImage).toContain("linear-gradient");
+  });
+
   it("adds the selection outline without replacing visual styling", () => {
     expect(layerStyle(layer, true)).toMatchObject({
       outline: "3px solid #38bdf8",
