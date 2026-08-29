@@ -5,6 +5,7 @@ import { createThreeGeometry } from "./3d-renderer-geometry";
 import { createThreeScene } from "./3d-renderer-scene";
 
 export interface Graphics3DRenderOptions {
+  /** Omit for a transparent WebGL canvas. */
   background?: string | number;
   pixelRatio?: number;
   width?: number;
@@ -19,7 +20,6 @@ export interface Graphics3DRenderer {
   dispose(): void;
 }
 
-// Compatibility exports: callers can continue importing these from the renderer boundary.
 export { createThreeCamera, createThreeGeometry, createThreeScene };
 
 export class ThreeGraphics3DRenderer implements Graphics3DRenderer {
@@ -30,16 +30,12 @@ export class ThreeGraphics3DRenderer implements Graphics3DRenderer {
     this.container = container;
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    this.renderer.setClearColor(0x000000, 0);
     this.resize();
     container.appendChild(this.renderer.domElement);
   }
 
-  render(
-    world: Graphics3DWorld,
-    camera: Graphics3DCamera,
-    view?: Pick<Graphics3DView, "visibility">,
-    options?: Graphics3DRenderOptions,
-  ): THREE.Scene {
+  render(world: Graphics3DWorld, camera: Graphics3DCamera, view?: Pick<Graphics3DView, "visibility">, options?: Graphics3DRenderOptions): THREE.Scene {
     const scene = createThreeScene(world, view);
     if (options?.background !== undefined) scene.background = new THREE.Color(options.background);
     if (!this.renderer) return scene;
@@ -48,6 +44,7 @@ export class ThreeGraphics3DRenderer implements Graphics3DRenderer {
     const height = options?.height ?? this.container?.clientHeight ?? 1;
     this.renderer.setPixelRatio(options?.pixelRatio ?? Math.min(window.devicePixelRatio || 1, 2));
     this.renderer.setSize(Math.max(1, width), Math.max(1, height), false);
+    this.renderer.setClearColor(options?.background === undefined ? 0x000000 : options.background, options?.background === undefined ? 0 : 1);
     this.renderer.render(scene, createThreeCamera(camera, width / height));
     return scene;
   }
@@ -56,9 +53,7 @@ export class ThreeGraphics3DRenderer implements Graphics3DRenderer {
     this.renderer?.setSize(Math.max(1, width), Math.max(1, height), false);
   }
 
-  getCanvas(): HTMLCanvasElement | undefined {
-    return this.renderer?.domElement;
-  }
+  getCanvas(): HTMLCanvasElement | undefined { return this.renderer?.domElement; }
 
   dispose(): void {
     this.renderer?.dispose();
