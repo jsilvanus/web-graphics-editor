@@ -5,6 +5,7 @@ import { evaluateWorldAtTime } from "./world-animation";
 const world: Graphics3DWorld = {
   id: "logo", meshes: [{ id: "logo-mesh", geometry: { vertices: [], indices: [] }, transform: { position: [0,0,0], rotation: [0,0,0], scale: [1,1,1] } }], cameras: [{ id: "camera", position: [0,0,5], rotation: [0,0,0], projection: "perspective", fov: 60 }], timeline: { duration: 10, tracks: [
     { id: "rx", targetType: "mesh", targetId: "logo-mesh", property: "rotationY", keyframes: [{ id: "a", time: 0, value: 0 }, { id: "b", time: 10, value: 360 }] },
+    { id: "x", targetType: "mesh", targetId: "logo-mesh", property: "positionX", keyframes: [{ id: "e", time: 0, value: 0 }, { id: "f", time: 10, value: 100 }] },
     { id: "fov", targetType: "camera", targetId: "camera", property: "fov", keyframes: [{ id: "c", time: 0, value: 60 }, { id: "d", time: 10, value: 90 }] }
   ] }
 };
@@ -20,9 +21,18 @@ describe("evaluateWorldAtTime", () => {
     const result = evaluateWorldAtTime(world, 2, { offset: 1, rate: 2 });
     expect(result.worldTime).toBe(5);
     expect(result.meshes[0].transform.rotation[1]).toBe(180);
+    expect(result.meshes[0].transform.position[0]).toBe(50);
+  });
+  it("allows two views to observe the same world at different world times", () => {
+    const a = evaluateWorldAtTime(world, 2, { offset: 0, rate: 1 });
+    const b = evaluateWorldAtTime(world, 2, { offset: 6, rate: 1 });
+    expect(a.worldTime).toBe(2);
+    expect(b.worldTime).toBe(8);
+    expect(a.meshes[0].transform.position[0]).toBe(20);
+    expect(b.meshes[0].transform.position[0]).toBe(80);
   });
   it("evaluates a looped world through mapped time", () => {
-    const result = evaluateWorldAtTime(world, 12, { offset: 0, rate: 1, loop: "loop", inPoint: 0, outPoint: 10 });
+    const result = evaluateWorldAtTime(world, 12, { offset: 0, rate: 1, loop: true, inPoint: 0, outPoint: 10 });
     expect(result.worldTime).toBe(2);
     expect(result.meshes[0].transform.rotation[1]).toBe(72);
   });
