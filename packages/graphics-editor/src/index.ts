@@ -1,4 +1,4 @@
-export type { GraphicsAsset, GraphicsDocument, GraphicsEditorProps, Layer, LayerType, PathCommand, PathNode, Point, Provenance, ProvenanceSource, Graphics3DTransform, Graphics3DMaterial, Graphics3DMeshGeometry, Graphics3DMesh, Graphics3DLight, Graphics3DCamera, Graphics3DWorld, Graphics3DVisibility, Graphics3DRenderMode, Graphics3DView, Graphics3DAnimatedProperty, Graphics3DAnimationTarget, Graphics3DTrack } from "./types";
+export type { GraphicsAsset, GraphicsDocument, GraphicsEditorProps, Layer, LayerType, PathCommand, PathNode, Point, Provenance, ProvenanceSource, Graphics3DTransform, Graphics3DMaterial, Graphics3DMeshGeometry, Graphics3DMesh, Graphics3DLight, Graphics3DCamera, Graphics3DWorld, Graphics3DVisibility, Graphics3DRenderMode, Graphics3DView, Graphics3DAnimatedProperty, Graphics3DAnimationTarget, Graphics3DTrack, GraphicsOutput, OutputPlaybackMode, OutputBackgroundMode, OutputTransition, OutputTransitionType } from "./types";
 export { GraphicsEditor, defaultGraphicsDocument } from "./GraphicsEditor";
 export { GRAPHICS_DOCUMENT_VERSION, serializeGraphicsDocument, deserializeGraphicsDocument } from "./serialization";
 export { serializeWegra, deserializeWegra } from "./wegra";
@@ -19,4 +19,10 @@ export type { Graphics3DInterchangeResult } from "./3d-interchange";
 export { ThreeDWorkspace } from "./ThreeDWorkspace";
 export type { ThreeDWorkspaceProps } from "./ThreeDWorkspace";
 export { interpolate3DKeyframes, create3DTrack, evaluate3DProperty, evaluate3DWorldAtTime, evaluate3DViewAtTime } from "./3d-animation";
-export { add3DTrack, remove3DTrack, upsert3DKeyframe, remove3DKeyframe, move3DKeyframe, tracks3DForTarget } from "./3d-timeline";
+export { add3DTrack, remove3DTrack, upsert3DKeyframe, remove3DKeyframe, move3DKeyframe, tracks3DForTarget, set3DKeyframeAtTime } from "./3d-timeline";
+export { OutputRenderer, outputRenderPath } from "./OutputRenderer";
+export type { OutputRendererProps } from "./OutputRenderer";
+export { createOutputRuntime, outputTransitionProgress, tickOutputRuntime, takeOutput, takeOffOutput, playOutput, pauseOutput, seekOutput, resetOutput, dispatchOutputRuntime } from "./outputs-runtime";
+export type { OutputRuntime, OutputRuntimeState, OutputRuntimeEvent } from "./outputs-runtime";
+export type { OutputCommand, OutputEvent } from "./output-protocol";
+export { isOutputCommand, outputStateEvent } from "./output-protocol";
