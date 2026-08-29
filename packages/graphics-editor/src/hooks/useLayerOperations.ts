@@ -2,9 +2,11 @@ import { useCallback } from "react";
 import type { GraphicsDocument, Layer, LayerType } from "../types";
 import { updateLayerCommand, updateLayerStyleCommand, addLayerCommand, removeLayerCommand, reorderLayerCommand, groupLayersCommand, ungroupLayerCommand } from "../document/commands";
 import type { DocumentOperation } from "../history/operations";
+import type { EditorOperationOptions } from "./useEditorHistory";
 import { linePath } from "../geometry/path";
 
-type ExecuteCommand = (command: { document: GraphicsDocument; operation?: DocumentOperation }, options?: { actorId?: string; actor?: unknown; label?: string }) => GraphicsDocument | undefined;
+type Command = { document: GraphicsDocument; operation?: DocumentOperation };
+type ExecuteCommand = (command: Command, options?: EditorOperationOptions) => GraphicsDocument | undefined;
 
 function createLayer(type: LayerType): Layer {
   const id = `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
@@ -16,11 +18,8 @@ function createLayer(type: LayerType): Layer {
   return { id, type, x: 460, y: 300, width: 1000, height: type === "ellipse" ? 440 : 500, style: { background: type === "ellipse" ? "#fff" : "#111" } };
 }
 
-export function useLayerOperations(
-  executeCommand: ExecuteCommand,
-  document: GraphicsDocument,
-) {
-  const execute = useCallback((command: { document: GraphicsDocument; operation?: DocumentOperation }, label: string) => executeCommand(command, { label }), [executeCommand]);
+export function useLayerOperations(executeCommand: ExecuteCommand, document: GraphicsDocument) {
+  const execute = useCallback((command: Command, label: string) => executeCommand(command, { label }), [executeCommand]);
 
   const updateLayer = useCallback((id: string, patch: Partial<Layer>) => execute(updateLayerCommand(document, id, patch), "Update layer"), [document, execute]);
   const updateStyle = useCallback((id: string, key: string, value: string | number | undefined) => execute(updateLayerStyleCommand(document, id, key, value), `Set ${key}`), [document, execute]);
@@ -33,11 +32,14 @@ export function useLayerOperations(
 
   const remove = useCallback((ids: Set<string>) => {
     const selected = document.layers.filter(layer => ids.has(layer.id));
-    const operations = selected.map(layer => removeLayerCommand(document, layer.id).operation).filter((operation): operation is DocumentOperation => !!operation);
-    if (operations.length) execute({ document: operations.reduce((current, operation) => {
-      const result = removeLayerCommand(current, operation.type === "remove-layer" ? operation.layer.id : "");
-      return result.document;
-    }, document), operation: operations.length === 1 ? operations[0] : { type: "batch", operations } }, "Remove layers");
+    let next = document;
+    const operations: DocumentOperation[] = [];
+    for (const layer of [...selected].sort((a, b) => document.layers.findIndex(item => item.id === b.id) - document.layers.findIndex(item => item.id === a.id))) {
+      const result = removeLayerCommand(next, layer.id);
+      next = result.document;
+      if (result.operation) operations.push(result.operation);
+    }
+    if (operations.length) execute({ document: next, operation: operations.length === 1 ? operations[0] : { type: "batch", operations } }, "Remove layers");
   }, [document, execute]);
 
   const duplicate = useCallback((ids: Set<string>) => {
