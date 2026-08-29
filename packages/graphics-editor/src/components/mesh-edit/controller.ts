@@ -1,12 +1,12 @@
 import * as THREE from "three";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls.js";
 import type { Graphics3DMesh } from "../../types";
-import { edgeKey, meshEdges } from "../../3d-mesh-topology";
-import { faceVertexIndices } from "../../3d-mesh-operations";
 import { createHandleManager } from "./handles";
 import { bevel, extrude, insetKernel, insetLegacy } from "./operations";
 import { clearSelection, createSelection, selectedVertexIds } from "./selection";
 import { moveVertices } from "../../mesh/move-vertices";
+import { weldVertices } from "../../mesh/weld-vertices";
+import { deleteVertices } from "../../mesh/delete-vertices";
 import type { FaceEditAction, MeshEditMode, ThreeDMeshEditController } from "./types";
 
 export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camera, renderer: THREE.WebGLRenderer, onChange: (geometry: Graphics3DMesh["geometry"]) => void): ThreeDMeshEditController {
@@ -48,6 +48,8 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
     setMode(mode) { state.mode = mode; clearSelection(selection); dragSnapshot = null; transform.detach(); handles.rebuild(); },
     setFaceAction(_action: FaceEditAction) {},
     moveSelectedVertices(delta) { if (!state.data) return; const ids = selectedVertexIds(state.data, selection, state.mode); if (!ids.size) return; updateGeometry(moveVertices(state.data, ids, delta)); },
+    weldSelectedVertices(tolerance = 1e-6) { if (!state.data || state.mode !== "vertices") return; const ids = [...selection.vertices]; if (!ids.length) return; updateGeometry(weldVertices(state.data, ids, tolerance)); clearSelection(selection); dragSnapshot = null; },
+    deleteSelectedVertices() { if (!state.data || state.mode !== "vertices") return; const ids = [...selection.vertices]; if (!ids.length) return; updateGeometry(deleteVertices(state.data, ids)); clearSelection(selection); dragSnapshot = null; },
     extrudeSelectedFace(distance) { if (!state.data || !selection.faces.size) return; updateGeometry(extrude(state.data, selection.faces, distance)); },
     insetSelectedFace(amount) { if (!state.data || !selection.faces.size) return; updateGeometry(insetKernel(state.data, selection.faces, amount)); },
     insetSelectedFaceLegacy(amount) { if (!state.data || !selection.faces.size) return; updateGeometry(insetLegacy(state.data, selection.faces, amount)); },
