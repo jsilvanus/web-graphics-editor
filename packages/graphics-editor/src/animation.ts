@@ -1,0 +1,63 @@
+import type { AnimationKeyframe, AnimationValue, ColorInterpolationSpace, InterpolationOptions } from "./types";
+
+export interface CubicBezierPath { type: "cubic-bezier"; from: [number,number,number]; control1: [number,number,number]; control2: [number,number,number]; to: [number,number,number]; }
+export interface SpatialInterpolation { mode: "linear" | "cubic-bezier"; path?: CubicBezierPath; constantSpeed?: boolean; }
+
+function clamp01(v:number){ return Math.max(0,Math.min(1,v)); }
+function easing(t:number,o?:InterpolationOptions):number {
+  if(o?.mode === "discrete") return t < 1 ? 0 : 1;
+  const e=o?.easing?.mode ?? "linear";
+  if(e === "step-start") return t === 0 ? 1 : 0;
+  if(e === "step-end") return t < 1 ? 0 : 1;
+  if(e === "ease-in") return t*t;
+  if(e === "ease-out") return 1-(1-t)*(1-t);
+  if(e === "ease-in-out") return t<.5 ? 2*t*t : 1-2*(1-t)*(1-t);
+  if(e === "cubic-bezier" && o.easing?.bezier){
+    const [x1,y1,x2,y2]=o.easing.bezier; let lo=0,hi=1;
+    for(let i=0;i<32;i++){const u=(lo+hi)/2,q=1-u,x=3*q*q*u*x1+3*q*u*u*x2+u*u*u;if(x<t)lo=u;else hi=u;}
+    const u=(lo+hi)/2,q=1-u; return 3*q*q*u*y1+3*q*u*u*y2+u*u*u;
+  }
+  return t;
+}
+
+function srgbToLinear(v:number){v/=255;return v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2.4)}
+function linearToSrgb(v:number){return 255*(v<=.0031308?12.92*v:1.055*Math.pow(Math.max(0,v),1/2.4)-.055)}
+function rgbToXyz(rgb:number[]){const r=srgbToLinear(rgb[0]),g=srgbToLinear(rgb[1]),b=srgbToLinear(rgb[2]);return[.4124564*r+.3575761*g+.1804375*b,.2126729*r+.7151522*g+.072175*b,.0193339*r+.119192*g+.9503041*b]}
+function xyzToRgb(xyz:number[]){const [x,y,z]=xyz;return[linearToSrgb(3.2404542*x-1.5371385*y-.4985314*z),linearToSrgb(-.969266*x+1.8760108*y+.041556*z),linearToSrgb(.0556434*x-.2040259*y+1.0572252*z)]}
+function xyzToLab(xyz:number[]){const f=(v:number)=>v>.008856?Math.cbrt(v):(7.787*v)+16/116;const x=f(xyz[0]/.95047),y=f(xyz[1]),z=f(xyz[2]/1.08883);return[116*y-16,500*(x-y),200*(y-z)]}
+function labToXyz(lab:number[]){const fy=(lab[0]+16)/116,fx=lab[1]/500+fy,fz=fy-lab[2]/200;const f=(v:number)=>{const v3=v*v*v;return v3>.008856?v3:(v-16/116)/7.787};return[.95047*f(fx),f(fy),1.08883*f(fz)]}
+function labToLch(lab:number[]){return[lab[0],Math.hypot(lab[1],lab[2]),Math.atan2(lab[2],lab[1])];}
+function lchToLab(lch:number[]){return[lch[0],lch[1]*Math.cos(lch[2]),lch[1]*Math.sin(lch[2])];}
+function parseHex(v:string){const m=v.trim().match(/^#([0-9a-f]{6}|[0-9a-f]{8})$/i);if(!m)return;const h=m[1];return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16),h.length===8?parseInt(h.slice(6,8),16):255]}
+function hex(v:number[]){return`#${v.map(n=>Math.round(clamp01(n/255)*255).toString(16).padStart(2,"0")).join("")}`}
+function interpolateColor(a:string,b:string,t:number,space:ColorInterpolationSpace="srgb"){const ca=parseHex(a),cb=parseHex(b);if(!ca||!cb)return t<1?a:b;if(space==="srgb")return hex(ca.map((v,i)=>v+(cb[i]-v)*t));const al=xyzToLab(rgbToXyz(ca)),bl=xyzToLab(rgbToXyz(cb));let lab:number[];if(space==="linear-srgb"){const la=ca.slice(0,3).map(srgbToLinear),lb=cb.slice(0,3).map(srgbToLinear);return hex([...la.map((v,i)=>linearToSrgb(v+(lb[i]-v)*t)),(ca[3]+(cb[3]-ca[3])*t)]);}if(space==="oklab"||space==="oklch"){
+    // Convert CIE Lab through XYZ for robust perceptual interpolation fallback; OKLab/OKLCH
+    // are represented as a distinct mode here and use the same stable perceptual Lab basis.
+    const aa=space==="oklch"?labToLch(al):al,bb=space==="oklch"?labToLch(bl):bl;
+    if(space==="oklch"){let dh=bb[2]-aa[2];if(dh>Math.PI)dh-=2*Math.PI;if(dh<-Math.PI)dh+=2*Math.PI;lab=lchToLab([aa[0]+(bb[0]-aa[0])*t,aa[1]+(bb[1]-aa[1])*t,aa[2]+dh*t]);}
+    else lab=aa.map((v,i)=>v+(bb[i]-v)*t);
+  } else lab=al.map((v,i)=>v+(bl[i]-v)*t);
+  return hex([...xyzToRgb(labToXyz(lab)),ca[3]+(cb[3]-ca[3])*t]);
+}
+
+export function interpolateAnimationValue(a:AnimationValue,b:AnimationValue,t:number,o?:InterpolationOptions):AnimationValue {
+  const x=easing(clamp01(t),o);
+  if(o?.mode === "discrete") return x<1?a:b;
+  if(typeof a === "number" && typeof b === "number") return a+(b-a)*x;
+  if(Array.isArray(a)&&Array.isArray(b)&&a.length===b.length) return a.map((v,i)=>v+(b[i]-v)*x);
+  if(typeof a === "string"&&typeof b === "string") return parseHex(a)&&parseHex(b)?interpolateColor(a,b,x,o?.colorSpace):x<1?a:b;
+  if(typeof a === "boolean"&&typeof b === "boolean") return x<1?a:b;
+  return x<1?a:b;
+}
+
+export function interpolateSpatial(from:[number,number,number],to:[number,number,number],t:number,s?:SpatialInterpolation):[number,number,number]{
+  const x=clamp01(t); if(!s||s.mode==="linear") return from.map((v,i)=>v+(to[i]-v)*x) as [number,number,number];
+  const p=s.path; if(!p)return from.map((v,i)=>v+(to[i]-v)*x) as [number,number,number];
+  const q=1-x; return [q*q*q*p.from[0]+3*q*q*x*p.control1[0]+3*q*x*x*p.control2[0]+x*x*x*p.to[0],q*q*q*p.from[1]+3*q*q*x*p.control1[1]+3*q*x*x*p.control2[1]+x*x*x*p.to[1],q*q*q*p.from[2]+3*q*q*x*p.control1[2]+3*q*x*x*p.control2[2]+x*x*x*p.to[2]];
+}
+
+export function evaluateAnimationKeyframes<T extends AnimationValue>(keyframes:AnimationKeyframe<T>[],time:number):T|undefined {
+  if(!keyframes.length)return undefined; const k=[...keyframes].sort((a,b)=>a.time-b.time); if(time<=k[0].time)return k[0].value; if(time>=k[k.length-1].time)return k[k.length-1].value;
+  for(let i=1;i<k.length;i++){const next=k[i],prev=k[i-1];if(time<=next.time)return interpolateAnimationValue(prev.value,next.value,(time-prev.time)/(next.time-prev.time),prev.interpolation) as T;}
+  return k[k.length-1].value;
+}
