@@ -1,12 +1,13 @@
-import type { AnimationKeyframe, AnimationValue, Easing, InterpolationOptions, LayerClip, Scene, SceneTimeline, SceneTransitionType } from "./types";
+import type { AnimationKeyframe, Easing, LayerClip, Scene, SceneTimeline, SceneTransitionType, Track } from "./types";
+import { evaluateAnimationKeyframes } from "./animation";
 export type AnimatedProperty="x"|"y"|"width"|"height"|"rotation"|"opacity"|"scaleX"|"scaleY";
-export interface Keyframe{id:string;time:number;value:number;easing?:Easing}
-export interface Track{id:string;layerId:string;property:AnimatedProperty;keyframes:Keyframe[]}
+export type Keyframe=AnimationKeyframe<number>;
+export { Track };
 export const DEFAULT_SCENE_DURATION=5;
 const id=(prefix:string)=>`${prefix}-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
 export function createScene(name="Scene",start=0,duration=DEFAULT_SCENE_DURATION):Scene{return{id:id("scene"),name,start,duration:Math.max(.1,duration)}}
-export function createTrack(layerId:string,property:AnimatedProperty):Track{return{id:id("track"),layerId,property,keyframes:[]}}
-export function createKeyframe(time:number,value:number,easing:Easing="linear"):Keyframe{return{id:id("key"),time,value,easing}}
+export function createTrack(layerId:string,property:AnimatedProperty):Track{return{id:id("track"),targetId:layerId,layerId,property,keyframes:[]}}
+export function createKeyframe(time:number,value:number,easing:Easing="linear"):Keyframe{return{id:id("key"),time,value,interpolation:{easing:{mode:easing}}}}
 export function createClip(layerId:string,start=0,duration=DEFAULT_SCENE_DURATION):LayerClip{return{id:id("clip"),layerId,start,duration:Math.max(.1,duration)}}
 export function timelineDuration(t:SceneTimeline){return t.scenes.reduce((m,s)=>Math.max(m,s.start+s.duration),0)}
 export function normalizeScenes(scenes:Scene[]){let cursor=0;return scenes.map(s=>{const n={...s,start:cursor,duration:Math.max(.1,s.duration)};cursor+=n.duration;return n})}
@@ -26,12 +27,7 @@ export function clipAtTime(t:SceneTimeline,layerId:string,time:number){return(t.
 export function duplicateTimelineRange(t:SceneTimeline,start:number,end:number,at=end):SceneTimeline{const lo=Math.min(start,end),hi=Math.max(start,end),duration=hi-lo;if(duration<=0)return t;const shift=at-lo;const stamp=Date.now();const tracks=t.tracks.map(track=>{const keys=track.keyframes.filter(k=>k.time>=lo&&k.time<=hi);if(!keys.length)return null;return{...track,id:`track-${stamp}-${Math.random().toString(36).slice(2,6)}`,keyframes:keys.map(k=>({...k,id:`key-${stamp}-${Math.random().toString(36).slice(2,6)}`,time:k.time+shift}))}}).filter(Boolean) as Track[];const clips=(t.clips??[]).flatMap(c=>{const a=Math.max(c.start,lo),b=Math.min(c.start+c.duration,hi);return b>a?[{...c,id:`clip-${stamp}-${Math.random().toString(36).slice(2,6)}`,start:a+shift,duration:b-a}]:[]});return{...t,tracks:[...t.tracks,...tracks],clips:[...(t.clips??[]),...clips]}}
 export function duplicateTimeline(t:SceneTimeline,at=timelineDuration(t)):SceneTimeline{return duplicateTimelineRange(t,0,timelineDuration(t),at)}
 export function setLoop(t:SceneTimeline,loop:boolean):SceneTimeline{return{...t,loop}}
-function easing(x:number,o?:InterpolationOptions):number{const e=o?.easing?.mode??"linear";if(o?.mode==="discrete")return x<1?0:1;if(e==="step-start")return x===0?1:0;if(e==="step-end")return x<1?0:1;if(e==="ease-in")return x*x;if(e==="ease-out")return 1-(1-x)*(1-x);if(e==="ease-in-out")return x<.5?2*x*x:1-2*(1-x)*(1-x);if(e==="cubic-bezier"&&o?.easing?.bezier){const [x1,y1,x2,y2]=o.easing.bezier;let lo=0,hi=1;for(let i=0;i<24;i++){const u=(lo+hi)/2,q=1-u,bx=3*q*q*u*x1+3*q*u*u*x2+u*u*u;if(bx<x)lo=u;else hi=u}const u=(lo+hi)/2,q=1-u;return 3*q*q*u*y1+3*q*u*u*y2+u*u*u}return x}
-function isTuple(v:AnimationValue):v is number[]{return Array.isArray(v)}
-function colorParts(v:string){const m=v.trim().match(/^#([0-9a-f]{6}|[0-9a-f]{8})$/i);if(!m)return null;const h=m[1];return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16),h.length===8?parseInt(h.slice(6,8),16):255]}
-function interpolateValue(a:AnimationValue,b:AnimationValue,x:number,o?:InterpolationOptions):AnimationValue{if(o?.mode==="discrete")return x<1?a:b;if(typeof a==="number"&&typeof b==="number")return a+(b-a)*x;if(isTuple(a)&&isTuple(b)&&a.length===b.length)return a.map((v,i)=>v+(b[i]-v)*x);if(typeof a==="string"&&typeof b==="string"){const ca=colorParts(a),cb=colorParts(b);if(ca&&cb){const c=ca.map((v,i)=>Math.round(v+(cb[i]-v)*x));return`#${c.map(v=>v.toString(16).padStart(2,"0")).join("")}`}return x<1?a:b}if(typeof a==="boolean"&&typeof b==="boolean")return x<1?a:b;return x<1?a:b}
-export function interpolateAnimationKeyframes(k:AnimationKeyframe[],time:number){if(!k.length)return undefined;const a=[...k].sort((x,y)=>x.time-y.time);if(time<=a[0].time)return a[0].value;if(time>=a.at(-1)!.time)return a.at(-1)!.value;for(let i=1;i<a.length;i++)if(time<=a[i].time){const prev=a[i-1],next=a[i],x=easing((time-prev.time)/(next.time-prev.time),prev.interpolation);return interpolateValue(prev.value,next.value,x,prev.interpolation)}}
-export function interpolateKeyframes(k:Keyframe[],time:number){return interpolateAnimationKeyframes(k.map(x=>({id:x.id,time:x.time,value:x.value,interpolation:x.easing?{easing:{mode:x.easing}}:undefined})),time) as number|undefined}
+export function evaluateTrack(track:Track,time:number){return evaluateAnimationKeyframes(track.keyframes,time)}
 export function upsertKeyframe(t:Track,k:Keyframe):Track{return{...t,keyframes:[...t.keyframes.filter(x=>x.id!==k.id&&Math.abs(x.time-k.time)>.0001),k].sort((a,b)=>a.time-b.time)}}
 export function moveKeyframe(t:Track,id:string,time:number):Track{const k=t.keyframes.find(x=>x.id===id);return k?upsertKeyframe(t,{...k,time:Math.max(0,time)}):t}
 export function removeKeyframe(t:Track,id:string):Track{return{...t,keyframes:t.keyframes.filter(k=>k.id!==id)}}
