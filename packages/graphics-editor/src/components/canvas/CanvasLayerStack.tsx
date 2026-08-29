@@ -1,6 +1,7 @@
 import type { FC, PointerEvent as ReactPointerEvent } from "react";
 import { WIDTH, HEIGHT } from "../../constants";
 import type { Graphics3DView, Graphics3DWorld, Layer, PathNode } from "../../types";
+import { getRootLayers } from "../../layer-tree";
 import { CanvasLayer } from "./CanvasLayer";
 import { SelectionOverlay } from "./SelectionOverlay";
 
@@ -13,10 +14,10 @@ export interface CanvasLayerStackProps {
   onPathNodes?: (id: string, nodes: PathNode[]) => void;
 }
 
-/** Owns the 2D composition order: document layers are painted in array order. */
+/** Owns 2D composition order and only paints root layers. Group children are composed by the group renderer. */
 export const CanvasLayerStack: FC<CanvasLayerStackProps> = ({ layers, selectedIds, worlds3d, views3d, onLayerPointerDown, onPathNodes }) => (
   <>
-    {layers.map(layer => (
+    {getRootLayers(layers).map(layer => (
       <CanvasLayer
         key={layer.id}
         layer={layer}
