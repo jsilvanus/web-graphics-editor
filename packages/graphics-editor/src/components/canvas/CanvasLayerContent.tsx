@@ -11,6 +11,7 @@ export interface CanvasLayerContentProps {
   layer: Layer;
   layers?: Layer[];
   selected: boolean;
+  selectedIds?: Set<string>;
   multiSelected: boolean;
   onPointerDown: (event: React.PointerEvent, kind: "move" | "resize" | "rotate", handle?: string) => void;
   onNodes?: (nodes: PathNode[]) => void;
@@ -18,9 +19,8 @@ export interface CanvasLayerContentProps {
   views3d?: Graphics3DView[];
 }
 
-/** Dispatches a layer to its small, type-specific renderer. */
-export function CanvasLayerContent({ layer, layers = [], selected, multiSelected, onPointerDown, onNodes, worlds3d = [], views3d = [] }: CanvasLayerContentProps): ReactNode {
-  if (layer.type === "group") return <GroupLayerRenderer layer={layer} layers={layers} selectedIds={new Set(selected ? [layer.id] : [])} worlds3d={worlds3d} views3d={views3d} onLayerPointerDown={(event, id, kind, handle) => onPointerDown(event, kind, handle)} onPathNodes={(id, nodes) => onNodes?.(nodes)} />;
+export function CanvasLayerContent({ layer, layers = [], selected, selectedIds = new Set(), multiSelected, onPointerDown, onNodes, worlds3d = [], views3d = [] }: CanvasLayerContentProps): ReactNode {
+  if (layer.type === "group") return <GroupLayerRenderer layer={layer} layers={layers} selectedIds={selectedIds} worlds3d={worlds3d} views3d={views3d} onLayerPointerDown={onPointerDown} onPathNodes={(id, nodes) => onNodes?.(nodes)} />;
   if (layer.type === "3d-view") {
     const view = views3d.find(item => item.id === layer.view3dId);
     const world = view && worlds3d.find(item => item.id === view.worldId);
