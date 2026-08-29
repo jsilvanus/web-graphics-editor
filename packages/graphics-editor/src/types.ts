@@ -40,6 +40,11 @@ export interface Graphics3DVisibility{mode:"all"|"include"|"exclude";objects:str
 export type Graphics3DRenderMode="auto"|"prerender"|"live"; export type Graphics3DResolutionMode="auto"|"custom";
 export interface Graphics3DRenderSettings{resolutionMode?:Graphics3DResolutionMode;resolutionWidth?:number;resolutionHeight?:number;resolutionScale?:number;maxPixelRatio?:number;background?:string;backgroundOpacity?:number;shadows?:boolean;environmentColor?:string;environmentIntensity?:number}
 export interface Graphics3DView{ id:string;name?:string;worldId:string;cameraId:string;visibility?:Graphics3DVisibility;renderMode?:Graphics3DRenderMode;renderSettings?:Graphics3DRenderSettings;renderAssetId:string;x:number;y:number;width:number;height:number;rotation?:number;opacity?:number;provenance?:Provenance;worldTime?:WorldTimeMapping}
-export interface GraphicsDocument{width:number;height:number;background?:string;layers:Layer[];timeline?:SceneTimeline;assets?:GraphicsAsset[];worlds3d?:Graphics3DWorld[];views3d?:Graphics3DView[]}
+export type OutputPlaybackMode="static"|"automatic"|"user"|"live";
+export type OutputBackgroundMode="transparent"|"opaque";
+export type OutputTransitionType=SceneTransitionType;
+export interface OutputTransition{type:OutputTransitionType;duration:number}
+export interface GraphicsOutput{id:string;name:string;compositionId?:string;playback:OutputPlaybackMode;background:OutputBackgroundMode;inTransition?:OutputTransition;outTransition?:OutputTransition;loop?:boolean;autoplay?:boolean;editable?:boolean;liveControl?:boolean;defaultTime?:number;createdAt?:string;updatedAt?:string;provenance?:Provenance}
+export interface GraphicsDocument{width:number;height:number;background?:string;layers:Layer[];timeline?:SceneTimeline;assets?:GraphicsAsset[];worlds3d?:Graphics3DWorld[];views3d?:Graphics3DView[];outputs?:GraphicsOutput[]}
 export interface GraphicsAsset{id:string;name:string;url:string;type:"image"|"video"|"font"|"other";mimeType?:string;size?:number;metadata?:Record<string,string|number>}
 export interface GraphicsEditorProps{document:GraphicsDocument;assets?:GraphicsAsset[];onChange:(document:GraphicsDocument)=>void}
