@@ -31,7 +31,7 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
   const [grid, setGrid] = useState(false), [safe, setSafe] = useState(false), [aspectLock, setAspectLock] = useState(true), [assetPicker, setAssetPicker] = useState(false);
   const artboardRef = useRef<HTMLDivElement>(null);
   const viewport = useCanvasViewport(document.width, document.height);
-  const { timeline, setTimeline, seek, changeTimeline } = useGraphicsEditorTimeline(initialDocument.timeline ?? createDefaultTimeline());
+  const { timeline, setTimeline, seek, changeTimeline } = useGraphicsEditorTimeline(document, executeCommand);
   const [playing, setPlaying] = useState(false);
   const projectAssets = useProjectAssets(document, assets);
   const commit = useCallback((next: GraphicsDocument) => setDocument(next, true), [setDocument]);
@@ -39,16 +39,17 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
   const transaction = useEditorTransaction(commit);
   const { updateLayer, updateStyle } = useLayerOperations(executeCommand, document);
   const commands = useLayerCommands(document, executeCommand, selectedIds, primaryId, select, clear);
-  const interaction = useCanvasInteraction(document, artboardRef, grid, aspectLock, transientChange, selectedIds);
+  const interaction = useCanvasInteraction(document, artboardRef, grid, aspectLock, transientChange, selectedIds, timeline.currentTime);
   const drawing = useEditorDrawing(document, commit, select, clear);
   const { add3DView, update3DView } = use3DViews(document, commit, select);
   const { saveWegra, openWegra } = useWegraIO(document, timeline, history, resetHistory, setTimeline, clear);
-  useTimelinePlayback(playing, setPlaying, setTimeline, timeline);
+  const transientSeek = useCallback((next: typeof timeline) => setDocument({ ...document, timeline: next }, false), [document, setDocument]);
+  useTimelinePlayback(playing, setPlaying, transientSeek, timeline);
   const animatedLayers = useAnimatedLayers(document, timeline);
   const { changeLayer, changeStyle } = useAnimatedLayerEditing(document, executeCommand, timeline.currentTime);
 
-  useEffect(() => { onChange?.({ ...document, timeline }); }, [document, timeline, onChange]);
-  useEffect(() => { if (initialDocumentRef.current === initialDocument) return; initialDocumentRef.current = initialDocument; setTimeline(initialDocument.timeline ?? createDefaultTimeline()); resetHistory(initialDocument); }, [initialDocument, resetHistory, setTimeline]);
+  useEffect(() => { onChange?.(document); }, [document, onChange]);
+  useEffect(() => { if (initialDocumentRef.current === initialDocument) return; initialDocumentRef.current = initialDocument; resetHistory({ ...initialDocument, timeline: initialDocument.timeline ?? createDefaultTimeline() }); }, [initialDocument, resetHistory]);
 
   const selectedLayer = animatedLayers.find(layer => layer.id === primaryId) ?? null;
   const selected3DView = selectedLayer?.type === "3d-view" ? document.views3d?.find(view => view.id === selectedLayer.view3dId) : undefined;
@@ -56,7 +57,7 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
   const addFont = useCallback((asset: GraphicsAsset) => { if (!primaryId) return; setDocument(d => ({ ...d, assets: [...(d.assets ?? []).filter(a => a.id !== asset.id), asset] })); updateLayer(primaryId, { textStyle: { ...(selectedLayer?.textStyle ?? {}), fontAssetId: asset.id, fontFamily: String(asset.metadata?.family ?? asset.name) } }); }, [primaryId, selectedLayer, setDocument, updateLayer]);
   const onCanvasPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => { if (drawing.activeTool === "select") return; drawing.onPointerDown(event, artboardRef); }, [drawing]);
   const onCanvasPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => { drawing.onPointerMove(event, artboardRef); if (drawing.drawingRef.current?.tool === "line") return; interaction.pointerMove(event); }, [drawing, interaction]);
-  const onCanvasPointerUp = useCallback(() => { if (drawing.drawingRef.current?.tool === "line") drawing.finishDrawing(); else interaction.pointerUp(); }, [drawing, interaction]);
+  const onCanvasPointerUp = useCallback(() => { if (drawing.drawingRef.current?.tool === "line") drawing.finishDrawing(); else { interaction.pointerUp(); transaction.end(document); } }, [drawing, interaction, transaction, document]);
   const onLayerPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>, id: string, kind: string, handle?: string) => { if (drawing.activeTool !== "select") return; if (kind === "move") select(id, event.shiftKey); transaction.begin(document); interaction.pointerDown(event, id, kind, handle); }, [drawing.activeTool, select, transaction, document, interaction]);
   const total = timelineDuration(timeline);
   const selectedCamera = selected3DView && selected3DWorld ? selected3DWorld.cameras.find((camera: Graphics3DCamera) => camera.id === selected3DView.cameraId) : undefined;
