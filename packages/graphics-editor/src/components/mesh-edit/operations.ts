@@ -3,6 +3,7 @@ import { extrudeFace } from "../../3d-mesh-operations";
 import { insetFace as insetFaceLegacy } from "../../3d-mesh-topology";
 import { insetGraphicsMeshFace } from "../../mesh/graphics-mesh-inset";
 import { bevelMeshEdges } from "../../mesh/graphics-mesh-bevel";
+import { extrudeRegion } from "../../mesh/extrude/extrude-region";
 
 export function insetKernel(data: Graphics3DMesh, faces: Set<number>, amount: number): Graphics3DMesh {
   let next = data;
@@ -20,6 +21,7 @@ export function insetLegacy(data: Graphics3DMesh, faces: Set<number>, amount: nu
 }
 
 export function extrude(data: Graphics3DMesh, faces: Set<number>, distance: number): Graphics3DMesh {
+  if (faces.size > 1) return extrudeRegion(data, faces, distance);
   let next = data;
   for (const face of [...faces].sort((a, b) => b - a)) next = extrudeFace(next, face, distance);
   return next;
