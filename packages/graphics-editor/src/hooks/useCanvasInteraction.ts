@@ -7,7 +7,7 @@ import { getReferenceId } from "../referenceStore";
 import { getLayerTreeIds } from "../document";
 import { getLayerBounds, type LayerBounds } from "../layer-bounds";
 import { interpolateKeyframes, createKeyframe, upsertKeyframe } from "../timeline";
-import type { GraphicsDocument, Layer, AnimatedProperty, SceneTimeline } from "../types";
+import type { GraphicsDocument, Layer, AnimatedProperty } from "../types";
 
 export type CanvasDrag={kind:string;layerId:string;selectedIds:string[];handle?:string;startX:number;startY:number;layers:Layer[];scale:number;left:number;top:number;centerX:number;centerY:number;startBounds:LayerBounds};
 function bounds(layers:Layer[]){const x=Math.min(...layers.map(l=>l.x)),y=Math.min(...layers.map(l=>l.y)),r=Math.max(...layers.map(l=>l.x+l.width)),b=Math.max(...layers.map(l=>l.y+l.height));return{x,y,width:r-x,height:b-y};}
@@ -17,13 +17,10 @@ const animatedProperties: AnimatedProperty[]=["x","y","width","height","rotation
 function applyAnimatedTransforms(document:GraphicsDocument,startLayers:Layer[],nextLayers:Layer[],time:number):GraphicsDocument{
  const timeline=document.timeline;if(!timeline)return{...document,layers:document.layers.map(l=>nextLayers.find(n=>n.id===l.id)??l)};
  const nextTracks=timeline.tracks.map(track=>({...track,keyframes:[...track.keyframes]}));
- const layers=document.layers.map(layer=>{const next=nextLayers.find(n=>n.id===layer.id);const start=startLayers.find(n=>n.id===layer.id);if(!next||!start)return layer;for(const property of animatedProperties){const track=nextTracks.find(t=>t.layerId===layer.id&&t.property===property);if(!track)continue;let startValue=interpolateKeyframes(track.keyframes,time);if(startValue===undefined)startValue=Number(start[property]);let value=startValue;
-   if(property==="x"||property==="y")value=startValue+(Number(next[property])-Number(start[property]));
-   else if(property==="width"||property==="height"){const base=Number(start[property]);value=base===0?Number(next[property]):startValue*(Number(next[property])/base);}
-   else if(property==="rotation")value=startValue+(Number(next.rotation??0)-Number(start.rotation??0));
-   if(!Number.isFinite(value))continue;const existing=track.keyframes.find(k=>Math.abs(k.time-time)<=.0001);const key=existing?{...existing,value}:createKeyframe(time,value);const updated=upsertKeyframe(track,key);const index=nextTracks.indexOf(track);nextTracks[index]=updated;}
-  const hasAnimated=animatedProperties.some(p=>nextTracks.some(t=>t.layerId===layer.id&&t.property===p));return hasAnimated?layer:next;});
- return {...document,layers, timeline:{...timeline,tracks:nextTracks}};
+ const layers=document.layers.map(layer=>{const next=nextLayers.find(n=>n.id===layer.id),start=startLayers.find(n=>n.id===layer.id);if(!next||!start)return layer;const result={...layer};
+  for(const property of animatedProperties){const track=nextTracks.find(t=>t.layerId===layer.id&&t.property===property);if(!track){(result as Record<string,unknown>)[property]=property==="rotation"?next.rotation??0:next[property];continue;}let startValue=interpolateKeyframes(track.keyframes,time);if(startValue===undefined)startValue=Number(start[property]);let value=startValue;if(property==="x"||property==="y")value=startValue+(Number(next[property])-Number(start[property]));else if(property==="width"||property==="height"){const base=Number(start[property]);value=base===0?Number(next[property]):startValue*(Number(next[property])/base);}else if(property==="rotation")value=startValue+(Number(next.rotation??0)-Number(start.rotation??0));if(!Number.isFinite(value))continue;const existing=track.keyframes.find(k=>Math.abs(k.time-time)<=.0001);const key=existing?{...existing,value}:createKeyframe(time,value);nextTracks[nextTracks.indexOf(track)]=upsertKeyframe(track,key);}
+  return result;});
+ return {...document,layers,timeline:{...timeline,tracks:nextTracks}};
 }
 export function useCanvasInteraction(document:GraphicsDocument,artboardRef:RefObject<HTMLDivElement|null>,grid:boolean,aspectLock:boolean,onChange:(next:GraphicsDocument)=>void,selectedIds:Set<string>=new Set(),currentTime=0){
  const dragRef=useRef<CanvasDrag|null>(null);
