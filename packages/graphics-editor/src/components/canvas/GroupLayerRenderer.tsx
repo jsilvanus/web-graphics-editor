@@ -10,23 +10,37 @@ export interface GroupLayerRendererProps {
   worlds3d: Graphics3DWorld[];
   views3d: Graphics3DView[];
   onLayerPointerDown: (event: ReactPointerEvent, id: string, kind: "move" | "resize" | "rotate", handle?: string) => void;
+  onSelectLayer?: (id: string, additive?: boolean) => void;
   onPathNodes?: (id: string, nodes: PathNode[]) => void;
 }
 
-/** Composes children in document coordinates inside the group's transform/opacity frame. */
-export const GroupLayerRenderer: FC<GroupLayerRendererProps> = ({ layer, layers, selectedIds, worlds3d, views3d, onLayerPointerDown, onPathNodes }) => {
+/** Composes children in document coordinates. Alt-click a child to select/manipulate its parent group. */
+export const GroupLayerRenderer: FC<GroupLayerRendererProps> = ({ layer, layers, selectedIds, worlds3d, views3d, onLayerPointerDown, onSelectLayer, onPathNodes }) => {
   const children = getChildLayers(layers, layer.id);
+  const childPointerDown = (event: ReactPointerEvent, child: Layer, kind: "move" | "resize" | "rotate", handle?: string) => {
+    if (event.altKey && kind === "move") {
+      onSelectLayer?.(layer.id, event.shiftKey);
+      onLayerPointerDown(event, layer.id, kind, handle);
+      return;
+    }
+    onSelectLayer?.(child.id, event.shiftKey);
+    onLayerPointerDown(event, child.id, kind, handle);
+  };
   return (
     <div style={{ position: "absolute", left: -layer.x, top: -layer.y, width: "100vw", height: "100vh", overflow: "visible" }}>
       {children.map(child => (
         <CanvasLayer
           key={child.id}
           layer={child}
+          layers={layers}
           selected={selectedIds.has(child.id)}
+          selectedIds={selectedIds}
           multiSelected={selectedIds.size > 1}
           worlds3d={worlds3d}
           views3d={views3d}
-          onPointerDown={(event, kind, handle) => onLayerPointerDown(event, child.id, kind, handle)}
+          onPointerDown={(event, kind, handle) => childPointerDown(event, child, kind, handle)}
+          onLayerPointerDown={onLayerPointerDown}
+          onSelectLayer={onSelectLayer}
           onNodes={nodes => onPathNodes?.(child.id, nodes)}
         />
       ))}
