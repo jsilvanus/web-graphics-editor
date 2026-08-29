@@ -6,6 +6,7 @@ import { faceVertexIndices } from "../../3d-mesh-operations";
 import { createHandleManager } from "./handles";
 import { bevel, extrude, insetKernel, insetLegacy } from "./operations";
 import { clearSelection, createSelection, selectedVertexIds } from "./selection";
+import { moveVertices } from "../../mesh/move-vertices";
 import type { FaceEditAction, MeshEditMode, ThreeDMeshEditController } from "./types";
 
 export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camera, renderer: THREE.WebGLRenderer, onChange: (geometry: Graphics3DMesh["geometry"]) => void): ThreeDMeshEditController {
@@ -37,8 +38,8 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
     const ids = selectedVertexIds(state.data, selection, state.mode); if (!ids.size) return;
     const center = new THREE.Vector3(); ids.forEach(id => center.add(new THREE.Vector3().fromArray(dragSnapshot!, id * 3))); center.multiplyScalar(1 / ids.size);
     const delta = pivot.position.clone().sub(center); if (delta.lengthSq() < 1e-10) return;
-    const vertices = [...state.data.geometry.vertices]; ids.forEach(id => { vertices[id * 3] = dragSnapshot![id * 3] + delta.x; vertices[id * 3 + 1] = dragSnapshot![id * 3 + 1] + delta.y; vertices[id * 3 + 2] = dragSnapshot![id * 3 + 2] + delta.z; });
-    state.data = { ...state.data, geometry: { ...state.data.geometry, vertices } }; onChange(state.data.geometry); dragSnapshot = vertices; pivot.position.copy(center).add(delta);
+    updateGeometry(moveVertices(state.data, ids, [delta.x, delta.y, delta.z]));
+    dragSnapshot = [...state.data.geometry.vertices]; pivot.position.copy(center).add(delta);
   };
   renderer.domElement.addEventListener("pointerdown", onPointerDown); transform.addEventListener("objectChange", onTransform);
   return {
@@ -46,6 +47,7 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
     updateData(data) { state.data = data; handles.rebuild(); },
     setMode(mode) { state.mode = mode; clearSelection(selection); dragSnapshot = null; transform.detach(); handles.rebuild(); },
     setFaceAction(_action: FaceEditAction) {},
+    moveSelectedVertices(delta) { if (!state.data) return; const ids = selectedVertexIds(state.data, selection, state.mode); if (!ids.size) return; updateGeometry(moveVertices(state.data, ids, delta)); },
     extrudeSelectedFace(distance) { if (!state.data || !selection.faces.size) return; updateGeometry(extrude(state.data, selection.faces, distance)); },
     insetSelectedFace(amount) { if (!state.data || !selection.faces.size) return; updateGeometry(insetKernel(state.data, selection.faces, amount)); },
     insetSelectedFaceLegacy(amount) { if (!state.data || !selection.faces.size) return; updateGeometry(insetLegacy(state.data, selection.faces, amount)); },
