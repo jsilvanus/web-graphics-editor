@@ -30,7 +30,8 @@ export interface Graphics3DCamera{ id:string;name?:string;position:[number,numbe
 export interface Graphics3DWorld{ id:string;name?:string;meshes:Graphics3DMesh[];lights?:Graphics3DLight[];cameras:Graphics3DCamera[];provenance?:Provenance }
 export interface Graphics3DVisibility{mode:"all"|"include"|"exclude";objects:string[]}
 export type Graphics3DRenderMode="auto"|"prerender"|"live";
-export interface Graphics3DRenderSettings{resolutionScale?:number;maxPixelRatio?:number;background?:string;backgroundOpacity?:number;shadows?:boolean;environmentColor?:string;environmentIntensity?:number}
+export type Graphics3DResolutionMode="auto"|"custom";
+export interface Graphics3DRenderSettings{resolutionMode?:Graphics3DResolutionMode;resolutionWidth?:number;resolutionHeight?:number;resolutionScale?:number;maxPixelRatio?:number;background?:string;backgroundOpacity?:number;shadows?:boolean;environmentColor?:string;environmentIntensity?:number}
 export interface Graphics3DView{ id:string;name?:string;worldId:string;cameraId:string;visibility?:Graphics3DVisibility;renderMode?:Graphics3DRenderMode;renderSettings?:Graphics3DRenderSettings;renderAssetId?:string;x:number;y:number;width:number;height:number;rotation?:number;opacity?:number;provenance?:Provenance }
 
 export interface GraphicsDocument{width:number;height:number;background?:string;layers:Layer[];timeline?:SceneTimeline;assets?:GraphicsAsset[];worlds3d?:Graphics3DWorld[];views3d?:Graphics3DView[]}
