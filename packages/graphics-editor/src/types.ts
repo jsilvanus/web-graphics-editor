@@ -15,9 +15,8 @@ export interface AnimationKeyframe<T extends AnimationValue=AnimationValue>{id:s
 export interface KeyframeGroup{id:string;time:number;keyframeIds:string[]}
 export interface AnimationTrack<T extends AnimationValue=AnimationValue>{id:string;targetId:string;property:string;keyframes:AnimationKeyframe<T>[];groupIds?:string[]}
 export type AnimatedProperty="x"|"y"|"width"|"height"|"rotation"|"opacity"|"scaleX"|"scaleY";
-/** Legacy numeric timeline representation retained for document compatibility. */
-export interface Keyframe{id:string;time:number;value:number;easing?:Easing}
-export interface Track{id:string;layerId:string;property:AnimatedProperty;keyframes:Keyframe[]}
+export interface Track extends AnimationTrack<number>{layerId:string;property:AnimatedProperty}
+export type Keyframe=AnimationKeyframe<number>;
 export type Graphics3DAnimatedProperty="positionX"|"positionY"|"positionZ"|"rotationX"|"rotationY"|"rotationZ"|"scaleX"|"scaleY"|"scaleZ"|"fov"|"opacity"|"visibility"|"materialColor"|"materialOpacity";
 export type Graphics3DAnimationTarget="mesh"|"camera";
 export interface Graphics3DTrack{id:string;targetType:Graphics3DAnimationTarget;targetId:string;property:Graphics3DAnimatedProperty;keyframes:AnimationKeyframe[]}
