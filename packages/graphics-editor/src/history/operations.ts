@@ -1,10 +1,16 @@
-import type { GraphicsDocument, Layer, SceneTimeline } from "../types";
+import type { GraphicsDocument, Layer, SceneTimeline, Track, Keyframe, LayerClip, AnimatedProperty } from "../types";
 
 export type ActorType = "human" | "ai" | "automation";
 export interface Actor { type: ActorType; userId?: string; source?: string }
 export interface ActorVocabularyEntry { type: ActorType; userId?: string; pseudonym: string }
 export interface ActorVocabulary { actors: Record<string, ActorVocabularyEntry> }
 export interface GroupChildSnapshot { layer: Layer; index: number }
+
+type KeyframeEdit = { trackId: string; keyframe: Keyframe; fromValue: number; toValue: number };
+type KeyframeCreate = { trackId: string; keyframe: Keyframe };
+type KeyframeDelete = { trackId: string; keyframe: Keyframe };
+type KeyframeMove = { trackId: string; keyframe: Keyframe; fromTime: number; toTime: number };
+type ClipTiming = { clipId: string; from: Pick<LayerClip, "start" | "duration">; to: Pick<LayerClip, "start" | "duration"> };
 
 export type DocumentOperation =
   | { type: "set-layer-property"; layerId: string; property: string; from: unknown; to: unknown }
@@ -18,76 +24,40 @@ export type DocumentOperation =
   | { type: "group-layers"; group: Layer; children: GroupChildSnapshot[]; index: number }
   | { type: "ungroup-layer"; group: Layer; children: GroupChildSnapshot[]; index: number }
   | { type: "set-timeline"; from?: SceneTimeline; to?: SceneTimeline }
+  | { type: "add-keyframe"; track: Track; keyframe: Keyframe }
+  | { type: "update-keyframe"; trackId: string; keyframeId: string; fromValue: number; toValue: number }
+  | { type: "delete-keyframe"; trackId: string; keyframe: Keyframe }
+  | { type: "move-keyframe"; trackId: string; keyframeId: string; fromTime: number; toTime: number }
+  | { type: "set-clip-timing"; clipId: string; from: Pick<LayerClip, "start" | "duration">; to: Pick<LayerClip, "start" | "duration"> }
   | { type: "batch"; operations: DocumentOperation[] };
 
 export interface HistoryEntry { id: string; timestamp: number; label: string; actor: string; operation: DocumentOperation }
 
-function moveAtIndex(document: GraphicsDocument, id: string, targetIndex: number): GraphicsDocument {
-  const index = document.layers.findIndex(layer => layer.id === id); if (index < 0) return document;
-  const layers = [...document.layers]; const [layer] = layers.splice(index, 1); layers.splice(Math.max(0, Math.min(targetIndex, layers.length)), 0, layer); return { ...document, layers };
-}
-function restoreChildren(document: GraphicsDocument, snapshots: GroupChildSnapshot[]): GraphicsDocument {
-  const ids = new Set(snapshots.map(snapshot => snapshot.layer.id)); const layers = document.layers.filter(layer => !ids.has(layer.id));
-  for (const snapshot of [...snapshots].sort((a, b) => a.index - b.index)) layers.splice(Math.max(0, Math.min(snapshot.index, layers.length)), 0, snapshot.layer);
-  return { ...document, layers };
-}
+function moveAtIndex(document: GraphicsDocument, id: string, targetIndex: number): GraphicsDocument { const index = document.layers.findIndex(layer => layer.id === id); if (index < 0) return document; const layers = [...document.layers]; const [layer] = layers.splice(index, 1); layers.splice(Math.max(0, Math.min(targetIndex, layers.length)), 0, layer); return { ...document, layers }; }
+function restoreChildren(document: GraphicsDocument, snapshots: GroupChildSnapshot[]): GraphicsDocument { const ids = new Set(snapshots.map(snapshot => snapshot.layer.id)); const layers = document.layers.filter(layer => !ids.has(layer.id)); for (const snapshot of [...snapshots].sort((a, b) => a.index - b.index)) layers.splice(Math.max(0, Math.min(snapshot.index, layers.length)), 0, snapshot.layer); return { ...document, layers }; }
 function groupedChildren(snapshots: GroupChildSnapshot[], groupId: string): Layer[] { return snapshots.map(snapshot => ({ ...snapshot.layer, parentId: groupId })); }
+function updateTrack(document: GraphicsDocument, trackId: string, updater: (track: Track) => Track): GraphicsDocument { const timeline = document.timeline; if (!timeline) return document; return { ...document, timeline: { ...timeline, tracks: timeline.tracks.map(track => track.id === trackId ? updater(track) : track) } }; }
+function findKeyframe(track: Track, id: string) { return track.keyframes.find(keyframe => keyframe.id === id); }
+function replaceKeyframe(track: Track, keyframe: Keyframe): Track { return { ...track, keyframes: [...track.keyframes.filter(k => k.id !== keyframe.id), keyframe].sort((a, b) => a.time - b.time) }; }
+function updateClip(document: GraphicsDocument, clipId: string, value: Pick<LayerClip, "start" | "duration">): GraphicsDocument { const timeline = document.timeline; if (!timeline) return document; return { ...document, timeline: { ...timeline, clips: (timeline.clips ?? []).map(clip => clip.id === clipId ? { ...clip, ...value } : clip) } }; }
 
 export function applyOperation(document: GraphicsDocument, operation: DocumentOperation, reverse = false): GraphicsDocument {
   if (operation.type === "batch") return [...(reverse ? [...operation.operations].reverse() : operation.operations)].reduce((current, item) => applyOperation(current, item, reverse), document);
   if (operation.type === "set-timeline") return { ...document, timeline: reverse ? operation.from : operation.to };
-  if (operation.type === "add-layer") {
-    if (reverse) return { ...document, layers: document.layers.filter(layer => layer.id !== operation.layer.id) };
-    const layers = [...document.layers]; layers.splice(Math.max(0, Math.min(operation.index ?? layers.length, layers.length)), 0, operation.layer); return { ...document, layers };
-  }
+  if (operation.type === "add-keyframe") return updateTrack(document, operation.track.id, track => { const keyframe = reverse ? undefined : operation.keyframe; return keyframe ? replaceKeyframe(track, keyframe) : { ...track, keyframes: track.keyframes.filter(k => k.id !== operation.keyframe.id) }; });
+  if (operation.type === "update-keyframe") return updateTrack(document, operation.trackId, track => { const keyframe = findKeyframe(track, operation.keyframeId); return keyframe ? replaceKeyframe(track, { ...keyframe, value: reverse ? operation.fromValue : operation.toValue }) : track; });
+  if (operation.type === "delete-keyframe") return updateTrack(document, operation.trackId, track => reverse ? replaceKeyframe(track, operation.keyframe) : { ...track, keyframes: track.keyframes.filter(k => k.id !== operation.keyframe.id) });
+  if (operation.type === "move-keyframe") return updateTrack(document, operation.trackId, track => { const keyframe = findKeyframe(track, operation.keyframeId); return keyframe ? replaceKeyframe(track, { ...keyframe, time: reverse ? operation.fromTime : operation.toTime }) : track; });
+  if (operation.type === "set-clip-timing") return updateClip(document, operation.clipId, reverse ? operation.from : operation.to);
+  if (operation.type === "add-layer") { if (reverse) return { ...document, layers: document.layers.filter(layer => layer.id !== operation.layer.id) }; const layers = [...document.layers]; layers.splice(Math.max(0, Math.min(operation.index ?? layers.length, layers.length)), 0, operation.layer); return { ...document, layers }; }
   if (operation.type === "remove-layer") return reverse ? applyOperation(document, { type: "add-layer", layer: operation.layer, index: operation.index }) : { ...document, layers: document.layers.filter(layer => layer.id !== operation.layer.id) };
   if (operation.type === "reorder-layer") return moveAtIndex(document, operation.layerId, reverse ? operation.fromIndex : operation.toIndex);
-  if (operation.type === "group-layers") {
-    if (reverse) return restoreChildren({ ...document, layers: document.layers.filter(layer => layer.id !== operation.group.id) }, operation.children);
-    const childIds = new Set(operation.children.map(snapshot => snapshot.layer.id)); const layers = document.layers.filter(layer => !childIds.has(layer.id) && layer.id !== operation.group.id);
-    layers.splice(Math.max(0, Math.min(operation.index, layers.length)), 0, operation.group); return { ...document, layers: [...layers, ...groupedChildren(operation.children, operation.group.id)] };
-  }
-  if (operation.type === "ungroup-layer") {
-    if (reverse) { const withoutChildren = document.layers.filter(layer => !operation.children.some(snapshot => snapshot.layer.id === layer.id) && layer.id !== operation.group.id); withoutChildren.splice(Math.max(0, Math.min(operation.index, withoutChildren.length)), 0, operation.group); return { ...document, layers: [...withoutChildren, ...groupedChildren(operation.children, operation.group.id)] }; }
-    const childIds = new Set(operation.children.map(snapshot => snapshot.layer.id)); return { ...document, layers: document.layers.filter(layer => layer.id !== operation.group.id && !childIds.has(layer.id)).concat(operation.children.map(snapshot => ({ ...snapshot.layer, parentId: undefined }))) };
-  }
+  if (operation.type === "group-layers") { if (reverse) return restoreChildren({ ...document, layers: document.layers.filter(layer => layer.id !== operation.group.id) }, operation.children); const childIds = new Set(operation.children.map(snapshot => snapshot.layer.id)); const layers = document.layers.filter(layer => !childIds.has(layer.id) && layer.id !== operation.group.id); layers.splice(Math.max(0, Math.min(operation.index, layers.length)), 0, operation.group); return { ...document, layers: [...layers, ...groupedChildren(operation.children, operation.group.id)] }; }
+  if (operation.type === "ungroup-layer") { if (reverse) { const withoutChildren = document.layers.filter(layer => !operation.children.some(snapshot => snapshot.layer.id === layer.id) && layer.id !== operation.group.id); withoutChildren.splice(Math.max(0, Math.min(operation.index, withoutChildren.length)), 0, operation.group); return { ...document, layers: [...withoutChildren, ...groupedChildren(operation.children, operation.group.id)] }; } const childIds = new Set(operation.children.map(snapshot => snapshot.layer.id)); return { ...document, layers: document.layers.filter(layer => layer.id !== operation.group.id && !childIds.has(layer.id)).concat(operation.children.map(snapshot => ({ ...snapshot.layer, parentId: undefined }))) }; }
   const value = reverse ? operation.from : operation.to;
-  return { ...document, layers: document.layers.map(layer => {
-    if (layer.id !== operation.layerId) return layer;
-    if (operation.type === "set-layer-style") { const style = { ...(layer.style ?? {}) }; if (value === undefined || value === "") delete style[operation.property]; else style[operation.property] = value as string | number; return { ...layer, style }; }
-    if (operation.type === "move-layer") return { ...layer, ...(value as { x: number; y: number }) };
-    if (operation.type === "resize-layer") return { ...layer, ...(value as { x: number; y: number; width: number; height: number }) };
-    if (operation.type === "rotate-layer") return { ...layer, rotation: value as number };
-    if (operation.type === "set-layer-property") return { ...layer, [operation.property]: value };
-    return layer;
-  }) };
+  return { ...document, layers: document.layers.map(layer => { if (layer.id !== operation.layerId) return layer; if (operation.type === "set-layer-style") { const style = { ...(layer.style ?? {}) }; if (value === undefined || value === "") delete style[operation.property]; else style[operation.property] = value as string | number; return { ...layer, style }; } if (operation.type === "move-layer") return { ...layer, ...(value as { x: number; y: number }) }; if (operation.type === "resize-layer") return { ...layer, ...(value as { x: number; y: number; width: number; height: number }) }; if (operation.type === "rotate-layer") return { ...layer, rotation: value as number }; if (operation.type === "set-layer-property") return { ...layer, [operation.property]: value }; return layer; }) };
 }
 
-export function invertOperation(operation: DocumentOperation): DocumentOperation {
-  if (operation.type === "batch") return { type: "batch", operations: [...operation.operations].reverse().map(invertOperation) };
-  if (operation.type === "add-layer") return { type: "remove-layer", layer: operation.layer, index: operation.index ?? 0 };
-  if (operation.type === "remove-layer") return { type: "add-layer", layer: operation.layer, index: operation.index };
-  if (operation.type === "reorder-layer") return { ...operation, fromIndex: operation.toIndex, toIndex: operation.fromIndex };
-  if (operation.type === "group-layers") return { type: "ungroup-layer", group: operation.group, children: operation.children, index: operation.index };
-  if (operation.type === "ungroup-layer") return { type: "group-layers", group: operation.group, children: operation.children, index: operation.index };
-  if (operation.type === "set-timeline") return { type: "set-timeline", from: operation.to, to: operation.from };
-  return { ...operation, from: operation.to, to: operation.from };
-}
+export function invertOperation(operation: DocumentOperation): DocumentOperation { if (operation.type === "batch") return { type: "batch", operations: [...operation.operations].reverse().map(invertOperation) }; if (operation.type === "add-layer") return { type: "remove-layer", layer: operation.layer, index: operation.index ?? 0 }; if (operation.type === "remove-layer") return { type: "add-layer", layer: operation.layer, index: operation.index }; if (operation.type === "reorder-layer") return { ...operation, fromIndex: operation.toIndex, toIndex: operation.fromIndex }; if (operation.type === "group-layers") return { type: "ungroup-layer", group: operation.group, children: operation.children, index: operation.index }; if (operation.type === "ungroup-layer") return { type: "group-layers", group: operation.group, children: operation.children, index: operation.index }; if (operation.type === "set-timeline") return { type: "set-timeline", from: operation.to, to: operation.from }; if (operation.type === "add-keyframe") return { type: "delete-keyframe", trackId: operation.track.id, keyframe: operation.keyframe }; if (operation.type === "delete-keyframe") return { type: "add-keyframe", track: { id: operation.trackId, layerId: "", property: "x" as AnimatedProperty, keyframes: [] }, keyframe: operation.keyframe }; if (operation.type === "update-keyframe") return { ...operation, fromValue: operation.toValue, toValue: operation.fromValue }; if (operation.type === "move-keyframe") return { ...operation, fromTime: operation.toTime, toTime: operation.fromTime }; if (operation.type === "set-clip-timing") return { ...operation, from: operation.to, to: operation.from }; return { ...operation, from: operation.to, to: operation.from }; }
 
-export function diffOperations(before: GraphicsDocument, after: GraphicsDocument): DocumentOperation[] {
-  const ops: DocumentOperation[] = [];
-  if (JSON.stringify(before.timeline) !== JSON.stringify(after.timeline)) ops.push({ type: "set-timeline", from: before.timeline, to: after.timeline });
-  const beforeById = new Map(before.layers.map((layer, index) => [layer.id, { layer, index }])); const afterById = new Map(after.layers.map((layer, index) => [layer.id, { layer, index }]));
-  for (const [id, { layer, index }] of beforeById) if (!afterById.has(id)) ops.push({ type: "remove-layer", layer, index });
-  for (const [id, { layer, index }] of afterById) if (!beforeById.has(id)) ops.push({ type: "add-layer", layer, index });
-  for (const [id, { layer: beforeLayer, index: beforeIndex }] of beforeById) {
-    const afterEntry = afterById.get(id); if (!afterEntry) continue; const { layer: afterLayer, index: afterIndex } = afterEntry;
-    if (beforeIndex !== afterIndex) ops.push({ type: "reorder-layer", layerId: id, fromIndex: beforeIndex, toIndex: afterIndex });
-    if (beforeLayer.x !== afterLayer.x || beforeLayer.y !== afterLayer.y) ops.push({ type: "move-layer", layerId: id, from: { x: beforeLayer.x, y: beforeLayer.y }, to: { x: afterLayer.x, y: afterLayer.y } });
-    if (beforeLayer.width !== afterLayer.width || beforeLayer.height !== afterLayer.height) ops.push({ type: "resize-layer", layerId: id, from: { x: beforeLayer.x, y: beforeLayer.y, width: beforeLayer.width, height: beforeLayer.height }, to: { x: afterLayer.x, y: afterLayer.y, width: afterLayer.width, height: afterLayer.height } });
-    if ((beforeLayer.rotation ?? 0) !== (afterLayer.rotation ?? 0)) ops.push({ type: "rotate-layer", layerId: id, from: beforeLayer.rotation ?? 0, to: afterLayer.rotation ?? 0 });
-    const keys = new Set([...Object.keys(beforeLayer.style ?? {}), ...Object.keys(afterLayer.style ?? {})]); for (const key of keys) { const from = beforeLayer.style?.[key], to = afterLayer.style?.[key]; if (!Object.is(from, to)) ops.push({ type: "set-layer-style", layerId: id, property: key, from, to }); }
-    for (const key of Object.keys(afterLayer) as (keyof Layer)[]) { if (["id", "type", "x", "y", "width", "height", "rotation", "style"].includes(key as string)) continue; const from = beforeLayer[key], to = afterLayer[key]; if (!Object.is(from, to)) ops.push({ type: "set-layer-property", layerId: id, property: key as string, from, to }); }
-  }
-  return ops;
-}
+export function diffOperations(before: GraphicsDocument, after: GraphicsDocument): DocumentOperation[] { const ops: DocumentOperation[] = []; if (JSON.stringify(before.timeline) !== JSON.stringify(after.timeline)) ops.push({ type: "set-timeline", from: before.timeline, to: after.timeline }); const beforeById = new Map(before.layers.map((layer, index) => [layer.id, { layer, index }])); const afterById = new Map(after.layers.map((layer, index) => [layer.id, { layer, index }])); for (const [id, { layer, index }] of beforeById) if (!afterById.has(id)) ops.push({ type: "remove-layer", layer, index }); for (const [id, { layer, index }] of afterById) if (!beforeById.has(id)) ops.push({ type: "add-layer", layer, index }); for (const [id, { layer: beforeLayer, index: beforeIndex }] of beforeById) { const afterEntry = afterById.get(id); if (!afterEntry) continue; const { layer: afterLayer, index: afterIndex } = afterEntry; if (beforeIndex !== afterIndex) ops.push({ type: "reorder-layer", layerId: id, fromIndex: beforeIndex, toIndex: afterIndex }); if (beforeLayer.x !== afterLayer.x || beforeLayer.y !== afterLayer.y) ops.push({ type: "move-layer", layerId: id, from: { x: beforeLayer.x, y: beforeLayer.y }, to: { x: afterLayer.x, y: afterLayer.y } }); if (beforeLayer.width !== afterLayer.width || beforeLayer.height !== afterLayer.height) ops.push({ type: "resize-layer", layerId: id, from: { x: beforeLayer.x, y: beforeLayer.y, width: beforeLayer.width, height: beforeLayer.height }, to: { x: afterLayer.x, y: afterLayer.y, width: afterLayer.width, height: afterLayer.height } }); if ((beforeLayer.rotation ?? 0) !== (afterLayer.rotation ?? 0)) ops.push({ type: "rotate-layer", layerId: id, from: beforeLayer.rotation ?? 0, to: afterLayer.rotation ?? 0 }); const keys = new Set([...Object.keys(beforeLayer.style ?? {}), ...Object.keys(afterLayer.style ?? {})]); for (const key of keys) { const from = beforeLayer.style?.[key], to = afterLayer.style?.[key]; if (!Object.is(from, to)) ops.push({ type: "set-layer-style", layerId: id, property: key, from, to }); } for (const key of Object.keys(afterLayer) as (keyof Layer)[]) { if (["id", "type", "x", "y", "width", "height", "rotation", "style"].includes(key as string)) continue; const from = beforeLayer[key], to = afterLayer[key]; if (!Object.is(from, to)) ops.push({ type: "set-layer-property", layerId: id, property: key as string, from, to }); } } return ops; }
