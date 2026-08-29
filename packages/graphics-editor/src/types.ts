@@ -11,13 +11,14 @@ export type Easing="linear"|"ease-in"|"ease-out"|"ease-in-out";
 export interface Keyframe{id:string;time:number;value:number;easing?:Easing}
 export interface Track{id:string;layerId:string;property:AnimatedProperty;keyframes:Keyframe[]}
 export type Graphics3DAnimatedProperty="positionX"|"positionY"|"positionZ"|"rotationX"|"rotationY"|"rotationZ"|"scaleX"|"scaleY"|"scaleZ"|"fov"|"opacity"|"visibility";
-export type Graphics3DAnimationTarget="mesh"|"camera"|"view";
+export type Graphics3DAnimationTarget="mesh"|"camera";
 export interface Graphics3DTrack{id:string;targetType:Graphics3DAnimationTarget;targetId:string;property:Graphics3DAnimatedProperty;keyframes:Keyframe[]}
-export interface LayerClip{id:string;layerId:string;start:number;duration:number}
+export interface Graphics3DWorldTimeline{tracks:Graphics3DTrack[]}
+export type LayerClip={id:string;layerId:string;start:number;duration:number}
 export type SceneTransitionType="cut"|"fade"|"dissolve"|"slide-left"|"slide-right"|"slide-up"|"slide-down";
 export interface SceneTransition{type:SceneTransitionType;duration:number}
 export interface Scene{id:string;name:string;start:number;duration:number;transition?:SceneTransition}
-export interface SceneTimeline{scenes:Scene[];currentSceneId:string;currentTime:number;tracks:Track[];tracks3d?:Graphics3DTrack[];clips?:LayerClip[];loop?:boolean}
+export interface SceneTimeline{scenes:Scene[];currentSceneId:string;currentTime:number;tracks:Track[];clips?:LayerClip[];loop?:boolean}
 
 export type ProvenanceSource="user"|"generated"|"imported"|"derived"|"ai";
 export interface Provenance{source:ProvenanceSource;createdBy?:string;sourceId?:string;sourceUri?:string;parentIds?:string[];createdAt?:string}
@@ -27,12 +28,12 @@ export interface Graphics3DMeshGeometry{vertices:number[];indices:number[];norma
 export interface Graphics3DMesh{ id:string;name?:string;geometry:Graphics3DMeshGeometry;transform:Graphics3DTransform;material?:Graphics3DMaterial;provenance?:Provenance }
 export interface Graphics3DLight{ id:string;type:"ambient"|"directional"|"point"|"spot";position?:[number,number,number];rotation?:[number,number,number];color?:string;intensity?:number;distance?:number;angle?:number;penumbra?:number }
 export interface Graphics3DCamera{ id:string;name?:string;position:[number,number,number];rotation:[number,number,number];projection:"perspective"|"orthographic";fov?:number;near?:number;far?:number;zoom?:number }
-export interface Graphics3DWorld{ id:string;name?:string;meshes:Graphics3DMesh[];lights?:Graphics3DLight[];cameras:Graphics3DCamera[];provenance?:Provenance }
+export interface Graphics3DWorld{id:string;name?:string;meshes:Graphics3DMesh[];lights?:Graphics3DLight[];cameras:Graphics3DCamera[];timeline?:Graphics3DWorldTimeline;provenance?:Provenance}
 export interface Graphics3DVisibility{mode:"all"|"include"|"exclude";objects:string[]}
 export type Graphics3DRenderMode="auto"|"prerender"|"live";
 export type Graphics3DResolutionMode="auto"|"custom";
 export interface Graphics3DRenderSettings{resolutionMode?:Graphics3DResolutionMode;resolutionWidth?:number;resolutionHeight?:number;resolutionScale?:number;maxPixelRatio?:number;background?:string;backgroundOpacity?:number;shadows?:boolean;environmentColor?:string;environmentIntensity?:number}
-export interface Graphics3DView{ id:string;name?:string;worldId:string;cameraId:string;visibility?:Graphics3DVisibility;renderMode?:Graphics3DRenderMode;renderSettings?:Graphics3DRenderSettings;renderAssetId?:string;x:number;y:number;width:number;height:number;rotation?:number;opacity?:number;provenance?:Provenance }
+export interface Graphics3DView{ id:string;name?:string;worldId:string;cameraId:string;visibility?:Graphics3DVisibility;renderMode?:Graphics3DRenderMode;renderSettings?:Graphics3DRenderSettings;renderAssetId:string;x:number;y:number;width:number;height:number;rotation?:number;opacity?:number;provenance?:Provenance }
 
 export interface GraphicsDocument{width:number;height:number;background?:string;layers:Layer[];timeline?:SceneTimeline;assets?:GraphicsAsset[];worlds3d?:Graphics3DWorld[];views3d?:Graphics3DView[]}
 export interface GraphicsAsset{id:string;name:string;url:string;type:"image"|"video"|"font"|"other";mimeType?:string;size?:number;metadata?:Record<string,string|number>}
