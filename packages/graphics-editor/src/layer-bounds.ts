@@ -1,7 +1,6 @@
 import type { Layer } from "./types";
 
 export interface LayerBounds { x: number; y: number; width: number; height: number }
-
 type Point = [number, number];
 
 function rotatedBounds(layer: Layer): LayerBounds {
@@ -20,13 +19,12 @@ export function getLayerBounds(layers: Layer[], layerId: string): LayerBounds | 
   if (!root) return null;
   const children = layers.filter(layer => layer.parentId === root.id);
   if (!children.length) return rotatedBounds(root);
-
   const boxes = children.map(child => getLayerBounds(layers, child.id)).filter((box): box is LayerBounds => !!box);
   if (!boxes.length) return rotatedBounds(root);
-  const x = Math.min(...boxes.map(box => box.x), root.x);
-  const y = Math.min(...boxes.map(box => box.y), root.y);
-  const right = Math.max(...boxes.map(box => box.x + box.width), root.x + root.width);
-  const bottom = Math.max(...boxes.map(box => box.y + box.height), root.y + root.height);
+  const x = Math.min(...boxes.map(box => box.x));
+  const y = Math.min(...boxes.map(box => box.y));
+  const right = Math.max(...boxes.map(box => box.x + box.width));
+  const bottom = Math.max(...boxes.map(box => box.y + box.height));
   return { x, y, width: right - x, height: bottom - y };
 }
 
