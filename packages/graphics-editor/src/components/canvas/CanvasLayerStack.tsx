@@ -9,10 +9,11 @@ export interface CanvasLayerStackProps {
   worlds3d: Graphics3DWorld[];
   views3d: Graphics3DView[];
   onLayerPointerDown: (event: ReactPointerEvent, id: string, kind: "move" | "resize" | "rotate", handle?: string) => void;
+  onSelectLayer?: (id: string, additive?: boolean) => void;
   onPathNodes?: (id: string, nodes: PathNode[]) => void;
 }
 
-export const CanvasLayerStack: FC<CanvasLayerStackProps> = ({ layers, selectedIds, worlds3d, views3d, onLayerPointerDown, onPathNodes }) => (
+export const CanvasLayerStack: FC<CanvasLayerStackProps> = ({ layers, selectedIds, worlds3d, views3d, onLayerPointerDown, onSelectLayer, onPathNodes }) => (
   <>{getRootLayers(layers).map(layer => (
     <CanvasLayer
       key={layer.id}
@@ -23,6 +24,7 @@ export const CanvasLayerStack: FC<CanvasLayerStackProps> = ({ layers, selectedId
       multiSelected={selectedIds.size > 1}
       worlds3d={worlds3d}
       views3d={views3d}
+      onSelectLayer={onSelectLayer}
       onPointerDown={(event, kind, handle) => onLayerPointerDown(event, layer.id, kind, handle)}
       onLayerPointerDown={onLayerPointerDown}
       onNodes={nodes => onPathNodes?.(layer.id, nodes)}
