@@ -1,4 +1,4 @@
-import type { AnimationKeyframe, Easing, LayerClip, Scene, SceneTimeline, SceneTransitionType, Track } from "./types";
+import type { AnimationKeyframe, Easing, LayerClip, Scene, SceneTimeline, SceneTransitionType, Track, InterpolationOptions } from "./types";
 import { evaluateAnimationKeyframes } from "./animation";
 export type AnimatedProperty="x"|"y"|"width"|"height"|"rotation"|"opacity"|"scaleX"|"scaleY";
 export type Keyframe=AnimationKeyframe<number>;
@@ -7,7 +7,7 @@ export const DEFAULT_SCENE_DURATION=5;
 const id=(prefix:string)=>`${prefix}-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
 export function createScene(name="Scene",start=0,duration=DEFAULT_SCENE_DURATION):Scene{return{id:id("scene"),name,start,duration:Math.max(.1,duration)}}
 export function createTrack(layerId:string,property:AnimatedProperty):Track{return{id:id("track"),targetId:layerId,layerId,property,keyframes:[]}}
-export function createKeyframe(time:number,value:number,easing:Easing="linear"):Keyframe{return{id:id("key"),time,value,interpolation:{easing:{mode:easing}}}}
+export function createKeyframe(time:number,value:number,easing:Easing="linear",interpolation?:InterpolationOptions):Keyframe{return{id:id("key"),time,value,interpolation:interpolation??{easing:{mode:easing}}}}
 export function createClip(layerId:string,start=0,duration=DEFAULT_SCENE_DURATION):LayerClip{return{id:id("clip"),layerId,start,duration:Math.max(.1,duration)}}
 export function timelineDuration(t:SceneTimeline){return t.scenes.reduce((m,s)=>Math.max(m,s.start+s.duration),0)}
 export function normalizeScenes(scenes:Scene[]){let cursor=0;return scenes.map(s=>{const n={...s,start:cursor,duration:Math.max(.1,s.duration)};cursor+=n.duration;return n})}
@@ -29,5 +29,7 @@ export function duplicateTimeline(t:SceneTimeline,at=timelineDuration(t)):SceneT
 export function setLoop(t:SceneTimeline,loop:boolean):SceneTimeline{return{...t,loop}}
 export function evaluateTrack(track:Track,time:number){return evaluateAnimationKeyframes(track.keyframes,time)}
 export function upsertKeyframe(t:Track,k:Keyframe):Track{return{...t,keyframes:[...t.keyframes.filter(x=>x.id!==k.id&&Math.abs(x.time-k.time)>.0001),k].sort((a,b)=>a.time-b.time)}}
+export function keyframeAtTime(t:Track,time:number,epsilon=.0001):Keyframe|undefined{return t.keyframes.find(k=>Math.abs(k.time-time)<=epsilon)}
+export function setKeyframeAtTime(t:Track,time:number,value:number,interpolation?:InterpolationOptions):Track{const existing=keyframeAtTime(t,time);return upsertKeyframe(t,{id:existing?.id??id("key"),time,value,interpolation:interpolation??existing?.interpolation??{easing:{mode:"linear"}}})}
 export function moveKeyframe(t:Track,id:string,time:number):Track{const k=t.keyframes.find(x=>x.id===id);return k?upsertKeyframe(t,{...k,time:Math.max(0,time)}):t}
 export function removeKeyframe(t:Track,id:string):Track{return{...t,keyframes:t.keyframes.filter(k=>k.id!==id)}}
