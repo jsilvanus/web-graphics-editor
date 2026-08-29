@@ -14,15 +14,15 @@ export type DocumentOperation =
   | { type: "add-layer"; layer: Layer; index?: number }
   | { type: "remove-layer"; layer: Layer; index: number }
   | { type: "reorder-layer"; layerId: string; fromIndex: number; toIndex: number }
-  | { type: "group-layers"; groupId: string; layerIds: string[] }
-  | { type: "ungroup-layer"; group: Layer }
+  | { type: "group-layers"; group: Layer; children: Layer[]; index: number }
+  | { type: "ungroup-layer"; group: Layer; children: Layer[]; index: number }
   | { type: "batch"; operations: DocumentOperation[] };
 
 export interface HistoryEntry { id: string; timestamp: number; label: string; actor: string; operation: DocumentOperation }
 
 function moveAtIndex(document: GraphicsDocument, id: string, targetIndex: number): GraphicsDocument {
   const index = document.layers.findIndex(layer => layer.id === id);
-  if (index < 0 || document.layers.length === 0) return document;
+  if (index < 0) return document;
   const layers = [...document.layers];
   const [layer] = layers.splice(index, 1);
   layers.splice(Math.max(0, Math.min(targetIndex, layers.length)), 0, layer);
@@ -44,16 +44,27 @@ export function applyOperation(document: GraphicsDocument, operation: DocumentOp
     if (reverse) return applyOperation(document, { type: "add-layer", layer: operation.layer, index: operation.index });
     return { ...document, layers: document.layers.filter(layer => layer.id !== operation.layer.id) };
   }
-  if (operation.type === "reorder-layer") {
-    return moveAtIndex(document, operation.layerId, reverse ? operation.fromIndex : operation.toIndex);
-  }
+  if (operation.type === "reorder-layer") return moveAtIndex(document, operation.layerId, reverse ? operation.fromIndex : operation.toIndex);
   if (operation.type === "group-layers") {
-    return reverse
-      ? { ...document, layers: document.layers.filter(layer => layer.id !== operation.groupId) .map(layer => operation.layerIds.includes(layer.id) ? { ...layer, parentId: undefined } : layer) }
-      : document;
+    if (reverse) {
+      const children = new Set(operation.children.map(layer => layer.id));
+      const withoutGroup = document.layers.filter(layer => layer.id !== operation.group.id);
+      return { ...document, layers: withoutGroup.map(layer => children.has(layer.id) ? operation.children.find(child => child.id === layer.id)! : layer) };
+    }
+    const children = new Set(operation.children.map(layer => layer.id));
+    const layers = document.layers.filter(layer => !children.has(layer.id) && layer.id !== operation.group.id);
+    layers.splice(Math.max(0, Math.min(operation.index, layers.length)), 0, operation.group);
+    return { ...document, layers: [...layers, ...operation.children.map(layer => ({ ...layer, parentId: operation.group.id }))] };
   }
   if (operation.type === "ungroup-layer") {
-    return reverse ? document : { ...document, layers: document.layers.filter(layer => layer.id !== operation.group.id).map(layer => operation.group.children?.includes(layer.id) ? { ...layer, parentId: undefined } : layer) };
+    if (reverse) {
+      const children = new Set(operation.children.map(layer => layer.id));
+      const layers = document.layers.filter(layer => !children.has(layer.id) && layer.id !== operation.group.id);
+      layers.splice(Math.max(0, Math.min(operation.index, layers.length)), 0, operation.group);
+      return { ...document, layers: [...layers, ...operation.children.map(layer => ({ ...layer, parentId: operation.group.id }))] };
+    }
+    const children = new Set(operation.children.map(layer => layer.id));
+    return { ...document, layers: document.layers.filter(layer => layer.id !== operation.group.id && !children.has(layer.id)).concat(operation.children.map(layer => ({ ...layer, parentId: undefined }))) };
   }
   const value = reverse ? operation.from : operation.to;
   return {
@@ -79,12 +90,11 @@ export function invertOperation(operation: DocumentOperation): DocumentOperation
   if (operation.type === "add-layer") return { type: "remove-layer", layer: operation.layer, index: operation.index ?? 0 };
   if (operation.type === "remove-layer") return { type: "add-layer", layer: operation.layer, index: operation.index };
   if (operation.type === "reorder-layer") return { ...operation, fromIndex: operation.toIndex, toIndex: operation.fromIndex };
-  if (operation.type === "group-layers") return { type: "batch", operations: [] };
-  if (operation.type === "ungroup-layer") return { type: "batch", operations: [] };
+  if (operation.type === "group-layers") return { type: "ungroup-layer", group: operation.group, children: operation.children, index: operation.index };
+  if (operation.type === "ungroup-layer") return { type: "group-layers", group: operation.group, children: operation.children, index: operation.index };
   return { ...operation, from: operation.to, to: operation.from };
 }
 
-/** Convert a completed document mutation into semantic history operations. */
 export function diffOperations(before: GraphicsDocument, after: GraphicsDocument): DocumentOperation[] {
   const ops: DocumentOperation[] = [];
   const beforeById = new Map(before.layers.map((layer, index) => [layer.id, { layer, index }]));
@@ -92,23 +102,15 @@ export function diffOperations(before: GraphicsDocument, after: GraphicsDocument
   for (const [id, { layer, index }] of beforeById) if (!afterById.has(id)) ops.push({ type: "remove-layer", layer, index });
   for (const [id, { layer, index }] of afterById) if (!beforeById.has(id)) ops.push({ type: "add-layer", layer, index });
   for (const [id, { layer: beforeLayer, index: beforeIndex }] of beforeById) {
-    const afterEntry = afterById.get(id);
-    if (!afterEntry) continue;
+    const afterEntry = afterById.get(id); if (!afterEntry) continue;
     const { layer: afterLayer, index: afterIndex } = afterEntry;
     if (beforeIndex !== afterIndex) ops.push({ type: "reorder-layer", layerId: id, fromIndex: beforeIndex, toIndex: afterIndex });
     if (beforeLayer.x !== afterLayer.x || beforeLayer.y !== afterLayer.y) ops.push({ type: "move-layer", layerId: id, from: { x: beforeLayer.x, y: beforeLayer.y }, to: { x: afterLayer.x, y: afterLayer.y } });
     if (beforeLayer.width !== afterLayer.width || beforeLayer.height !== afterLayer.height) ops.push({ type: "resize-layer", layerId: id, from: { x: beforeLayer.x, y: beforeLayer.y, width: beforeLayer.width, height: beforeLayer.height }, to: { x: afterLayer.x, y: afterLayer.y, width: afterLayer.width, height: afterLayer.height } });
     if ((beforeLayer.rotation ?? 0) !== (afterLayer.rotation ?? 0)) ops.push({ type: "rotate-layer", layerId: id, from: beforeLayer.rotation ?? 0, to: afterLayer.rotation ?? 0 });
     const keys = new Set([...Object.keys(beforeLayer.style ?? {}), ...Object.keys(afterLayer.style ?? {})]);
-    for (const key of keys) {
-      const from = beforeLayer.style?.[key], to = afterLayer.style?.[key];
-      if (!Object.is(from, to)) ops.push({ type: "set-layer-style", layerId: id, property: key, from, to });
-    }
-    for (const key of Object.keys(afterLayer) as (keyof Layer)[]) {
-      if (["id", "type", "x", "y", "width", "height", "rotation", "style"].includes(key as string)) continue;
-      const from = beforeLayer[key], to = afterLayer[key];
-      if (!Object.is(from, to)) ops.push({ type: "set-layer-property", layerId: id, property: key as string, from, to });
-    }
+    for (const key of keys) { const from = beforeLayer.style?.[key], to = afterLayer.style?.[key]; if (!Object.is(from, to)) ops.push({ type: "set-layer-style", layerId: id, property: key, from, to }); }
+    for (const key of Object.keys(afterLayer) as (keyof Layer)[]) { if (["id", "type", "x", "y", "width", "height", "rotation", "style"].includes(key as string)) continue; const from = beforeLayer[key], to = afterLayer[key]; if (!Object.is(from, to)) ops.push({ type: "set-layer-property", layerId: id, property: key as string, from, to }); }
   }
   return ops;
 }
