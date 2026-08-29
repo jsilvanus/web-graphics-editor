@@ -21,6 +21,7 @@ export const GroupLayerRenderer: FC<GroupLayerRendererProps> = ({ layer, layers,
   const originX = bounds?.x ?? layer.x;
   const originY = bounds?.y ?? layer.y;
   const childPointerDown = (event: ReactPointerEvent, child: Layer, kind: "move" | "resize" | "rotate", handle?: string) => {
+    event.stopPropagation();
     if (event.altKey && kind === "move") {
       onSelectLayer?.(layer.id, event.shiftKey);
       onLayerPointerDown(event, layer.id, kind, handle);
@@ -29,11 +30,7 @@ export const GroupLayerRenderer: FC<GroupLayerRendererProps> = ({ layer, layers,
     onSelectLayer?.(child.id, event.shiftKey);
     onLayerPointerDown(event, child.id, kind, handle);
   };
-  return (
-    <div style={{ position: "absolute", left: -originX, top: -originY, width: "100vw", height: "100vh", overflow: "visible" }}>
-      {children.map(child => (
-        <CanvasLayer key={child.id} layer={child} layers={layers} selected={selectedIds.has(child.id)} selectedIds={selectedIds} multiSelected={selectedIds.size > 1} worlds3d={worlds3d} views3d={views3d} onPointerDown={(event, kind, handle) => childPointerDown(event, child, kind, handle)} onLayerPointerDown={onLayerPointerDown} onSelectLayer={onSelectLayer} onNodes={nodes => onPathNodes?.(child.id, nodes)} />
-      ))}
-    </div>
-  );
+  return <div style={{ position: "absolute", left: -originX, top: -originY, width: "100vw", height: "100vh", overflow: "visible" }}>
+    {children.map(child => <CanvasLayer key={child.id} layer={child} layers={layers} selected={selectedIds.has(child.id)} selectedIds={selectedIds} multiSelected={selectedIds.size > 1} worlds3d={worlds3d} views3d={views3d} onPointerDown={(event, kind, handle) => childPointerDown(event, child, kind, handle)} onLayerPointerDown={onLayerPointerDown} onSelectLayer={onSelectLayer} onNodes={nodes => onPathNodes?.(child.id, nodes)} />)}
+  </div>;
 };
