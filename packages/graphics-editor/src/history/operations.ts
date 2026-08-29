@@ -5,6 +5,8 @@ export interface Actor { type: ActorType; userId?: string; source?: string }
 export interface ActorVocabularyEntry { type: ActorType; userId?: string; pseudonym: string }
 export interface ActorVocabulary { actors: Record<string, ActorVocabularyEntry> }
 
+export interface GroupChildSnapshot { layer: Layer; index: number }
+
 export type DocumentOperation =
   | { type: "set-layer-property"; layerId: string; property: string; from: unknown; to: unknown }
   | { type: "set-layer-style"; layerId: string; property: string; from: unknown; to: unknown }
@@ -14,8 +16,8 @@ export type DocumentOperation =
   | { type: "add-layer"; layer: Layer; index?: number }
   | { type: "remove-layer"; layer: Layer; index: number }
   | { type: "reorder-layer"; layerId: string; fromIndex: number; toIndex: number }
-  | { type: "group-layers"; group: Layer; children: Layer[]; index: number }
-  | { type: "ungroup-layer"; group: Layer; children: Layer[]; index: number }
+  | { type: "group-layers"; group: Layer; children: GroupChildSnapshot[]; index: number }
+  | { type: "ungroup-layer"; group: Layer; children: GroupChildSnapshot[]; index: number }
   | { type: "batch"; operations: DocumentOperation[] };
 
 export interface HistoryEntry { id: string; timestamp: number; label: string; actor: string; operation: DocumentOperation }
@@ -27,6 +29,19 @@ function moveAtIndex(document: GraphicsDocument, id: string, targetIndex: number
   const [layer] = layers.splice(index, 1);
   layers.splice(Math.max(0, Math.min(targetIndex, layers.length)), 0, layer);
   return { ...document, layers };
+}
+
+function restoreChildren(document: GraphicsDocument, snapshots: GroupChildSnapshot[]): GraphicsDocument {
+  const ids = new Set(snapshots.map(snapshot => snapshot.layer.id));
+  const layers = document.layers.filter(layer => !ids.has(layer.id));
+  for (const snapshot of [...snapshots].sort((a, b) => a.index - b.index)) {
+    layers.splice(Math.max(0, Math.min(snapshot.index, layers.length)), 0, snapshot.layer);
+  }
+  return { ...document, layers };
+}
+
+function groupedChildren(snapshots: GroupChildSnapshot[], groupId: string): Layer[] {
+  return snapshots.map(snapshot => ({ ...snapshot.layer, parentId: groupId }));
 }
 
 export function applyOperation(document: GraphicsDocument, operation: DocumentOperation, reverse = false): GraphicsDocument {
@@ -47,24 +62,22 @@ export function applyOperation(document: GraphicsDocument, operation: DocumentOp
   if (operation.type === "reorder-layer") return moveAtIndex(document, operation.layerId, reverse ? operation.fromIndex : operation.toIndex);
   if (operation.type === "group-layers") {
     if (reverse) {
-      const children = new Set(operation.children.map(layer => layer.id));
       const withoutGroup = document.layers.filter(layer => layer.id !== operation.group.id);
-      return { ...document, layers: withoutGroup.map(layer => children.has(layer.id) ? operation.children.find(child => child.id === layer.id)! : layer) };
+      return restoreChildren({ ...document, layers: withoutGroup }, operation.children);
     }
-    const children = new Set(operation.children.map(layer => layer.id));
-    const layers = document.layers.filter(layer => !children.has(layer.id) && layer.id !== operation.group.id);
+    const childIds = new Set(operation.children.map(snapshot => snapshot.layer.id));
+    const layers = document.layers.filter(layer => !childIds.has(layer.id) && layer.id !== operation.group.id);
     layers.splice(Math.max(0, Math.min(operation.index, layers.length)), 0, operation.group);
-    return { ...document, layers: [...layers, ...operation.children.map(layer => ({ ...layer, parentId: operation.group.id }))] };
+    return { ...document, layers: [...layers, ...groupedChildren(operation.children, operation.group.id)] };
   }
   if (operation.type === "ungroup-layer") {
     if (reverse) {
-      const children = new Set(operation.children.map(layer => layer.id));
-      const layers = document.layers.filter(layer => !children.has(layer.id) && layer.id !== operation.group.id);
-      layers.splice(Math.max(0, Math.min(operation.index, layers.length)), 0, operation.group);
-      return { ...document, layers: [...layers, ...operation.children.map(layer => ({ ...layer, parentId: operation.group.id }))] };
+      const withoutChildren = document.layers.filter(layer => !operation.children.some(snapshot => snapshot.layer.id === layer.id) && layer.id !== operation.group.id);
+      withoutChildren.splice(Math.max(0, Math.min(operation.index, withoutChildren.length)), 0, operation.group);
+      return { ...document, layers: [...withoutChildren, ...groupedChildren(operation.children, operation.group.id)] };
     }
-    const children = new Set(operation.children.map(layer => layer.id));
-    return { ...document, layers: document.layers.filter(layer => layer.id !== operation.group.id && !children.has(layer.id)).concat(operation.children.map(layer => ({ ...layer, parentId: undefined }))) };
+    const childIds = new Set(operation.children.map(snapshot => snapshot.layer.id));
+    return { ...document, layers: document.layers.filter(layer => layer.id !== operation.group.id && !childIds.has(layer.id)).concat(operation.children.map(snapshot => ({ ...snapshot.layer, parentId: undefined }))) };
   }
   const value = reverse ? operation.from : operation.to;
   return {
