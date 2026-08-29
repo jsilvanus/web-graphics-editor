@@ -5,8 +5,7 @@ export type PathCommand={type:"M"|"L";x:number;y:number}|{type:"H";x:number}|{ty
 export type TextAlign="left"|"center"|"right"; export type VerticalAlign="top"|"middle"|"bottom";
 export interface GradientStop{offset:number;color:string;opacity?:number}
 export interface Gradient{type:"linear"|"radial";angle?:number;cx?:number;cy?:number;stops:GradientStop[]}
-export interface Layer{id:string;type:LayerType;x:number;y:number;width:number;height:number;rotation?:number;text?:string;src?:string;path?:string;pathCommands?:PathCommand[];nodes?:PathNode[];closed?:boolean;children?:string[];parentId?:string;animation?:string;style?:Record<string,string|number>;gradient?:Gradient;textStyle?:{fontFamily?:string;fontSize?:number;fontWeight?:number|string;fontStyle?:"normal"|"italic";textAlign?:TextAlign;verticalAlign?:VerticalAlign;lineHeight?:number|string;letterSpacing?:number|string;whiteSpace?:"nowrap"|"pre-wrap";wrap?:"none"|"word"|"character";fontAssetId?:string};view3dId?:string}
-
+export interface Layer{id:string;type:LayerType;x:number;y:number;width:number;height:number;rotation?:number;opacity?:number;text?:string;src?:string;path?:string;pathCommands?:PathCommand[];nodes?:PathNode[];closed?:boolean;children?:string[];parentId?:string;animation?:string;style?:Record<string,string|number>;gradient?:Gradient;textStyle?:{fontFamily?:string;fontSize?:number;fontWeight?:number|string;fontStyle?:"normal"|"italic";textAlign?:TextAlign;verticalAlign?:VerticalAlign;lineHeight?:number|string;letterSpacing?:number|string;whiteSpace?:"nowrap"|"pre-wrap";wrap?:"none"|"word"|"character";fontAssetId?:string};view3dId?:string}
 export type AnimationTuple=number[];
 export type AnimationValue=number|string|boolean|AnimationTuple;
 export type Easing="linear"|"ease-in"|"ease-out"|"ease-in-out"|"step-start"|"step-end"|"cubic-bezier";
@@ -17,23 +16,20 @@ export interface InterpolationOptions{mode?:InterpolationMode;easing?:EasingPara
 export interface AnimationKeyframe<T extends AnimationValue=AnimationValue>{id:string;time:number;value:T;interpolation?:InterpolationOptions}
 export interface KeyframeGroup{id:string;time:number;keyframeIds:string[]}
 export interface AnimationTrack<T extends AnimationValue=AnimationValue>{id:string;targetId:string;property:string;keyframes:AnimationKeyframe<T>[];groupIds?:string[]}
-
 export type AnimatedProperty="x"|"y"|"width"|"height"|"rotation"|"opacity"|"scaleX"|"scaleY";
-/** Legacy numeric keyframe/track model; migrate to AnimationKeyframe/AnimationTrack incrementally. */
+/** Legacy numeric timeline representation retained for document compatibility. */
 export interface Keyframe{id:string;time:number;value:number;easing?:Easing}
 export interface Track{id:string;layerId:string;property:AnimatedProperty;keyframes:Keyframe[]}
 export type Graphics3DAnimatedProperty="positionX"|"positionY"|"positionZ"|"rotationX"|"rotationY"|"rotationZ"|"scaleX"|"scaleY"|"scaleZ"|"fov"|"opacity"|"visibility"|"materialColor"|"materialOpacity";
 export type Graphics3DAnimationTarget="mesh"|"camera";
-export interface Graphics3DTrack{id:string;targetType:Graphics3DAnimationTarget;targetId:string;property:Graphics3DAnimatedProperty;keyframes:Keyframe[]}
+export interface Graphics3DTrack{id:string;targetType:Graphics3DAnimationTarget;targetId:string;property:Graphics3DAnimatedProperty;keyframes:AnimationKeyframe[]}
 export interface Graphics3DWorldTimeline{duration?:number;tracks:Graphics3DTrack[];loop?:boolean}
 export type LayerClip={id:string;layerId:string;start:number;duration:number}
 export type SceneTransitionType="cut"|"fade"|"dissolve"|"slide-left"|"slide-right"|"slide-up"|"slide-down";
 export interface SceneTransition{type:SceneTransitionType;duration:number}
 export interface Scene{id:string;name:string;start:number;duration:number;transition?:SceneTransition}
 export interface SceneTimeline{scenes:Scene[];currentSceneId:string;currentTime:number;tracks:Track[];clips?:LayerClip[];loop?:boolean}
-
 export interface WorldTimeMapping{offset:number;rate:number;loop?:boolean;inPoint?:number;outPoint?:number}
-
 export type ProvenanceSource="user"|"generated"|"imported"|"derived"|"ai";
 export interface Provenance{source:ProvenanceSource;createdBy?:string;sourceId?:string;sourceUri?:string;parentIds?:string[];createdAt?:string}
 export interface Graphics3DTransform{position:[number,number,number];rotation:[number,number,number];scale:[number,number,number]}
