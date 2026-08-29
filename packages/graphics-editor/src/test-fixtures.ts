@@ -1,0 +1,5 @@
+import type { GraphicsDocument, Graphics3DWorld, Layer } from "./types";
+
+export const layer=(id:string,overrides:Partial<Layer>={}):Layer=>({id,type:"rectangle",x:0,y:0,width:100,height:100,...overrides});
+export const baseDocument=():GraphicsDocument=>({width:1920,height:1080,layers:[layer("background"),layer("title",{type:"text",text:"Hello"}),layer("lyrics",{type:"text",text:"Lyrics"})],compositions:[{id:"all",name:"All",layerIds:["background","title","lyrics"]}],viewports:[{id:"broadcast",name:"Broadcast",width:1920,height:1080,compositionIds:["all"]},{id:"venue",name:"Venue",width:1080,height:1920,compositionIds:["all"]}],timeline:{scenes:[{id:"intro",name:"Intro",compositionId:"all",start:0,duration:5}],currentSceneId:"intro",currentTime:0,tracks:[],loop:false},outputs:[{id:"out",name:"Output",viewportId:"broadcast",playback:"live",background:"transparent"}]});
+export const world=(overrides:Partial<Graphics3DWorld>={}):Graphics3DWorld=>({id:"world",name:"Test World",meshes:[],cameras:[{id:"camera",position:[0,0,5],rotation:[0,0,0],projection:"perspective",fov:50}],...overrides});
