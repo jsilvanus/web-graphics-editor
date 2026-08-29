@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties, type FC } fro
 import type { GraphicsDocument, GraphicsOutput } from "./types";
 import { CanvasLayerStack } from "./components/canvas/CanvasLayerStack";
 import { createOutputRuntime, dispatchOutputRuntime, outputTransitionProgress, type OutputRuntime } from "./outputs-runtime";
+import { resolveOutput } from "./presentation";
 
 export interface OutputRendererProps {
   document: GraphicsDocument;
@@ -32,6 +33,9 @@ export const OutputRenderer:FC<OutputRendererProps>=({document,output,showContro
   const frame=useRef<number>();
   const last=useRef<number>();
   const runtimeRef=useRef(runtime); runtimeRef.current=runtime;
+  const resolved=useMemo(()=>resolveOutput(document,output.id,runtime.time),[document,output.id,runtime.time]);
+  const layers=resolved?.layers??[];
+  const viewport=resolved&&"scene" in resolved?document.viewports?.find(v=>v.id===output.viewportId):document.viewports?.find(v=>v.id===output.viewportId);
   const background=output.background==="transparent"?"transparent":document.background??"#000";
   const transition=useMemo(()=>transitionStyle(output,runtime),[output,runtime]);
 
@@ -43,10 +47,10 @@ export const OutputRenderer:FC<OutputRendererProps>=({document,output,showContro
   },[output]);
 
   const command=(event:Parameters<typeof dispatchOutputRuntime>[2])=>setRuntime(r=>dispatchOutputRuntime(r,output,event));
-  const rootStyle:CSSProperties={position:"relative",width:"100%",aspectRatio:`${document.width}/${document.height}`,overflow:"hidden",background,...style};
+  const rootStyle:CSSProperties={position:"relative",width:"100%",aspectRatio:`${viewport?.width??document.width}/${viewport?.height??document.height}`,overflow:"hidden",background,...style};
   const artboardStyle:CSSProperties={position:"absolute",inset:0,width:"100%",height:"100%",transformOrigin:"center center",...transition};
   const controls=showControls&&output.playback!=="static"&&<div style={{position:"absolute",zIndex:1000,left:8,bottom:8,display:"flex",gap:6}}><button type="button" onClick={()=>command({type:"TAKE"})}>TAKE</button><button type="button" onClick={()=>command({type:"TAKE_OFF"})}>TAKE OFF</button><button type="button" onClick={()=>command({type:runtime.playing?"PAUSE":"PLAY"})}>{runtime.playing?"Pause":"Play"}</button></div>;
-  return <div className={className} style={rootStyle} data-wegra-output={output.id} data-output-state={runtime.state} data-output-time={runtime.time}>{<div style={artboardStyle}><CanvasLayerStack layers={document.layers} selectedIds={new Set()} worlds3d={document.worlds3d??[]} views3d={document.views3d??[]} currentTime={runtime.time} onLayerPointerDown={()=>{}} onSelectLayer={()=>{}} onPathNodes={()=>{}} /></div>}{controls}</div>;
+  return <div className={className} style={rootStyle} data-wegra-output={output.id} data-output-state={runtime.state} data-output-time={runtime.time}><div style={artboardStyle}><CanvasLayerStack layers={layers} selectedIds={new Set()} worlds3d={document.worlds3d??[]} views3d={document.views3d??[]} currentTime={runtime.time} onLayerPointerDown={()=>{}} onSelectLayer={()=>{}} onPathNodes={()=>{}} /></div>{controls}</div>;
 };
 
 export function outputRenderPath(outputId:string){return `/render/${encodeURIComponent(outputId)}`}
