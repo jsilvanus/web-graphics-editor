@@ -5,7 +5,9 @@ export type PathCommand={type:"M"|"L";x:number;y:number}|{type:"H";x:number}|{ty
 export type TextAlign="left"|"center"|"right"; export type VerticalAlign="top"|"middle"|"bottom";
 export interface GradientStop{offset:number;color:string;opacity?:number}
 export interface Gradient{type:"linear"|"radial";angle?:number;cx?:number;cy?:number;stops:GradientStop[]}
-export interface Layer{id:string;type:LayerType;x:number;y:number;width:number;height:number;rotation?:number;opacity?:number;text?:string;src?:string;path?:string;pathCommands?:PathCommand[];nodes?:PathNode[];closed?:boolean;children?:string[];parentId?:string;animation?:string;style?:Record<string,string|number>;gradient?:Gradient;textStyle?:{fontFamily?:string;fontSize?:number;fontWeight?:number|string;fontStyle?:"normal"|"italic";textAlign?:TextAlign;verticalAlign?:VerticalAlign;lineHeight?:number|string;letterSpacing?:number|string;whiteSpace?:"nowrap"|"pre-wrap";wrap?:"none"|"word"|"character";fontAssetId?:string};view3dId?:string}
+export interface ViewportOverride{x?:number;y?:number;width?:number;height?:number;rotation?:number;opacity?:number;visible?:boolean}
+export interface Layer{id:string;type:LayerType;x:number;y:number;width:number;height:number;rotation?:number;opacity?:number;visible?:boolean;text?:string;src?:string;path?:string;pathCommands?:PathCommand[];nodes?:PathNode[];closed?:boolean;children?:string[];parentId?:string;animation?:string;style?:Record<string,string|number>;gradient?:Gradient;textStyle?:{fontFamily?:string;fontSize?:number;fontWeight?:number|string;fontStyle?:"normal"|"italic";textAlign?:TextAlign;verticalAlign?:VerticalAlign;lineHeight?:number|string;letterSpacing?:number|string;whiteSpace?:"nowrap"|"pre-wrap";wrap?:"none"|"word"|"character";fontAssetId?:string};view3dId?:string;viewportOverrides?:Record<string,ViewportOverride>;provenance?:Provenance}
+export interface Composition{id:string;name:string;layerIds:string[];provenance?:Provenance}
 export type AnimationTuple=number[]; export type AnimationValue=number|string|boolean|AnimationTuple;
 export type Easing="linear"|"ease-in"|"ease-out"|"ease-in-out"|"step-start"|"step-end"|"cubic-bezier";
 export type InterpolationMode="linear"|"discrete"|"cubic-bezier"; export type ColorInterpolationSpace="srgb"|"linear-srgb"|"oklab"|"oklch";
@@ -24,7 +26,7 @@ export interface Graphics3DWorldTimeline{duration?:number;tracks:Graphics3DTrack
 export type LayerClip={id:string;layerId:string;start:number;duration:number}
 export type SceneTransitionType="cut"|"fade"|"dissolve"|"slide-left"|"slide-right"|"slide-up"|"slide-down";
 export interface SceneTransition{type:SceneTransitionType;duration:number}
-export interface Scene{id:string;name:string;start:number;duration:number;transition?:SceneTransition}
+export interface Scene{id:string;name:string;compositionId:string;start:number;duration:number;transition?:SceneTransition;provenance?:Provenance}
 export interface SceneTimeline{scenes:Scene[];currentSceneId:string;currentTime:number;tracks:Track[];clips?:LayerClip[];loop?:boolean}
 export interface WorldTimeMapping{offset:number;rate:number;loop?:boolean;inPoint?:number;outPoint?:number}
 export type ProvenanceSource="user"|"generated"|"imported"|"derived"|"ai";
@@ -40,11 +42,12 @@ export interface Graphics3DVisibility{mode:"all"|"include"|"exclude";objects:str
 export type Graphics3DRenderMode="auto"|"prerender"|"live"; export type Graphics3DResolutionMode="auto"|"custom";
 export interface Graphics3DRenderSettings{resolutionMode?:Graphics3DResolutionMode;resolutionWidth?:number;resolutionHeight?:number;resolutionScale?:number;maxPixelRatio?:number;background?:string;backgroundOpacity?:number;shadows?:boolean;environmentColor?:string;environmentIntensity?:number}
 export interface Graphics3DView{ id:string;name?:string;worldId:string;cameraId:string;visibility?:Graphics3DVisibility;renderMode?:Graphics3DRenderMode;renderSettings?:Graphics3DRenderSettings;renderAssetId:string;x:number;y:number;width:number;height:number;rotation?:number;opacity?:number;provenance?:Provenance;worldTime?:WorldTimeMapping}
+export interface Viewport{id:string;name:string;width:number;height:number;compositionIds?:string[];provenance?:Provenance}
 export type OutputPlaybackMode="static"|"automatic"|"user"|"live";
 export type OutputBackgroundMode="transparent"|"opaque";
 export type OutputTransitionType=SceneTransitionType;
 export interface OutputTransition{type:OutputTransitionType;duration:number}
-export interface GraphicsOutput{id:string;name:string;compositionId?:string;playback:OutputPlaybackMode;background:OutputBackgroundMode;inTransition?:OutputTransition;outTransition?:OutputTransition;loop?:boolean;autoplay?:boolean;editable?:boolean;liveControl?:boolean;defaultTime?:number;createdAt?:string;updatedAt?:string;provenance?:Provenance}
-export interface GraphicsDocument{width:number;height:number;background?:string;layers:Layer[];timeline?:SceneTimeline;assets?:GraphicsAsset[];worlds3d?:Graphics3DWorld[];views3d?:Graphics3DView[];outputs?:GraphicsOutput[]}
+export interface GraphicsOutput{id:string;name:string;viewportId?:string;playback:OutputPlaybackMode;background:OutputBackgroundMode;inTransition?:OutputTransition;outTransition?:OutputTransition;loop?:boolean;autoplay?:boolean;editable?:boolean;liveControl?:boolean;defaultTime?:number;createdAt?:string;updatedAt?:string;provenance?:Provenance}
+export interface GraphicsDocument{width:number;height:number;background?:string;layers:Layer[];compositions?:Composition[];viewports?:Viewport[];timeline?:SceneTimeline;assets?:GraphicsAsset[];worlds3d?:Graphics3DWorld[];views3d?:Graphics3DView[];outputs?:GraphicsOutput[]}
 export interface GraphicsAsset{id:string;name:string;url:string;type:"image"|"video"|"font"|"other";mimeType?:string;size?:number;metadata?:Record<string,string|number>}
 export interface GraphicsEditorProps{document:GraphicsDocument;assets?:GraphicsAsset[];onChange:(document:GraphicsDocument)=>void}
