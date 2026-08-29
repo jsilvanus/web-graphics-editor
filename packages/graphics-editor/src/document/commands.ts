@@ -1,8 +1,13 @@
 import type { GraphicsDocument, Layer } from "../types";
+import { alignLayers, distributeLayers, type AlignMode, type AlignReference, type DistributeMode } from "../alignment";
 import { bringLayerForward, bringLayerToFront, sendLayerBackward, sendLayerToBack, groupLayers, ungroupLayer, updateLayer, updateLayerStyle } from "./operations";
-import type { DocumentOperation } from "../history/operations";
+import { diffOperations, type DocumentOperation } from "../history/operations";
 
 export interface CommandResult { document: GraphicsDocument; operation?: DocumentOperation }
+
+function batchOrSingle(operations: DocumentOperation[]): DocumentOperation | undefined {
+  return operations.length === 1 ? operations[0] : operations.length ? { type: "batch", operations } : undefined;
+}
 
 export function updateLayerCommand(document: GraphicsDocument, id: string, patch: Partial<Layer>): CommandResult {
   let next = document;
@@ -13,7 +18,7 @@ export function updateLayerCommand(document: GraphicsDocument, id: string, patch
     next = updateLayer(next, id, { [property]: to } as Partial<Layer>);
     operations.push({ type: "set-layer-property", layerId: id, property, from, to });
   }
-  return { document: next, operation: operations.length <= 1 ? operations[0] : { type: "batch", operations } };
+  return { document: next, operation: batchOrSingle(operations) };
 }
 
 export function updateLayerStyleCommand(document: GraphicsDocument, id: string, key: string, value: string | number | undefined): CommandResult {
@@ -65,4 +70,16 @@ export function addLayerCommand(document: GraphicsDocument, layer: Layer, index?
   const layers = [...document.layers];
   layers.splice(target, 0, layer);
   return { document: { ...document, layers }, operation: { type: "add-layer", layer, index: target } };
+}
+
+export function alignLayersCommand(document: GraphicsDocument, ids: Set<string>, mode: AlignMode, reference: AlignReference): CommandResult {
+  const layers = alignLayers(document.layers, ids, mode, reference, document.width, document.height);
+  const next = layers === document.layers ? document : { ...document, layers };
+  return { document: next, operation: batchOrSingle(diffOperations(document, next)) };
+}
+
+export function distributeLayersCommand(document: GraphicsDocument, ids: Set<string>, mode: DistributeMode): CommandResult {
+  const layers = distributeLayers(document.layers, ids, mode);
+  const next = layers === document.layers ? document : { ...document, layers };
+  return { document: next, operation: batchOrSingle(diffOperations(document, next)) };
 }
