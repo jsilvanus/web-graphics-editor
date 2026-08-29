@@ -12,7 +12,6 @@ export interface CanvasLayerStackProps {
   onPathNodes?: (id: string, nodes: PathNode[]) => void;
 }
 
-/** Owns 2D composition order and only paints root layers. Group children are composed by the group renderer. */
 export const CanvasLayerStack: FC<CanvasLayerStackProps> = ({ layers, selectedIds, worlds3d, views3d, onLayerPointerDown, onPathNodes }) => (
   <>{getRootLayers(layers).map(layer => (
     <CanvasLayer
@@ -25,6 +24,7 @@ export const CanvasLayerStack: FC<CanvasLayerStackProps> = ({ layers, selectedId
       worlds3d={worlds3d}
       views3d={views3d}
       onPointerDown={(event, kind, handle) => onLayerPointerDown(event, layer.id, kind, handle)}
+      onLayerPointerDown={onLayerPointerDown}
       onNodes={nodes => onPathNodes?.(layer.id, nodes)}
     />
   ))}</>
