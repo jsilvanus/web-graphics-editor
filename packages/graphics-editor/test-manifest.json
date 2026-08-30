@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "name": "WEGRA Test Pyramid",
+  "floors": [
+    {
+      "id": "unit",
+      "description": "Independent foundational tests. Every suite runs even when another suite fails.",
+      "failFast": false,
+      "suites": [
+        "animation",
+        "animation-edge",
+        "animation-comprehensive",
+        "model-primitives",
+        "geometry",
+        "world-time"
+      ]
+    },
+    {
+      "id": "model",
+      "needs": ["unit"],
+      "description": "Document, history, timeline and architectural model contracts.",
+      "failFast": false,
+      "suites": [
+        "serialization",
+        "serialization-edge",
+        "timelineCommands",
+        "scene-timeline",
+        "viewport-output",
+        "world-view"
+      ]
+    },
+    {
+      "id": "integration",
+      "needs": ["model"],
+      "description": "Cross-layer presentation and runtime contracts.",
+      "failFast": false,
+      "suites": [
+        "presentation",
+        "architecture.integration",
+        "output"
+      ]
+    },
+    {
+      "id": "package",
+      "needs": ["integration"],
+      "description": "Complete package verification: tests, types and build.",
+      "failFast": true,
+      "commands": [
+        "npm run typecheck --workspace @jsilvanus/graphics-editor",
+        "npm test --workspace @jsilvanus/graphics-editor",
+        "npm run build --workspace @jsilvanus/graphics-editor"
+      ]
+    }
+  ]
+}
