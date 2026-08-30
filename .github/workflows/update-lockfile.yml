@@ -1,0 +1,68 @@
+name: Update npm lockfile
+
+on:
+  push:
+    paths:
+      - package.json
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-lockfile-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  update-lockfile:
+    name: Update package-lock.json
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Generate lockfile
+        run: npm install --package-lock-only --ignore-scripts
+
+      - name: Verify lockfile exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f package-lock.json
+          echo "package-lock.json exists"
+
+      - name: Show lockfile diff
+        shell: bash
+        run: |
+          set -euo pipefail
+          git status --short
+          git diff -- package-lock.json
+
+      - name: Commit lockfile if changed
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if git diff --quiet -- package-lock.json && git ls-files --error-unmatch package-lock.json >/dev/null 2>&1; then
+            echo "package-lock.json is already tracked and unchanged."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+
+          if git diff --cached --quiet; then
+            echo "No lockfile changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chore: update package-lock.json"
+          git push
