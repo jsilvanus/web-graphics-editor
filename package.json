@@ -1,5 +1,6 @@
 {
   "name": "@jsilvanus/web-graphics-editors",
+  "version": "0.0.1",
   "private": true,
   "description": "Reusable web-based editors for graphics, video timelines, and related visual editing workflows.",
   "workspaces": ["packages/*", "apps/*"],
