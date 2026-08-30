@@ -1,0 +1,98 @@
+name: Test Pyramid
+
+on:
+  push:
+  workflow_dispatch:
+
+concurrency:
+  group: test-pyramid-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Floor 1: independent foundational suites. Every suite runs even if another fails.
+  unit:
+    name: Unit / ${{ matrix.suite }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - animation
+          - animation-edge
+          - model-primitives
+          - geometry
+          - world-time
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Run unit suite
+        run: npm exec --workspace @jsilvanus/graphics-editor vitest run "src/${{ matrix.suite }}*.test.ts"
+
+  # Floor 2: document/history/timeline contracts. These depend on the unit floor.
+  model:
+    name: Model / ${{ matrix.suite }}
+    needs: unit
+    if: ${{ needs.unit.result == 'success' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - serialization
+          - timelineCommands
+          - scene-timeline
+          - viewport-output
+          - world-view
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Run model suite
+        run: npm exec --workspace @jsilvanus/graphics-editor vitest run "src/**/${{ matrix.suite }}*.test.ts" "src/${{ matrix.suite }}*.test.ts"
+
+  # Floor 3: presentation and cross-layer integration.
+  integration:
+    name: Integration / ${{ matrix.suite }}
+    needs: model
+    if: ${{ needs.model.result == 'success' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - presentation
+          - architecture.integration
+          - output
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Run integration suite
+        run: npm exec --workspace @jsilvanus/graphics-editor vitest run "src/*${{ matrix.suite }}*.test.ts"
+
+  # Floor 4: package-wide verification. Kept separate so failures identify the broadest layer.
+  package:
+    name: Package verification
+    needs: integration
+    if: ${{ needs.integration.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck --workspace @jsilvanus/graphics-editor
+      - run: npm test --workspace @jsilvanus/graphics-editor
+      - run: npm run build --workspace @jsilvanus/graphics-editor
