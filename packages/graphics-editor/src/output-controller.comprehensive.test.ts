@@ -1,0 +1,17 @@
+import {describe,expect,it,vi} from "vitest";
+import {OutputController} from "./output-controller";
+import type {GraphicsOutput} from "./types";
+const output:GraphicsOutput={id:"o",name:"O",viewportId:"v",playback:"live",background:"transparent",liveControl:true,defaultTime:3};
+const make=(changes?:Partial<GraphicsOutput>)=>{const store={...output,...changes};const updateOutput=vi.fn((_:string,c:Partial<Pick<GraphicsOutput,"playback"|"background">>)=>Object.assign(store,c));return {store,updateOutput,controller:new OutputController({getOutput:id=>id==="o"?store:undefined,updateOutput,now:()=>1000})};};
+
+describe("output controller",()=>{
+ it("initializes lazily and uses default time",()=>{const {controller}=make();expect(controller.initialize("o")?.time).toBe(3);expect(controller.initialize("o")).toBe(controller.getRuntime("o"));});
+ it("rejects unknown outputs",()=>expect(make().controller.dispatch({type:"output.play",outputId:"missing"} as any)[0]).toMatchObject({type:"output.error",code:"not_found"}));
+ it("rejects live TAKE when disabled",()=>{const {controller}=make({liveControl:false});expect(controller.dispatch({type:"output.take",outputId:"o"} as any)[0]).toMatchObject({code:"not_allowed"});});
+ it("takes and takes off",()=>{const {controller}=make();expect(controller.dispatch({type:"output.take",outputId:"o"} as any).some(e=>e.type==="output.ack")).toBe(true);expect(controller.dispatch({type:"output.takeOff",outputId:"o"} as any).some(e=>e.type==="output.ack")).toBe(true);});
+ it("plays, pauses, seeks and resets",()=>{const {controller}=make();controller.dispatch({type:"output.play",outputId:"o"} as any);controller.tick(1);expect(controller.getRuntime("o")?.time).toBeGreaterThan(3);controller.dispatch({type:"output.pause",outputId:"o"} as any);const t=controller.getRuntime("o")?.time;controller.tick(2);expect(controller.getRuntime("o")?.time).toBe(t);controller.dispatch({type:"output.seek",outputId:"o",time:9} as any);expect(controller.getRuntime("o")?.time).toBe(9);controller.dispatch({type:"output.reset",outputId:"o"} as any);expect(controller.getRuntime("o")?.time).toBe(3);});
+ it("emits events to subscribers",()=>{const {controller}=make();const listener=vi.fn();const unsub=controller.subscribe(listener);controller.dispatch({type:"output.play",outputId:"o"} as any);expect(listener).toHaveBeenCalled();const n=listener.mock.calls.length;unsub();controller.dispatch({type:"output.pause",outputId:"o"} as any);expect(listener.mock.calls.length).toBe(n);});
+ it("updates persistent playback/background configuration",()=>{const {controller,store,updateOutput}=make();controller.dispatch({type:"output.setPlayback",outputId:"o",playback:"automatic"} as any);controller.dispatch({type:"output.setBackground",outputId:"o",background:"opaque"} as any);expect(store.playback).toBe("automatic");expect(store.background).toBe("opaque");expect(updateOutput).toHaveBeenCalledTimes(2);});
+ it("rejects persistent configuration without updater",()=>{const c=new OutputController({getOutput:id=>id==="o"?output:undefined});expect(c.dispatch({type:"output.setPlayback",outputId:"o",playback:"static"} as any)[0]).toMatchObject({code:"not_allowed"});});
+ it("ignores invalid ticks",()=>{const {controller}=make();controller.initialize("o");const t=controller.getRuntime("o")?.time;controller.tick(0);controller.tick(-1);controller.tick(Number.NaN);expect(controller.getRuntime("o")?.time).toBe(t);});
+});
