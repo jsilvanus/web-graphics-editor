@@ -8,6 +8,9 @@ concurrency:
   group: test-pyramid-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   manifest:
     name: Read test manifest
@@ -33,7 +36,7 @@ jobs:
 
   # Floor 1: every foundational suite runs independently.
   unit:
-    name: Unit / ${{ matrix.suite }}
+    name: Unit / ${{ matrix.suite.id }}
     needs: manifest
     runs-on: ubuntu-latest
     strategy:
@@ -47,12 +50,13 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npm exec --workspace @jsilvanus/graphics-editor vitest run "src/${{ matrix.suite }}*.test.ts"
+      - name: Run ${{ matrix.suite.id }}
+        run: npm exec --workspace @jsilvanus/graphics-editor vitest run ${{ join(matrix.suite.files, ' ') }}
 
-  # Floor 2 runs only when the complete unit floor succeeds; its suites are independent.
+  # Floor 2: all model suites run independently, but only after the complete unit floor succeeds.
   model:
-    name: Model / ${{ matrix.suite }}
-    needs: unit
+    name: Model / ${{ matrix.suite.id }}
+    needs: [manifest, unit]
     if: ${{ needs.unit.result == 'success' }}
     runs-on: ubuntu-latest
     strategy:
@@ -66,12 +70,13 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npm exec --workspace @jsilvanus/graphics-editor vitest run "src/${{ matrix.suite }}*.test.ts"
+      - name: Run ${{ matrix.suite.id }}
+        run: npm exec --workspace @jsilvanus/graphics-editor vitest run ${{ join(matrix.suite.files, ' ') }}
 
-  # Floor 3 runs only when the complete model floor succeeds; its suites are independent.
+  # Floor 3: all integration suites run independently, but only after the complete model floor succeeds.
   integration:
-    name: Integration / ${{ matrix.suite }}
-    needs: model
+    name: Integration / ${{ matrix.suite.id }}
+    needs: [manifest, model]
     if: ${{ needs.model.result == 'success' }}
     runs-on: ubuntu-latest
     strategy:
@@ -85,9 +90,10 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npm exec --workspace @jsilvanus/graphics-editor vitest run "src/*${{ matrix.suite }}*.test.ts"
+      - name: Run ${{ matrix.suite.id }}
+        run: npm exec --workspace @jsilvanus/graphics-editor vitest run ${{ join(matrix.suite.files, ' ') }}
 
-  # Final package verification remains a single gate after all integration suites succeed.
+  # Final package verification runs only after every integration suite succeeds.
   package:
     name: Package verification
     needs: integration
