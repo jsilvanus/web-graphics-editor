@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "name": "WEGRA Test Pyramid",
   "floors": [
     {
@@ -7,12 +7,12 @@
       "description": "Independent foundational tests. Every suite runs even when another suite fails.",
       "failFast": false,
       "suites": [
-        "animation",
-        "animation-edge",
-        "animation-comprehensive",
-        "model-primitives",
-        "geometry",
-        "world-time"
+        {"id":"animation","files":["src/animation.test.ts"]},
+        {"id":"animation-edge","files":["src/animation.edge.test.ts"]},
+        {"id":"animation-comprehensive","files":["src/animation-comprehensive.test.ts"]},
+        {"id":"model-primitives","files":["src/model.primitives.test.ts"]},
+        {"id":"geometry","files":["src/geometry.test.ts"]},
+        {"id":"world-time","files":["src/world-time.test.ts"]}
       ]
     },
     {
@@ -21,12 +21,12 @@
       "description": "Document, history, timeline and architectural model contracts.",
       "failFast": false,
       "suites": [
-        "serialization",
-        "serialization-edge",
-        "timelineCommands",
-        "scene-timeline",
-        "viewport-output",
-        "world-view"
+        {"id":"serialization","files":["src/serialization.test.ts"]},
+        {"id":"serialization-edge","files":["src/serialization.edge.test.ts"]},
+        {"id":"timelineCommands","files":["src/timelineCommands.test.ts"]},
+        {"id":"scene-timeline","files":["src/scene-timeline.test.ts"]},
+        {"id":"viewport-output","files":["src/viewport-output.test.ts"]},
+        {"id":"world-view","files":["src/world-view.test.ts"]}
       ]
     },
     {
@@ -35,9 +35,9 @@
       "description": "Cross-layer presentation and runtime contracts.",
       "failFast": false,
       "suites": [
-        "presentation",
-        "architecture.integration",
-        "output"
+        {"id":"presentation","files":["src/presentation.test.ts"]},
+        {"id":"architecture.integration","files":["src/architecture.integration.test.ts"]},
+        {"id":"output","files":["src/output.test.ts"]}
       ]
     },
     {
