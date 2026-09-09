@@ -69,9 +69,6 @@ jobs:
           if extra:
               raise SystemExit("Manifest contains non-test files: " + ", ".join(extra))
 
-          for floor_id, suite_id, file in referenced:
-              print(f"# {floor_id}/{suite_id}: {file}")
-
           for floor_id in ("unit", "model", "integration"):
               suites = floors[floor_id]["suites"]
               print(f"{floor_id}=" + json.dumps(suites, separators=(",", ":")))
