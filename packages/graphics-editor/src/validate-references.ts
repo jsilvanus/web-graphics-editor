@@ -1,4 +1,4 @@
-import type { GraphicsDocument, GraphicsAsset, Layer } from "./types";
+import type { GraphicsDocument } from "./types";
 
 export interface DocumentValidationResult {
   valid: boolean;
@@ -61,10 +61,7 @@ export function validateDocumentReferences(document:GraphicsDocument):DocumentVa
   const timeline=document.timeline;
   if (timeline) {
     for (const scene of timeline.scenes) requireReference(compositions,scene.compositionId,`scene "${scene.id}" compositionId`,errors);
-    for (const track of timeline.tracks) {
-      requireReference(layers,track.layerId,`timeline track "${track.id}" layerId`,errors);
-      if (track.keyframes.length===0) errors.push(`timeline track "${track.id}" has no keyframes`);
-    }
+    for (const track of timeline.tracks) requireReference(layers,track.layerId,`timeline track "${track.id}" layerId`,errors);
     for (const clip of timeline.clips ?? []) requireReference(layers,clip.layerId,`timeline clip "${clip.id}" layerId`,errors);
     if (timeline.currentSceneId) requireReference(new Map(timeline.scenes.map(scene=>[scene.id,scene])),timeline.currentSceneId,"timeline currentSceneId",errors);
   }
