@@ -9,6 +9,7 @@ function domToRuns(root: HTMLElement): TextRun[] {
   const visit = (node: Node, inherited: Omit<TextRun, "text"> = {}) => {
     if (node.nodeType === Node.TEXT_NODE) { const text = node.textContent ?? ""; if (text) runs.push({ text, ...inherited }); return; }
     if (!(node instanceof HTMLElement)) return;
+    if (node.tagName === "BR") { runs.push({ text: "\n", ...inherited }); return; }
     const next = { ...inherited } as Omit<TextRun, "text">;
     const style = node.style;
     if (node.tagName === "B" || node.tagName === "STRONG" || style.fontWeight) next.fontWeight = style.fontWeight || "700";
@@ -18,16 +19,11 @@ function domToRuns(root: HTMLElement): TextRun[] {
     if (style.color) next.color = style.color;
     if (style.letterSpacing) next.letterSpacing = style.letterSpacing;
     for (const child of Array.from(node.childNodes)) visit(child, next);
-    if (node.tagName === "BR") runs.push({ text: "\n", ...inherited });
   };
   visit(root);
   return runs;
 }
-function normalizeRuns(runs: TextRun[]) {
-  const result: TextRun[] = [];
-  for (const run of runs) { if (!run.text) continue; const previous = result[result.length - 1]; const same = previous && JSON.stringify({ ...previous, text: undefined }) === JSON.stringify({ ...run, text: undefined }); if (same) previous.text += run.text; else result.push({ ...run }); }
-  return result;
-}
+function normalizeRuns(runs: TextRun[]) { const result: TextRun[] = []; for (const run of runs) { if (!run.text) continue; const previous = result[result.length - 1]; const same = previous && JSON.stringify({ ...previous, text: undefined }) === JSON.stringify({ ...run, text: undefined }); if (same) previous.text += run.text; else result.push({ ...run }); } return result; }
 
 export function TextLayerRenderer({ layer, layers = [], onTextCommit, onTextRunsCommit }: { layer: Layer; layers?: Layer[]; onTextCommit?: (text: string) => void; onTextRunsCommit?: (runs: TextRun[] | undefined) => void }) {
   const text = layer.textStyle ?? {};
@@ -47,14 +43,12 @@ export function TextLayerRenderer({ layer, layers = [], onTextCommit, onTextRuns
 
   const finishEditing = (commit: boolean) => { const value = commit ? (editorRef.current?.textContent ?? draft) : originalRef.current; const runs = commit && editorRef.current ? normalizeRuns(domToRuns(editorRef.current)) : undefined; setDraft(value); setEditing(false); if (commit) { if (value !== originalRef.current) onTextCommit?.(value); if (runs?.length) onTextRunsCommit?.(runs); else onTextRunsCommit?.(undefined); } };
   const format = (command: "bold" | "italic") => { editorRef.current?.focus(); document.execCommand(command); setDraft(editorRef.current?.textContent ?? draft); };
+  const beginEdit = (event: React.MouseEvent) => { event.stopPropagation(); originalRef.current = layer.text ?? ""; setDraft(layer.text ?? ""); setEditing(true); };
 
   if (editing || !pathLayer) {
-    if (!editing) return <div style={style} onDoubleClick={event => { event.stopPropagation(); originalRef.current = layer.text ?? ""; setDraft(layer.text ?? ""); setEditing(true); }}>{layer.textRuns?.length ? layer.textRuns.map((run, index) => <span key={index} style={{ fontFamily: run.fontFamily, fontSize: run.fontSize, fontWeight: run.fontWeight, fontStyle: run.fontStyle, color: run.color, letterSpacing: run.letterSpacing }}>{run.text}</span>) : layer.text}</div>;
+    if (!editing) return <div style={style} onDoubleClick={beginEdit}>{layer.textRuns?.length ? layer.textRuns.map((run, index) => <span key={index} style={{ fontFamily: run.fontFamily, fontSize: run.fontSize, fontWeight: run.fontWeight, fontStyle: run.fontStyle, color: run.color, letterSpacing: run.letterSpacing }}>{run.text}</span>) : layer.text}</div>;
     return <div style={{ position: "relative", width: "100%", height: "100%" }}>
-      <div style={{ position: "absolute", top: 0, left: 0, zIndex: 2, display: "flex", gap: 3, padding: 3, background: "rgba(20,20,20,.9)", borderRadius: 4 }} onPointerDown={event => event.preventDefault()}>
-        <button type="button" title="Bold" onMouseDown={event => { event.preventDefault(); format("bold"); }}>B</button>
-        <button type="button" title="Italic" onMouseDown={event => { event.preventDefault(); format("italic"); }}>I</button>
-      </div>
+      <div style={{ position: "absolute", top: 0, left: 0, zIndex: 2, display: "flex", gap: 3, padding: 3, background: "rgba(20,20,20,.9)", borderRadius: 4 }} onPointerDown={event => event.preventDefault()}><button type="button" title="Bold" onMouseDown={event => { event.preventDefault(); format("bold"); }}>B</button><button type="button" title="Italic" onMouseDown={event => { event.preventDefault(); format("italic"); }}>I</button></div>
       <div ref={editorRef} style={{ ...style, outline: "1px dashed currentColor", paddingTop: 28 }} contentEditable role="textbox" aria-label="Edit rich text" aria-multiline="true" suppressContentEditableWarning onPointerDown={event => event.stopPropagation()} onClick={event => event.stopPropagation()} onInput={event => setDraft(event.currentTarget.textContent ?? "")} onBlur={() => { if (cancelRef.current) { cancelRef.current = false; return; } finishEditing(true); }} onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); cancelRef.current = true; finishEditing(false); } }} />
     </div>;
   }
@@ -67,5 +61,5 @@ export function TextLayerRenderer({ layer, layers = [], onTextCommit, onTextRuns
   const anchor = align === "center" ? "middle" : align === "right" ? "end" : "start";
   const offset = Number.isFinite(textPathStartOffset) ? textPathStartOffset : 0;
   const runs = layer.textRuns?.length ? layer.textRuns : [{ text: layer.text ?? "" }];
-  return <svg width="100%" height="100%" viewBox={`0 0 ${Math.max(layer.width, 1)} ${Math.max(layer.height, 1)}`} preserveAspectRatio="none" style={{ display: "block", overflow: "visible", pointerEvents: "auto" }} onDoubleClick={event => { event.stopPropagation(); originalRef.current = layer.text ?? ""; setDraft(layer.text ?? ""); setEditing(true); }}><defs><path id={`${layer.id}-text-path`} d={d} transform={`translate(${tx} ${ty}) scale(${sx} ${sy})`} /></defs><text textAnchor={anchor} fontFamily={style.fontFamily} fontSize={style.fontSize} fontWeight={style.fontWeight} fontStyle={style.fontStyle} fill={style.color} letterSpacing={style.letterSpacing}>{runs.map((run, index) => <tspan key={index} fontFamily={run.fontFamily} fontSize={run.fontSize} fontWeight={run.fontWeight} fontStyle={run.fontStyle} fill={run.color} letterSpacing={run.letterSpacing}><textPath href={`#${layer.id}-text-path`} startOffset={`${offset}%`}>{run.text}</textPath></tspan>)}</text></svg>;
+  return <svg width="100%" height="100%" viewBox={`0 0 ${Math.max(layer.width, 1)} ${Math.max(layer.height, 1)}`} preserveAspectRatio="none" style={{ display: "block", overflow: "visible", pointerEvents: "auto" }} onDoubleClick={beginEdit}><defs><path id={`${layer.id}-text-path`} d={d} transform={`translate(${tx} ${ty}) scale(${sx} ${sy})`} /></defs><text textAnchor={anchor} fontFamily={style.fontFamily} fontSize={style.fontSize} fontWeight={style.fontWeight} fontStyle={style.fontStyle} fill={style.color} letterSpacing={style.letterSpacing}><textPath href={`#${layer.id}-text-path`} startOffset={`${offset}%`}>{runs.map((run, index) => <tspan key={index} fontFamily={run.fontFamily} fontSize={run.fontSize} fontWeight={run.fontWeight} fontStyle={run.fontStyle} fill={run.color} letterSpacing={run.letterSpacing}>{run.text}</tspan>)}</textPath></text></svg>;
 }
