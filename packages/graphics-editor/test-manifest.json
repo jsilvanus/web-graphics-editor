@@ -1,31 +1,34 @@
 {
-  "version": 2,
+  "version": 3,
   "name": "WEGRA Test Pyramid",
+  "policy": {
+    "everyTestFileMustBelongToExactlyOneSuite": true,
+    "suitePathsAreRelativeTo": "packages/graphics-editor"
+  },
   "floors": [
     {
       "id": "unit",
-      "description": "Independent foundational tests. Every suite runs even when another suite fails.",
+      "description": "Fast foundational model and algorithm tests. Every suite runs independently.",
       "failFast": false,
       "suites": [
-        {"id":"animation","files":["src/animation.test.ts"]},
-        {"id":"animation-edge","files":["src/animation.edge.test.ts"]},
-        {"id":"animation-comprehensive","files":["src/animation-comprehensive.test.ts"]},
-        {"id":"model-primitives","files":["src/model.primitives.test.ts"]},
-        {"id":"geometry","files":["src/geometry.test.ts"]},
-        {"id":"mesh-validation","files":["src/mesh/validate.test.ts"]},
-        {"id":"world-time","files":["src/world-time.test.ts"]}
+        {"id":"animation","files":["src/animation.test.ts","src/animation.edge.test.ts","src/animation-comprehensive.test.ts","src/animation-engine.test.ts"]},
+        {"id":"geometry","files":["src/geometry.test.ts","src/geometry/path.test.ts","src/spatial-interpolation.test.ts"]},
+        {"id":"3d-core","files":["src/3d.test.ts","src/3d-animation.test.ts","src/3d-mesh.test.ts"]},
+        {"id":"3d-rendering","files":["src/3d-renderer.test.ts","src/3d-render-cache.test.ts"]},
+        {"id":"mesh-topology","files":["src/mesh/validate.test.ts","src/mesh/half-edge.test.ts","src/mesh/graphics-mesh.test.ts","src/mesh/split-edge.test.ts","src/mesh/delete-vertices.test.ts","src/mesh/weld-vertices.test.ts","src/mesh/bevel/bevel-edge.test.ts"]},
+        {"id":"document-model","files":["src/model-primitives.test.ts","src/document.test.ts","src/layer-tree.test.ts","src/render-model.test.ts"]},
+        {"id":"world-animation","files":["src/world-animation.test.ts","src/world-time.test.ts","src/world-keyframe-edit.test.ts"]}
       ]
     },
     {
       "id": "model",
       "needs": ["unit"],
-      "description": "Document, history, timeline and architectural model contracts.",
+      "description": "Document, history, serialization, timeline and reference-integrity contracts.",
       "failFast": false,
       "suites": [
-        {"id":"serialization","files":["src/serialization.test.ts"]},
-        {"id":"serialization-edge","files":["src/serialization.edge.test.ts"]},
-        {"id":"history","files":["src/history/store.test.ts","src/history/operations.test.ts"]},
-        {"id":"timelineCommands","files":["src/timelineCommands.test.ts"]},
+        {"id":"serialization","files":["src/serialization.test.ts","src/serialization.edge.test.ts","src/wegra.test.ts"]},
+        {"id":"history","files":["src/history/store.test.ts","src/history/operations.test.ts","src/history/worldOperations.test.ts","src/history/worldResolver.test.ts"]},
+        {"id":"document-commands","files":["src/document/commands.comprehensive.test.ts","src/document/timelineCommands.test.ts"]},
         {"id":"scene-timeline","files":["src/scene-timeline.test.ts"]},
         {"id":"viewport-output","files":["src/viewport-output.test.ts"]},
         {"id":"world-view","files":["src/world-view.test.ts"]},
@@ -35,18 +38,20 @@
     {
       "id": "integration",
       "needs": ["model"],
-      "description": "Cross-layer presentation and runtime contracts.",
+      "description": "Cross-layer presentation, persistence and runtime contracts.",
       "failFast": false,
       "suites": [
-        {"id":"presentation","files":["src/presentation.test.ts"]},
-        {"id":"architecture.integration","files":["src/architecture.integration.test.ts"]},
-        {"id":"output","files":["src/output.test.ts"]}
+        {"id":"presentation","files":["src/presentation.test.ts","src/presentation.property.test.ts","src/presentation.integration.test.ts"]},
+        {"id":"architecture","files":["src/architecture.integration.test.ts"]},
+        {"id":"persistence","files":["src/editing-persistence.integration.test.ts"]},
+        {"id":"world-view-integration","files":["src/world-view.integration.test.ts","src/world-view-integration.test.ts"]},
+        {"id":"outputs","files":["src/outputs-runtime.test.ts","src/output-controller.comprehensive.test.ts"]}
       ]
     },
     {
       "id": "package",
       "needs": ["integration"],
-      "description": "Complete package verification: tests, types and build.",
+      "description": "Complete package verification: full test suite, types and build.",
       "failFast": true,
       "commands": [
         "npm run typecheck --workspace @jsilvanus/graphics-editor",
