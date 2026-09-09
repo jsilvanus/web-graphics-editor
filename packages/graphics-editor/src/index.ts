@@ -10,6 +10,8 @@ export type { WegraManifest, WegraProject } from "./wegra";
 export { linePath, orthogonalPoint, pathCommandsToD, roundedRectPath, nodesToD, mirrorHandle } from "./geometry";
 export { roundedPolygonNodes } from "./geometry/rounded";
 export { exportSvg, importSvg } from "./svg";
+export { buildRenderTree, flattenRenderTree } from "./render-model";
+export type { RenderNode } from "./render-model";
 export { snapPosition, guidesForPosition } from "./snapping";
 export type { SnapResult, SnapGuides } from "./snapping";
 export { create3DWorld, update3DWorld, remove3DWorld, add3DMesh, update3DMesh, remove3DMesh, add3DCamera, update3DCamera, remove3DView, set3DViewVisibility, setProvenance } from "./3d";
