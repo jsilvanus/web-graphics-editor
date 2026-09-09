@@ -13,7 +13,7 @@ This is the implementation roadmap for the 3D editor. Keep the architecture modu
 - [x] face extrusion groundwork
 - [x] edge bevel
 - [x] boundary-edge bevel
-- [x] multi-edge bevel/corner topology groundwork
+- [x] multi-edge bevel with corner closure
 - [ ] face translation
 - [ ] robust multi-face extrusion
 - [ ] move/add/delete vertices
@@ -87,7 +87,7 @@ This is the implementation roadmap for the 3D editor. Keep the architecture modu
 - [ ] snapping
 - [ ] numeric transform panels
 - [ ] performance with larger meshes
-- [ ] topology/geometry tests
+- [x] topology/geometry tests for bevel operations
 - [ ] rendering tests
 
 ## Implementation order
