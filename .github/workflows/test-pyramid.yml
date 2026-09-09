@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   manifest:
-    name: Read test manifest
+    name: Validate test manifest
     runs-on: ubuntu-latest
     outputs:
       unit: ${{ steps.manifest.outputs.unit }}
@@ -28,10 +28,53 @@ jobs:
           python - <<'PY' >> "$GITHUB_OUTPUT"
           import json
           from pathlib import Path
-          m=json.loads(Path("packages/graphics-editor/test-manifest.json").read_text())
-          for floor in ("unit","model","integration"):
-              suites=next(x["suites"] for x in m["floors"] if x["id"]==floor)
-              print(f"{floor}=" + json.dumps(suites, separators=(",",":")))
+
+          root = Path("packages/graphics-editor")
+          manifest_path = root / "test-manifest.json"
+          m = json.loads(manifest_path.read_text())
+          floors = {floor["id"]: floor for floor in m["floors"]}
+          required_floors = {"unit", "model", "integration", "package"}
+          if set(floors) != required_floors:
+              raise SystemExit(f"Expected floors {sorted(required_floors)}, got {sorted(floors)}")
+
+          referenced = []
+          for floor_id in ("unit", "model", "integration"):
+              suites = floors[floor_id].get("suites", [])
+              if not suites:
+                  raise SystemExit(f"Floor {floor_id} has no suites")
+              for suite in suites:
+                  files = suite.get("files", [])
+                  if not files:
+                      raise SystemExit(f"Suite {floor_id}/{suite.get('id')} has no files")
+                  for file in files:
+                      path = root / file
+                      if not path.is_file():
+                          raise SystemExit(f"Manifest references missing test file: {file}")
+                      referenced.append((floor_id, suite["id"], file))
+
+          paths = [file for _, _, file in referenced]
+          duplicates = sorted({p for p in paths if paths.count(p) > 1})
+          if duplicates:
+              raise SystemExit("Test files appear in multiple suites: " + ", ".join(duplicates))
+
+          discovered = sorted(
+              str(path.relative_to(root))
+              for path in (root / "src").rglob("*")
+              if path.is_file() and path.name.endswith((".test.ts", ".test.tsx"))
+          )
+          missing = sorted(set(discovered) - set(paths))
+          extra = sorted(set(paths) - set(discovered))
+          if missing:
+              raise SystemExit("Test files missing from manifest: " + ", ".join(missing))
+          if extra:
+              raise SystemExit("Manifest contains non-test files: " + ", ".join(extra))
+
+          for floor_id, suite_id, file in referenced:
+              print(f"# {floor_id}/{suite_id}: {file}")
+
+          for floor_id in ("unit", "model", "integration"):
+              suites = floors[floor_id]["suites"]
+              print(f"{floor_id}=" + json.dumps(suites, separators=(",", ":")))
           PY
 
   # Floor 1: every foundational suite runs independently.
@@ -39,6 +82,7 @@ jobs:
     name: Unit / ${{ matrix.suite.id }}
     needs: manifest
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
@@ -49,16 +93,17 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
+      - run: npm ci --prefer-offline --no-audit --no-fund
       - name: Run ${{ matrix.suite.id }}
         run: npm exec --workspace @jsilvanus/graphics-editor vitest run ${{ join(matrix.suite.files, ' ') }}
 
-  # Floor 2: all model suites run independently, but only after the complete unit floor succeeds.
+  # Floor 2: model suites run independently, but only after the complete unit floor succeeds.
   model:
     name: Model / ${{ matrix.suite.id }}
     needs: [manifest, unit]
     if: ${{ needs.unit.result == 'success' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
@@ -69,16 +114,17 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
+      - run: npm ci --prefer-offline --no-audit --no-fund
       - name: Run ${{ matrix.suite.id }}
         run: npm exec --workspace @jsilvanus/graphics-editor vitest run ${{ join(matrix.suite.files, ' ') }}
 
-  # Floor 3: all integration suites run independently, but only after the complete model floor succeeds.
+  # Floor 3: integration suites run independently, but only after the complete model floor succeeds.
   integration:
     name: Integration / ${{ matrix.suite.id }}
     needs: [manifest, model]
     if: ${{ needs.model.result == 'success' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
@@ -89,7 +135,7 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
+      - run: npm ci --prefer-offline --no-audit --no-fund
       - name: Run ${{ matrix.suite.id }}
         run: npm exec --workspace @jsilvanus/graphics-editor vitest run ${{ join(matrix.suite.files, ' ') }}
 
@@ -99,13 +145,14 @@ jobs:
     needs: integration
     if: ${{ needs.integration.result == 'success' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
+      - run: npm ci --prefer-offline --no-audit --no-fund
       - run: npm run typecheck --workspace @jsilvanus/graphics-editor
       - run: npm test --workspace @jsilvanus/graphics-editor
       - run: npm run build --workspace @jsilvanus/graphics-editor
