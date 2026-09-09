@@ -23,9 +23,10 @@ export function useAnimatedLayerEditing(document: GraphicsDocument, executeComma
   }, [document, executeCommand, currentTime]);
 
   const changeStyle = useCallback((id: string, key: string, value: string | number) => {
-    if (key === "opacity" && typeof value === "number" && document.timeline?.tracks.some(track => track.layerId === id && track.property === "opacity")) {
-      const result = setAnimatedPropertyAtTime(document, id, "opacity", currentTime, value);
-      if (result.operation) executeCommand(result, { label: `Set opacity at ${currentTime.toFixed(2)}s` });
+    const trackProperty = key === "text-path-start-offset" ? "textPathStartOffset" : key === "opacity" ? "opacity" : undefined;
+    if (trackProperty && typeof value === "number" && document.timeline?.tracks.some(track => track.layerId === id && track.property === trackProperty)) {
+      const result = setAnimatedPropertyAtTime(document, id, trackProperty as AnimatedProperty, currentTime, value);
+      if (result.operation) executeCommand(result, { label: `Set ${key} at ${currentTime.toFixed(2)}s` });
       return;
     }
     const result = updateLayerStyleCommand(document, id, key, value);
