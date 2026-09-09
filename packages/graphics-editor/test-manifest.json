@@ -12,6 +12,7 @@
         {"id":"animation-comprehensive","files":["src/animation-comprehensive.test.ts"]},
         {"id":"model-primitives","files":["src/model.primitives.test.ts"]},
         {"id":"geometry","files":["src/geometry.test.ts"]},
+        {"id":"mesh-validation","files":["src/mesh/validate.test.ts"]},
         {"id":"world-time","files":["src/world-time.test.ts"]}
       ]
     },
