@@ -3,6 +3,8 @@ export { resolveComposition, resolveViewportComposition, resolveScene, resolveOu
 export type { ResolvedLayer, ResolvedComposition, ResolvedScene } from "./presentation";
 export { GraphicsEditor, defaultGraphicsDocument } from "./GraphicsEditor";
 export { GRAPHICS_DOCUMENT_VERSION, serializeGraphicsDocument, deserializeGraphicsDocument } from "./serialization";
+export { validateDocumentReferences, assertValidDocumentReferences } from "./validate-references";
+export type { DocumentValidationResult } from "./validate-references";
 export { serializeWegra, deserializeWegra } from "./wegra";
 export type { WegraManifest, WegraProject } from "./wegra";
 export { linePath, orthogonalPoint, pathCommandsToD, roundedRectPath, nodesToD, mirrorHandle } from "./geometry";
