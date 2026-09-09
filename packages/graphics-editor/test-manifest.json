@@ -28,7 +28,8 @@
         {"id":"timelineCommands","files":["src/timelineCommands.test.ts"]},
         {"id":"scene-timeline","files":["src/scene-timeline.test.ts"]},
         {"id":"viewport-output","files":["src/viewport-output.test.ts"]},
-        {"id":"world-view","files":["src/world-view.test.ts"]}
+        {"id":"world-view","files":["src/world-view.test.ts"]},
+        {"id":"reference-integrity","files":["src/validate-references.test.ts"]}
       ]
     },
     {
