@@ -24,6 +24,7 @@
       "suites": [
         {"id":"serialization","files":["src/serialization.test.ts"]},
         {"id":"serialization-edge","files":["src/serialization.edge.test.ts"]},
+        {"id":"history","files":["src/history/store.test.ts","src/history/operations.test.ts"]},
         {"id":"timelineCommands","files":["src/timelineCommands.test.ts"]},
         {"id":"scene-timeline","files":["src/scene-timeline.test.ts"]},
         {"id":"viewport-output","files":["src/viewport-output.test.ts"]},
