@@ -36,4 +36,16 @@ describe("evaluateWorldAtTime", () => {
     expect(result.worldTime).toBe(2);
     expect(result.meshes[0].transform.rotation[1]).toBe(72);
   });
+  it("does not mutate the source world while evaluating", () => {
+    const before = JSON.stringify(world);
+    const first = evaluateWorldAtTime(world, 5, { offset: 0, rate: 1 });
+    first.meshes[0].transform.position[0] = 999;
+    first.meshes[0].transform.rotation[1] = 999;
+    first.cameras[0].position[0] = 999;
+    expect(JSON.stringify(world)).toBe(before);
+    const second = evaluateWorldAtTime(world, 5, { offset: 0, rate: 1 });
+    expect(second.meshes[0].transform.position[0]).toBe(50);
+    expect(second.meshes[0].transform.rotation[1]).toBe(180);
+    expect(second.cameras[0].position[0]).toBe(0);
+  });
 });
