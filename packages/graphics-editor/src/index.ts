@@ -5,8 +5,8 @@ export { GraphicsEditor, defaultGraphicsDocument } from "./GraphicsEditor";
 export { GRAPHICS_DOCUMENT_VERSION, serializeGraphicsDocument, deserializeGraphicsDocument } from "./serialization";
 export { validateDocumentReferences, assertValidDocumentReferences } from "./validate-references";
 export type { DocumentValidationResult } from "./validate-references";
-export { serializeWegra, deserializeWegra } from "./wegra";
-export type { WegraManifest, WegraProject } from "./wegra";
+export { serializeWegra, deserializeWegra, canonicalJson, migrateWegraManifest, WEGRA_FORMAT, WEGRA_VERSION, SUPPORTED_WEGRA_VERSIONS, WEGRA_MIGRATIONS } from "./wegra";
+export type { WegraManifest, WegraProject, SupportedWegraVersion } from "./wegra";
 export { linePath, orthogonalPoint, pathCommandsToD, roundedRectPath, nodesToD, mirrorHandle } from "./geometry";
 export { roundedPolygonNodes } from "./geometry/rounded";
 export { exportSvg, importSvg } from "./svg";
@@ -29,6 +29,5 @@ export { add3DTrack, remove3DTrack, upsert3DKeyframe, remove3DKeyframe, move3DKe
 export { OutputRenderer, outputRenderPath } from "./OutputRenderer";
 export type { OutputRendererProps } from "./OutputRenderer";
 export { createOutputRuntime, outputTransitionProgress, tickOutputRuntime, takeOutput, takeOffOutput, playOutput, pauseOutput, seekOutput, resetOutput, dispatchOutputRuntime } from "./outputs-runtime";
-export type { OutputRuntime, OutputRuntimeState, OutputRuntimeEvent } from "./outputs-runtime";
 export type { OutputCommand, OutputEvent } from "./output-protocol";
 export { isOutputCommand, outputStateEvent } from "./output-protocol";
