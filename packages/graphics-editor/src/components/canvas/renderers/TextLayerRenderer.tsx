@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { Layer } from "../../../types";
 import { styleValue } from "../../../geometry";
 
@@ -41,7 +41,7 @@ export function TextLayerRenderer({ layer, onTextCommit }: { layer: Layer; onTex
   const style: CSSProperties = {
     width: "100%", height: "100%", boxSizing: "border-box",
     pointerEvents: editing ? "auto" : "none",
-    overflow: text.wrap === "none" ? "visible" : "hidden",
+    overflow: text.overflow ?? (text.wrap === "none" ? "visible" : "hidden"),
     display: "flex", flexDirection: "column",
     justifyContent: text.verticalAlign === "middle" ? "center" : text.verticalAlign === "bottom" ? "flex-end" : "flex-start",
     textAlign: align as CSSProperties["textAlign"],
@@ -58,27 +58,7 @@ export function TextLayerRenderer({ layer, onTextCommit }: { layer: Layer; onTex
     cursor: editing ? "text" : "default",
   };
 
-  if (!editing) {
-    return <div style={style} onDoubleClick={event => { event.stopPropagation(); originalRef.current = layer.text ?? ""; setDraft(layer.text ?? ""); setEditing(true); }}>{layer.text}</div>;
-  }
+  if (!editing) return <div style={style} onDoubleClick={event => { event.stopPropagation(); originalRef.current = layer.text ?? ""; setDraft(layer.text ?? ""); setEditing(true); }}>{layer.text}</div>;
 
-  return <div
-    ref={editorRef}
-    style={style}
-    contentEditable
-    role="textbox"
-    aria-label="Edit text"
-    aria-multiline="true"
-    suppressContentEditableWarning
-    onPointerDown={event => event.stopPropagation()}
-    onClick={event => event.stopPropagation()}
-    onInput={event => setDraft(event.currentTarget.textContent ?? "")}
-    onBlur={() => finishEditing(true)}
-    onKeyDown={event => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        finishEditing(false);
-      }
-    }}
-  />;
+  return <div ref={editorRef} style={style} contentEditable role="textbox" aria-label="Edit text" aria-multiline="true" suppressContentEditableWarning onPointerDown={event => event.stopPropagation()} onClick={event => event.stopPropagation()} onInput={event => setDraft(event.currentTarget.textContent ?? "")} onBlur={() => finishEditing(true)} onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); finishEditing(false); } }} />;
 }
