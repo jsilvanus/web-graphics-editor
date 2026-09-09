@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { Layer, TextRun } from "../../../types";
-import { pathCommandsToD, nodesToD, styleValue } from "../../../geometry";
+import { pathCommandsToD, nodesToD, styleValue, reversePathNodes } from "../../../geometry";
+import { linePath } from "../../../geometry/path";
 
 function escapeHtml(value: string) { return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;"); }
 function runsToHtml(runs: TextRun[]) { return runs.map(run => `<span style="${run.fontWeight ? `font-weight:${run.fontWeight};` : ""}${run.fontStyle ? `font-style:${run.fontStyle};` : ""}${run.fontFamily ? `font-family:${escapeHtml(run.fontFamily)};` : ""}${run.fontSize ? `font-size:${run.fontSize}px;` : ""}${run.color ? `color:${escapeHtml(run.color)};` : ""}${run.letterSpacing ? `letter-spacing:${escapeHtml(String(run.letterSpacing))};` : ""}">${escapeHtml(run.text).replace(/\n/g, "<br>")}</span>`).join(""); }
@@ -30,6 +31,7 @@ export function TextLayerRenderer({ layer, layers = [], onTextCommit, onTextRuns
   const align = text.textAlign ?? styleValue(layer, "text-align", "left");
   const textPathLayerId = styleValue(layer, "text-path-layer-id", "");
   const textPathStartOffset = Number.parseFloat(styleValue(layer, "text-path-start-offset", "0"));
+  const pathDirection = styleValue(layer, "text-path-direction", "forward");
   const pathLayer = textPathLayerId ? layers.find(candidate => candidate.id === textPathLayerId && (candidate.type === "path" || candidate.type === "line")) : undefined;
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(layer.text ?? "");
@@ -53,7 +55,11 @@ export function TextLayerRenderer({ layer, layers = [], onTextCommit, onTextRuns
     </div>;
   }
 
-  const d = pathLayer.nodes?.length ? nodesToD(pathLayer.nodes, pathLayer.closed) : pathLayer.path || (pathLayer.pathCommands ? pathCommandsToD(pathLayer.pathCommands) : "");
+  const sourceNodes = pathLayer.nodes?.length ? pathLayer.nodes : undefined;
+  const nodes = pathDirection === "reverse" && sourceNodes ? reversePathNodes(sourceNodes) : sourceNodes;
+  const d = pathLayer.type === "line"
+    ? (pathDirection === "reverse" ? linePath(pathLayer.width, pathLayer.height, 0, 0) : linePath(0, 0, pathLayer.width, pathLayer.height))
+    : nodes?.length ? nodesToD(nodes, pathLayer.closed) : pathLayer.path || (pathLayer.pathCommands ? pathCommandsToD(pathLayer.pathCommands) : "");
   const sx = layer.width ? pathLayer.width / layer.width : 1;
   const sy = layer.height ? pathLayer.height / layer.height : 1;
   const tx = pathLayer.x - layer.x;
