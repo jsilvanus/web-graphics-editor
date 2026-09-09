@@ -20,8 +20,8 @@ export interface AnimationTrack<T extends AnimationValue=AnimationValue>{id:stri
 export type AnimatedProperty="x"|"y"|"width"|"height"|"rotation"|"opacity"|"scaleX"|"scaleY";
 export interface Track extends AnimationTrack<number>{layerId:string;property:AnimatedProperty}
 export type Keyframe=AnimationKeyframe<number>;
-export type Graphics3DAnimatedProperty="positionX"|"positionY"|"positionZ"|"rotationX"|"rotationY"|"rotationZ"|"scaleX"|"scaleY"|"scaleZ"|"fov"|"opacity"|"visibility"|"materialColor"|"materialOpacity";
-export type Graphics3DAnimationTarget="mesh"|"camera";
+export type Graphics3DAnimatedProperty="positionX"|"positionY"|"positionZ"|"rotationX"|"rotationY"|"rotationZ"|"scaleX"|"scaleY"|"scaleZ"|"fov"|"opacity"|"visibility"|"materialColor"|"materialOpacity"|"intensity"|"distance"|"angle"|"penumbra";
+export type Graphics3DAnimationTarget="mesh"|"camera"|"light";
 export interface Graphics3DTrack{id:string;targetType:Graphics3DAnimationTarget;targetId:string;property:Graphics3DAnimatedProperty;keyframes:AnimationKeyframe[]}
 export interface Graphics3DWorldTimeline{duration?:number;tracks:Graphics3DTrack[];loop?:boolean}
 export type LayerClip={id:string;layerId:string;start:number;duration:number}
@@ -38,12 +38,11 @@ export interface Graphics3DMeshGeometry{vertices:number[];indices:number[];norma
 export interface Graphics3DMesh{ id:string;name?:string;geometry:Graphics3DMeshGeometry;transform:Graphics3DTransform;opacity?:number;visible?:boolean;material?:Graphics3DMaterial;provenance?:Provenance }
 export interface Graphics3DLight{ id:string;type:"ambient"|"directional"|"point"|"spot";position?:[number,number,number];rotation?:[number,number,number];color?:string;intensity?:number;distance?:number;angle?:number;penumbra?:number }
 export interface Graphics3DCamera{ id:string;name?:string;position:[number,number,number];rotation:[number,number,number];projection:"perspective"|"orthographic";fov?:number;near?:number;far?:number;zoom?:number }
-export interface Graphics3DWorld{id:string;name?:string;meshes:Graphics3DMesh[];lights?:Graphics3DLight[];cameras:Graphics3DCamera[];timeline?:Graphics3DWorldTimeline;provenance?:Provenance}
 export interface Graphics3DVisibility{mode:"all"|"include"|"exclude";objects:string[]}
 export type Graphics3DRenderMode="auto"|"prerender"|"live"; export type Graphics3DResolutionMode="auto"|"custom";
 export interface Graphics3DRenderSettings{resolutionMode?:Graphics3DResolutionMode;resolutionWidth?:number;resolutionHeight?:number;resolutionScale?:number;maxPixelRatio?:number;background?:string;backgroundOpacity?:number;shadows?:boolean;environmentColor?:string;environmentIntensity?:number}
+export interface Graphics3DWorld{id:string;name?:string;meshes:Graphics3DMesh[];lights?:Graphics3DLight[];cameras:Graphics3DCamera[];timeline?:Graphics3DWorldTimeline;provenance?:Provenance}
 export interface Graphics3DView{ id:string;name?:string;worldId:string;cameraId:string;visibility?:Graphics3DVisibility;renderMode?:Graphics3DRenderMode;renderSettings?:Graphics3DRenderSettings;renderAssetId:string;x:number;y:number;width:number;height:number;rotation?:number;opacity?:number;provenance?:Provenance;worldTime?:WorldTimeMapping}
-export interface Viewport{id:string;name:string;width:number;height:number;compositionIds?:string[];provenance?:Provenance}
 export type OutputPlaybackMode="static"|"automatic"|"user"|"live";
 export type OutputBackgroundMode="transparent"|"opaque";
 export type OutputTransitionType=SceneTransitionType;
