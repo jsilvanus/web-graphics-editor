@@ -1,5 +1,6 @@
 import type { FC } from "react";
-import type { AnimatedProperty, Layer, Scene } from "../../types";
+import type { Layer, Scene } from "../../types";
+import type { Timeline2DProperty } from "./useTimelineKeyframes";
 
 export interface SceneTimeline2DTreeProps {
   scenes: Scene[];
@@ -25,4 +26,4 @@ export const SceneTimeline2DTree: FC<SceneTimeline2DTreeProps> = ({ scenes, laye
   </>
 );
 
-export const DEFAULT_2D_PROPERTIES: AnimatedProperty[] = ["x", "y", "width", "height", "rotation", "opacity"];
+export const DEFAULT_2D_PROPERTIES: Timeline2DProperty[] = ["x", "y", "width", "height", "rotation", "opacity", "textPathStartOffset"];
