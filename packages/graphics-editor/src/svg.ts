@@ -5,10 +5,8 @@ import { buildRenderTree, type RenderNode } from "./render-model";
 function esc(value: string) { return value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 function attrs(style: Record<string, string | number> = {}) { return Object.entries(style).map(([k, v]) => `${k}="${esc(String(v))}"`).join(" "); }
 function transformFor(layer: Layer) { return `translate(${layer.x} ${layer.y}) rotate(${layer.rotation ?? 0} ${layer.width / 2} ${layer.height / 2})`; }
-
 function leafSvg(layer: Layer): string {
-  const transform = transformFor(layer);
-  const style = attrs(layer.style);
+  const transform = transformFor(layer), style = attrs(layer.style);
   if (layer.type === "path" || layer.type === "line") return `<path d="${esc(layer.nodes?.length ? nodesToD(layer.nodes, layer.closed) : layer.path ?? "")}" ${style ? style + " " : ""}transform="${transform}"/>`;
   if (layer.type === "rectangle") return `<rect x="0" y="0" width="${layer.width}" height="${layer.height}" ${style ? style + " " : ""}transform="${transform}"/>`;
   if (layer.type === "ellipse") return `<ellipse cx="${layer.width / 2}" cy="${layer.height / 2}" rx="${layer.width / 2}" ry="${layer.height / 2}" ${style ? style + " " : ""}transform="${transform}"/>`;
@@ -16,14 +14,10 @@ function leafSvg(layer: Layer): string {
   if (layer.type === "3d-view") return `<rect x="0" y="0" width="${layer.width}" height="${layer.height}" fill="none" stroke="currentColor" stroke-dasharray="8 6" ${style ? style + " " : ""}transform="${transform}"/>`;
   return `<text x="0" y="0" ${style ? style + " " : ""}transform="${transform}">${esc(layer.text ?? "")}</text>`;
 }
-
 function renderNode(node: RenderNode): string {
-  if (node.layer.type === "group") return `<g opacity="${node.opacity}" transform="${transformFor(node.layer)}">${node.children.map(renderNode).join("")}</g>`;
-  const ownOpacity = typeof node.layer.opacity === "number" ? Math.max(0, Math.min(1, node.layer.opacity)) : 1;
-  const svg = leafSvg(node.layer);
-  return ownOpacity === 1 ? svg : svg.replace(/transform="/, `opacity="${ownOpacity}" transform="`);
+  if (node.layer.type === "group") return `<g opacity="${node.opacity}">${node.children.map(renderNode).join("")}</g>`;
+  return `<g opacity="${node.opacity}">${leafSvg(node.layer)}</g>`;
 }
-
 export function exportSvg(document: GraphicsDocument): string {
   const roots = buildRenderTree(document);
   const background = document.background ? `<rect width="100%" height="100%" fill="${esc(document.background)}"/>` : "";
