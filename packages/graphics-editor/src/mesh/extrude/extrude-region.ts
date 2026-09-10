@@ -2,6 +2,7 @@ import type { Graphics3DMesh } from "../../types";
 import { faceNormal, faceVertexIndices } from "../../3d-mesh-operations";
 
 type Vec3 = [number, number, number];
+type Edge = { a: number; b: number; faces: number[] };
 
 const add = (a: Vec3, b: Vec3): Vec3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 const scale = (a: Vec3, n: number): Vec3 => [a[0] * n, a[1] * n, a[2] * n];
@@ -15,29 +16,23 @@ function edgeKey(a: number, b: number): string {
 }
 
 /**
- * Extrudes a connected set of triangular faces as one region.
- * Interior edges are kept internal; only the region boundary receives side walls.
- * A single averaged normal is used for the duplicated top region so a flat
- * multi-face selection moves as a coherent modeling region.
+ * Extrudes selected triangular faces as independent connected regions.
+ * Faces connected by an edge share their top vertices and use one averaged
+ * normal. Faces that merely touch at a vertex remain separate regions.
  */
 export function extrudeRegion(mesh: Graphics3DMesh, selectedFaces: Set<number>, distance: number): Graphics3DMesh {
   if (!selectedFaces.size || !Number.isFinite(distance)) return mesh;
 
-  const faces = [...selectedFaces].filter(i => faceVertexIndices(mesh, i) !== null).sort((a, b) => a - b);
-  if (!faces.length) return mesh;
-
-  const faceIds = new Set(faces);
   const faceVertices = new Map<number, [number, number, number]>();
   const normals = new Map<number, Vec3>();
-  const counts = new Map<number, number>();
-  const edges = new Map<string, { a: number; b: number; faces: number[] }>();
+  const edges = new Map<string, Edge>();
 
-  for (const face of faces) {
-    const ids = faceVertexIndices(mesh, face)!;
+  for (const face of [...selectedFaces].sort((a, b) => a - b)) {
+    const ids = faceVertexIndices(mesh, face);
+    if (!ids) continue;
     faceVertices.set(face, ids);
     const normal = faceNormal(mesh, face);
     if (normal) normals.set(face, normal);
-    for (const id of ids) counts.set(id, (counts.get(id) ?? 0) + 1);
     for (let i = 0; i < 3; i++) {
       const a = ids[i], b = ids[(i + 1) % 3], key = edgeKey(a, b);
       const entry = edges.get(key) ?? { a, b, faces: [] };
@@ -46,46 +41,87 @@ export function extrudeRegion(mesh: Graphics3DMesh, selectedFaces: Set<number>, 
     }
   }
 
-  // One displacement per selected vertex. This gives adjacent selected faces
-  // a shared top vertex while keeping the operation independent of face order.
-  const vertexNormals = new Map<number, Vec3>();
-  for (const [face, ids] of faceVertices) {
-    const n = normals.get(face);
-    if (!n) continue;
-    for (const id of ids) vertexNormals.set(id, add(vertexNormals.get(id) ?? [0, 0, 0], n));
+  const faces = [...faceVertices.keys()];
+  if (!faces.length) return mesh;
+
+  // Connected components are defined by shared edges, not shared vertices.
+  const adjacency = new Map<number, Set<number>>();
+  for (const face of faces) adjacency.set(face, new Set());
+  for (const edge of edges.values()) {
+    if (edge.faces.length < 2) continue;
+    for (const a of edge.faces) for (const b of edge.faces) {
+      if (a !== b) adjacency.get(a)?.add(b);
+    }
   }
+
+  const components: number[][] = [];
+  const componentOf = new Map<number, number>();
+  const visited = new Set<number>();
+  for (const start of faces) {
+    if (visited.has(start)) continue;
+    const component: number[] = [];
+    const queue = [start];
+    visited.add(start);
+    while (queue.length) {
+      const face = queue.shift()!;
+      componentOf.set(face, components.length);
+      component.push(face);
+      for (const next of adjacency.get(face) ?? []) {
+        if (visited.has(next)) continue;
+        visited.add(next);
+        queue.push(next);
+      }
+    }
+    component.sort((a, b) => a - b);
+    components.push(component);
+  }
+
+  const componentNormals = components.map(component => {
+    let sum: Vec3 = [0, 0, 0];
+    for (const face of component) {
+      const normal = normals.get(face);
+      if (normal) sum = add(sum, normal);
+    }
+    return normalize(sum);
+  });
 
   const vertices = [...mesh.geometry.vertices];
-  const topId = new Map<number, number>();
-  for (const id of vertexNormals.keys()) {
-    const base = id * 3;
-    const n = normalize(vertexNormals.get(id)!);
-    const p: Vec3 = [mesh.geometry.vertices[base], mesh.geometry.vertices[base + 1], mesh.geometry.vertices[base + 2]];
-    const v = add(p, scale(n, distance));
-    topId.set(id, vertices.length / 3);
-    vertices.push(...v);
+  // Component + vertex is intentional: vertex-only touching regions must not
+  // accidentally share a displaced vertex.
+  const topId = new Map<string, number>();
+  for (const [face, ids] of faceVertices) {
+    const component = componentOf.get(face)!;
+    const normal = componentNormals[component];
+    for (const id of ids) {
+      const key = `${component}:${id}`;
+      if (topId.has(key)) continue;
+      const base = id * 3;
+      const p: Vec3 = [mesh.geometry.vertices[base], mesh.geometry.vertices[base + 1], mesh.geometry.vertices[base + 2]];
+      topId.set(key, vertices.length / 3);
+      vertices.push(...add(p, scale(normal, distance)));
+    }
   }
 
+  const topVertex = (face: number, id: number): number => topId.get(`${componentOf.get(face)}:${id}`)!;
   const indices = [...mesh.geometry.indices];
-  // Replace each selected face with its displaced counterpart.
+
   for (const face of faces) {
     const ids = faceVertices.get(face)!;
     const base = face * 3;
-    indices[base] = topId.get(ids[0])!;
-    indices[base + 1] = topId.get(ids[1])!;
-    indices[base + 2] = topId.get(ids[2])!;
+    indices[base] = topVertex(face, ids[0]);
+    indices[base + 1] = topVertex(face, ids[1]);
+    indices[base + 2] = topVertex(face, ids[2]);
   }
 
-  // Build walls only along the boundary of the selected region.
+  // Only selected-region boundary edges receive side walls.
   for (const edge of edges.values()) {
-    if (edge.faces.length !== 1 || !faceIds.has(edge.faces[0])) continue;
-    const a = edge.a, b = edge.b;
-    const ta = topId.get(a), tb = topId.get(b);
-    if (ta === undefined || tb === undefined) continue;
-    const face = faceVertices.get(edge.faces[0])!;
-    const posA = face.indexOf(a), posB = face.indexOf(b);
-    if ((posA + 1) % 3 === posB) indices.push(a, b, tb, a, tb, ta);
-    else indices.push(a, tb, b, a, ta, tb);
+    if (edge.faces.length !== 1) continue;
+    const face = edge.faces[0];
+    const ids = faceVertices.get(face)!;
+    const ta = topVertex(face, edge.a), tb = topVertex(face, edge.b);
+    const posA = ids.indexOf(edge.a), posB = ids.indexOf(edge.b);
+    if ((posA + 1) % 3 === posB) indices.push(edge.a, edge.b, tb, edge.a, tb, ta);
+    else indices.push(edge.a, tb, edge.b, edge.a, ta, tb);
   }
 
   return { ...mesh, geometry: { ...mesh.geometry, vertices, indices, normals: undefined, uv: undefined } };
