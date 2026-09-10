@@ -4,6 +4,7 @@ import type { Graphics3DMesh } from "../../types";
 import { createHandleManager } from "./handles";
 import { bevel, extrude, insetKernel, insetLegacy } from "./operations";
 import { clearSelection, createSelection, selectedVertexIds } from "./selection";
+import { addVertex } from "../../mesh/add-vertex";
 import { moveVertices } from "../../mesh/move-vertices";
 import { translateFaces } from "../../mesh/translate-faces";
 import { weldVertices } from "../../mesh/weld-vertices";
@@ -67,6 +68,7 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
     updateData(data) { state.data = data; if (!transform.dragging) rebuild(); },
     setMode(mode) { state.mode = mode; clearSelection(selection); dragData = null; dragOrigin = null; rebuild(); },
     setFaceAction(action: FaceEditAction) { state.faceAction = action; if (action === "translate" && state.mode === "faces") rebuild(); else if (action !== "translate") transform.detach(); },
+    addVertex(position) { if (!state.data || state.mode !== "vertices") return; const before = state.data.geometry.vertices.length / 3; const next = addVertex(state.data, position); if (next === state.data) return; selection.vertices.clear(); selection.vertices.add(before); updateGeometry(next); },
     moveSelectedVertices(delta) { if (!state.data) return; const ids = selectedVertexIds(state.data, selection, state.mode); if (!ids.size) return; updateGeometry(moveVertices(state.data, ids, delta)); },
     weldSelectedVertices(tolerance = 1e-6) { if (!state.data || state.mode !== "vertices") return; const ids = [...selection.vertices]; if (!ids.length) return; updateGeometry(weldVertices(state.data, ids, tolerance)); clearSelection(selection); dragData = null; dragOrigin = null; },
     deleteSelectedVertices() { if (!state.data || state.mode !== "vertices") return; const ids = [...selection.vertices]; if (!ids.length) return; updateGeometry(deleteVertices(state.data, ids)); clearSelection(selection); dragData = null; dragOrigin = null; },
