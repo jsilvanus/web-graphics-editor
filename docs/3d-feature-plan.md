@@ -14,7 +14,7 @@ This is the implementation roadmap for the 3D editor. Keep the architecture modu
 - [x] edge bevel
 - [x] boundary-edge bevel
 - [x] multi-edge bevel with corner closure
-- [ ] face translation
+- [x] face translation
 - [ ] robust multi-face extrusion
 - [ ] move/add/delete vertices
 - [ ] add/delete faces
@@ -94,7 +94,7 @@ This is the implementation roadmap for the 3D editor. Keep the architecture modu
 
 ## Implementation order
 
-1. Face translation
+1. ~~Face translation~~
 2. Robust multi-face extrusion
 3. Vertex operations
 4. Face/edge topology operations
