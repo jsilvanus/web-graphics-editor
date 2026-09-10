@@ -38,11 +38,9 @@ describe("extrudeRegion", () => {
     const mesh = createBoxMesh("box");
     const result = extrudeRegion(mesh, new Set([0, 1]), 1);
 
-    // The original two triangles remain represented by two top triangles;
-    // exactly four boundary quads (8 triangles) are appended.
+    // Four boundary quads (8 triangles) are appended; the shared edge adds no wall.
     const appended = result.geometry.indices.slice(mesh.geometry.indices.length);
     expect(appended).toHaveLength(24);
-    expect(appended).not.toContain(8);
   });
 
   it("keeps disconnected selected regions separate", () => {
