@@ -1,5 +1,5 @@
 import type { Graphics3DMesh } from "../types";
-import { faceVertexIndices } from "../mesh/3d-mesh-operations";
+import { faceVertexIndices } from "../3d-mesh-operations";
 import { moveVertices } from "./move-vertices";
 
 type Vec3 = [number, number, number];
