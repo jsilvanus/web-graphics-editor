@@ -5,18 +5,28 @@ import { createHandleManager } from "./handles";
 import { bevel, extrude, insetKernel, insetLegacy } from "./operations";
 import { clearSelection, createSelection, selectedVertexIds } from "./selection";
 import { moveVertices } from "../../mesh/move-vertices";
+import { translateFaces } from "../../mesh/translate-faces";
 import { weldVertices } from "../../mesh/weld-vertices";
 import { deleteVertices } from "../../mesh/delete-vertices";
 import type { FaceEditAction, MeshEditMode, ThreeDMeshEditController } from "./types";
 
 export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camera, renderer: THREE.WebGLRenderer, onChange: (geometry: Graphics3DMesh["geometry"]) => void): ThreeDMeshEditController {
   const transform = new TransformControls(camera, renderer.domElement); scene.add(transform.getHelper());
+  transform.setMode("translate");
   const raycaster = new THREE.Raycaster(), pointer = new THREE.Vector2(), selection = createSelection();
-  const state: { mesh?: THREE.Mesh; data?: Graphics3DMesh; mode: MeshEditMode } = { mode: "object" };
+  const state: { mesh?: THREE.Mesh; data?: Graphics3DMesh; mode: MeshEditMode; faceAction: FaceEditAction } = { mode: "object", faceAction: "translate" };
   const handles = createHandleManager(scene, selection, state);
-  let dragSnapshot: number[] | null = null;
+  let dragData: Graphics3DMesh | null = null;
+  let dragOrigin: THREE.Vector3 | null = null;
 
-  const updateGeometry = (data: Graphics3DMesh) => { state.data = data; onChange(data.geometry); handles.rebuild(); };
+  const syncTransform = () => {
+    transform.detach();
+    if (state.mode !== "faces" || state.faceAction !== "translate") return;
+    const pivot = handles.group.userData.pivot as THREE.Group | undefined;
+    if (pivot && selection.faces.size) transform.attach(pivot);
+  };
+  const rebuild = () => { handles.rebuild(); syncTransform(); };
+  const updateGeometry = (data: Graphics3DMesh) => { state.data = data; onChange(data.geometry); rebuild(); };
   const onPointerDown = (event: PointerEvent) => {
     if (!state.mesh || !state.data || transform.dragging) return;
     const rect = renderer.domElement.getBoundingClientRect(); pointer.set((event.clientX - rect.left) / rect.width * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1); raycaster.setFromCamera(pointer, camera);
@@ -30,31 +40,41 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
       const hit = raycaster.intersectObject(state.mesh, false)[0]; if (hit?.faceIndex == null) return;
       toggleSelection(selection.faces, hit.faceIndex, event.shiftKey);
     } else return;
-    handles.rebuild(); dragSnapshot = [...state.data.geometry.vertices];
+    rebuild();
+    dragData = state.data;
+    const pivot = handles.group.userData.pivot as THREE.Group | undefined;
+    dragOrigin = pivot ? pivot.position.clone() : null;
   };
   const onTransform = () => {
-    if (!state.data || !dragSnapshot || state.mode === "object") return;
-    const pivot = handles.group.userData.pivot as THREE.Group | undefined; if (!pivot) return;
-    const ids = selectedVertexIds(state.data, selection, state.mode); if (!ids.size) return;
-    const center = new THREE.Vector3(); ids.forEach(id => center.add(new THREE.Vector3().fromArray(dragSnapshot!, id * 3))); center.multiplyScalar(1 / ids.size);
-    const delta = pivot.position.clone().sub(center); if (delta.lengthSq() < 1e-10) return;
-    updateGeometry(moveVertices(state.data, ids, [delta.x, delta.y, delta.z]));
-    dragSnapshot = [...state.data.geometry.vertices]; pivot.position.copy(center).add(delta);
+    if (!state.data || !dragData || state.mode === "object") return;
+    const pivot = handles.group.userData.pivot as THREE.Group | undefined;
+    if (!pivot || !dragOrigin) return;
+    const delta = pivot.position.clone().sub(dragOrigin);
+    if (delta.lengthSq() < 1e-10) return;
+    const ids = selectedVertexIds(dragData, selection, state.mode);
+    if (!ids.size) return;
+    const next = state.mode === "faces"
+      ? translateFaces(dragData, selection.faces, [delta.x, delta.y, delta.z])
+      : moveVertices(dragData, ids, [delta.x, delta.y, delta.z]);
+    state.data = next;
+    onChange(next.geometry);
   };
-  renderer.domElement.addEventListener("pointerdown", onPointerDown); transform.addEventListener("objectChange", onTransform);
+  const onTransformEnd = () => { dragData = null; dragOrigin = null; };
+  renderer.domElement.addEventListener("pointerdown", onPointerDown); transform.addEventListener("objectChange", onTransform); transform.addEventListener("dragging-changed", onTransformDraggingChanged);
+  function onTransformDraggingChanged(event: { value: boolean }) { if (!event.value) onTransformEnd(); }
   return {
-    setMesh(mesh, data) { state.mesh = mesh; state.data = data; clearSelection(selection); dragSnapshot = null; handles.rebuild(); },
-    updateData(data) { state.data = data; handles.rebuild(); },
-    setMode(mode) { state.mode = mode; clearSelection(selection); dragSnapshot = null; transform.detach(); handles.rebuild(); },
-    setFaceAction(_action: FaceEditAction) {},
+    setMesh(mesh, data) { state.mesh = mesh; state.data = data; clearSelection(selection); dragData = null; dragOrigin = null; rebuild(); },
+    updateData(data) { state.data = data; if (!transform.dragging) rebuild(); },
+    setMode(mode) { state.mode = mode; clearSelection(selection); dragData = null; dragOrigin = null; rebuild(); },
+    setFaceAction(action: FaceEditAction) { state.faceAction = action; if (action === "translate" && state.mode === "faces") rebuild(); else if (action !== "translate") transform.detach(); },
     moveSelectedVertices(delta) { if (!state.data) return; const ids = selectedVertexIds(state.data, selection, state.mode); if (!ids.size) return; updateGeometry(moveVertices(state.data, ids, delta)); },
-    weldSelectedVertices(tolerance = 1e-6) { if (!state.data || state.mode !== "vertices") return; const ids = [...selection.vertices]; if (!ids.length) return; updateGeometry(weldVertices(state.data, ids, tolerance)); clearSelection(selection); dragSnapshot = null; },
-    deleteSelectedVertices() { if (!state.data || state.mode !== "vertices") return; const ids = [...selection.vertices]; if (!ids.length) return; updateGeometry(deleteVertices(state.data, ids)); clearSelection(selection); dragSnapshot = null; },
+    weldSelectedVertices(tolerance = 1e-6) { if (!state.data || state.mode !== "vertices") return; const ids = [...selection.vertices]; if (!ids.length) return; updateGeometry(weldVertices(state.data, ids, tolerance)); clearSelection(selection); dragData = null; dragOrigin = null; },
+    deleteSelectedVertices() { if (!state.data || state.mode !== "vertices") return; const ids = [...selection.vertices]; if (!ids.length) return; updateGeometry(deleteVertices(state.data, ids)); clearSelection(selection); dragData = null; dragOrigin = null; },
     extrudeSelectedFace(distance) { if (!state.data || !selection.faces.size) return; updateGeometry(extrude(state.data, selection.faces, distance)); },
     insetSelectedFace(amount) { if (!state.data || !selection.faces.size) return; updateGeometry(insetKernel(state.data, selection.faces, amount)); },
     insetSelectedFaceLegacy(amount) { if (!state.data || !selection.faces.size) return; updateGeometry(insetLegacy(state.data, selection.faces, amount)); },
     bevelSelectedEdges(amount) { if (!state.data || !selection.edges.size) return; updateGeometry(bevel(state.data, selection.edges, amount)); },
-    dispose() { renderer.domElement.removeEventListener("pointerdown", onPointerDown); transform.removeEventListener("objectChange", onTransform); transform.detach(); transform.dispose(); handles.removePivot(); handles.clear(); scene.remove(handles.group); }
+    dispose() { renderer.domElement.removeEventListener("pointerdown", onPointerDown); transform.removeEventListener("objectChange", onTransform); transform.removeEventListener("dragging-changed", onTransformDraggingChanged); transform.detach(); transform.dispose(); handles.removePivot(); handles.clear(); scene.remove(handles.group); }
   };
 }
 
