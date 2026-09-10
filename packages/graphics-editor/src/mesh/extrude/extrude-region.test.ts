@@ -11,13 +11,8 @@ describe("extrudeRegion", () => {
     const mesh = createBoxMesh("box");
     const result = extrudeRegion(mesh, new Set([0, 1]), 1);
 
-    // Two selected triangles form one quad. The shared edge stays internal,
-    // so only four boundary edges receive side walls.
     expect(result.geometry.vertices).toHaveLength(mesh.geometry.vertices.length + 4 * 3);
     expect(result.geometry.indices).toHaveLength(mesh.geometry.indices.length + 4 * 6);
-
-    // The first box face points toward -Z; its four top vertices therefore move
-    // one unit in -Z.
     expect(vertices(result, [8, 9, 10, 11])).toEqual([
       [-0.5, -0.5, -1.5],
       [0.5, -0.5, -1.5],
@@ -37,8 +32,6 @@ describe("extrudeRegion", () => {
   it("does not create an internal wall between selected faces", () => {
     const mesh = createBoxMesh("box");
     const result = extrudeRegion(mesh, new Set([0, 1]), 1);
-
-    // Four boundary quads (8 triangles) are appended; the shared edge adds no wall.
     const appended = result.geometry.indices.slice(mesh.geometry.indices.length);
     expect(appended).toHaveLength(24);
   });
@@ -46,11 +39,15 @@ describe("extrudeRegion", () => {
   it("keeps disconnected selected regions separate", () => {
     const mesh = createBoxMesh("box");
     const result = extrudeRegion(mesh, new Set([0, 2]), 1);
-
-    // These faces do not share an edge, so each gets its own three top vertices
-    // and three side-wall quads.
     expect(result.geometry.vertices).toHaveLength(mesh.geometry.vertices.length + 6 * 3);
     expect(result.geometry.indices).toHaveLength(mesh.geometry.indices.length + 6 * 6);
+  });
+
+  it("does not weld regions that only touch at a vertex", () => {
+    const mesh = createBoxMesh("box");
+    // Faces 0 and 6 share vertex 2 but do not share an edge.
+    const result = extrudeRegion(mesh, new Set([0, 6]), 1);
+    expect(result.geometry.vertices).toHaveLength(mesh.geometry.vertices.length + 6 * 3);
   });
 
   it("ignores empty, invalid, and non-finite requests", () => {
