@@ -23,6 +23,7 @@ export interface ThreeDMeshEditController {
   updateData: (data: Graphics3DMesh | undefined) => void;
   setMode: (mode: MeshEditMode) => void;
   setFaceAction: (action: FaceEditAction) => void;
+  addVertex: (position: [number, number, number]) => void;
   moveSelectedVertices: (delta: [number, number, number]) => void;
   weldSelectedVertices: (tolerance?: number) => void;
   deleteSelectedVertices: () => void;
