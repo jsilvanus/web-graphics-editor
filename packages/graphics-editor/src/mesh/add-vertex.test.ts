@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createBoxMesh } from "../3d-mesh";
+import { createBoxMesh } from "../3d-primitives";
 import { addVertex } from "./add-vertex";
 
 const meshWithGeometry = () => ({
