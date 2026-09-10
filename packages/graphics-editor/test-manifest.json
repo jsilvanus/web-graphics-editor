@@ -15,7 +15,7 @@
         {"id":"geometry","files":["src/geometry.test.ts","src/geometry/path.test.ts","src/spatial-interpolation.test.ts"]},
         {"id":"3d-core","files":["src/3d.test.ts","src/3d-animation.test.ts","src/3d-mesh.test.ts"]},
         {"id":"3d-rendering","files":["src/3d-renderer.test.ts","src/3d-render-cache.test.ts"]},
-        {"id":"mesh-topology","files":["src/mesh/validate.test.ts","src/mesh/half-edge.test.ts","src/mesh/graphics-mesh.test.ts","src/mesh/split-edge.test.ts","src/mesh/delete-vertices.test.ts","src/mesh/weld-vertices.test.ts","src/mesh/translate-faces.test.ts","src/mesh/bevel/bevel-edge.test.ts"]},
+        {"id":"mesh-topology","files":["src/mesh/validate.test.ts","src/mesh/half-edge.test.ts","src/mesh/graphics-mesh.test.ts","src/mesh/split-edge.test.ts","src/mesh/delete-vertices.test.ts","src/mesh/weld-vertices.test.ts","src/mesh/translate-faces.test.ts","src/mesh/extrude/extrude-region.test.ts","src/mesh/bevel/bevel-edge.test.ts"]},
         {"id":"document-model","files":["src/model-primitives.test.ts","src/document.test.ts","src/layer-tree.test.ts","src/render-model.test.ts"]},
         {"id":"world-animation","files":["src/world-animation.test.ts","src/world-time.test.ts","src/world-keyframe-edit.test.ts"]}
       ]
