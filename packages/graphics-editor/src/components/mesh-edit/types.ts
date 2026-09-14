@@ -24,9 +24,11 @@ export interface ThreeDMeshEditController {
   setMode: (mode: MeshEditMode) => void;
   setFaceAction: (action: FaceEditAction) => void;
   addVertex: (position: [number, number, number]) => void;
+  addFaceFromSelection: () => void;
   moveSelectedVertices: (delta: [number, number, number]) => void;
   weldSelectedVertices: (tolerance?: number) => void;
   deleteSelectedVertices: () => void;
+  deleteSelectedFaces: () => void;
   extrudeSelectedFace: (distance: number) => void;
   insetSelectedFace: (amount: number) => void;
   insetSelectedFaceLegacy: (amount: number) => void;
