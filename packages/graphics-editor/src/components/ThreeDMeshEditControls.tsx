@@ -16,6 +16,7 @@ export function ThreeDMeshEditControls({ mode, controller, disabled = false }: T
     {mode === "vertices" && <>
       <span style={{ fontSize: 12 }}>Vertex</span>
       <button disabled={disabled || !controller} onClick={() => controller?.addVertex([0, 0, 0])}>Add</button>
+      <button disabled={disabled || !controller} onClick={() => controller?.addFaceFromSelection()} title="Create a triangle from exactly three selected vertices">Add Face</button>
       <button disabled={disabled || !controller} onClick={() => controller?.moveSelectedVertices([0, distance, 0])}>Move +Y</button>
       <label style={{ fontSize: 12 }}>Step <input aria-label="Vertex move step" type="number" step="0.1" value={distance} onChange={event => setDistance(Number(event.target.value) || 0)} style={{ width: 64 }} /></label>
       <button disabled={disabled || !controller} onClick={() => controller?.weldSelectedVertices(weldTolerance)}>Weld</button>
@@ -33,6 +34,7 @@ export function ThreeDMeshEditControls({ mode, controller, disabled = false }: T
       <button disabled={disabled || !controller} onClick={() => controller?.setFaceAction("translate")}>Move</button>
       <button disabled={disabled || !controller} onClick={() => controller?.extrudeSelectedFace(distance)}>Extrude</button>
       <button disabled={disabled || !controller} onClick={() => controller?.insetSelectedFace(distance)}>Inset</button>
+      <button disabled={disabled || !controller} onClick={() => controller?.deleteSelectedFaces()}>Delete</button>
     </>}
   </div>;
 }
