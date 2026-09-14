@@ -73,9 +73,9 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
     addFaceFromSelection() {
       if (!state.data || state.mode !== "vertices" || selection.vertices.size !== 3) return;
       const vertices = [...selection.vertices] as [number, number, number];
-      updateGeometry(addGraphicsMeshFace(state.data, vertices));
-      selection.vertices.clear();
-      selection.faces.clear();
+      const next = addGraphicsMeshFace(state.data, vertices);
+      clearSelection(selection);
+      updateGeometry(next);
     },
     moveSelectedVertices(delta) { if (!state.data) return; const ids = selectedVertexIds(state.data, selection, state.mode); if (!ids.size) return; updateGeometry(moveVertices(state.data, ids, delta)); },
     weldSelectedVertices(tolerance = 1e-6) { if (!state.data || state.mode !== "vertices") return; const ids = [...selection.vertices]; if (!ids.length) return; updateGeometry(weldVertices(state.data, ids, tolerance)); clearSelection(selection); dragData = null; dragOrigin = null; },
@@ -84,8 +84,8 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
       if (!state.data || state.mode !== "faces" || !selection.faces.size) return;
       let next = state.data;
       for (const faceId of [...selection.faces].sort((a, b) => b - a)) next = deleteGraphicsMeshFace(next, faceId);
-      updateGeometry(next);
       clearSelection(selection);
+      updateGeometry(next);
       dragData = null;
       dragOrigin = null;
     },
