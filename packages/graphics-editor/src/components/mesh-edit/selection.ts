@@ -168,45 +168,20 @@ function vertexDirection(data: Graphics3DMesh, from: number, to: number): THREE.
 }
 
 /**
- * Selects the edge ring around a selected edge. For triangular meshes this is
- * the geometric continuation of the loop on the adjacent face strip: at each
- * step we choose the edge in the neighboring face whose direction is most
- * parallel to the original edge direction.
+ * Selects the geometric edge ring: all edges whose direction is parallel to
+ * the starting edge. On triangulated meshes this gives a useful ring even
+ * when the original quad structure is no longer explicitly represented.
  */
 export function selectEdgeRing(data: Graphics3DMesh, startKey: string): Set<string> {
   const edges = meshEdges(data);
   const start = edges.find(edge => edgeKey(edge.a, edge.b) === startKey);
   if (!start) return new Set();
 
-  const result = new Set<string>([startKey]);
-  const queue = [startKey];
   const target = vertexDirection(data, start.a, start.b).normalize();
-  const edgeByKey = new Map(edges.map(edge => [edgeKey(edge.a, edge.b), edge]));
-
-  while (queue.length) {
-    const key = queue.shift()!;
-    const edge = edgeByKey.get(key);
-    if (!edge) continue;
-
-    for (const face of edge.faces) {
-      const ids = faceVertexIndices(data, face);
-      if (!ids) continue;
-      for (let i = 0; i < ids.length; i++) {
-        const a = ids[i];
-        const b = ids[(i + 1) % ids.length];
-        const candidateKey = edgeKey(a, b);
-        if (candidateKey === key) continue;
-        const candidate = edgeByKey.get(candidateKey);
-        if (!candidate || result.has(candidateKey)) continue;
-
-        const direction = vertexDirection(data, candidate.a, candidate.b).normalize();
-        const parallel = Math.abs(target.dot(direction));
-        if (parallel >= 0.85) {
-          result.add(candidateKey);
-          queue.push(candidateKey);
-        }
-      }
-    }
+  const result = new Set<string>();
+  for (const edge of edges) {
+    const direction = vertexDirection(data, edge.a, edge.b).normalize();
+    if (Math.abs(target.dot(direction)) >= 0.85) result.add(edgeKey(edge.a, edge.b));
   }
   return result;
 }
