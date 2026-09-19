@@ -88,7 +88,7 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
       dragData = null;
       dragOrigin = null;
     },
-    extrudeSelectedFace(distance) { if (!state.data || !selection.faces.size) return; updateGeometry(extrude(state.data, selection.faces, distance)); },
+    extrudeSelectedFaces(distance) { if (!state.data || state.mode !== "faces" || !selection.faces.size) return; updateGeometry(extrude(state.data, selection.faces, distance)); },
     insetSelectedFace(amount) { if (!state.data || !selection.faces.size) return; updateGeometry(insetKernel(state.data, selection.faces, amount)); },
     insetSelectedFaceLegacy(amount) { if (!state.data || !selection.faces.size) return; updateGeometry(insetLegacy(state.data, selection.faces, amount)); },
     bevelSelectedEdges(amount) { if (!state.data || !selection.edges.size) return; updateGeometry(bevel(state.data, selection.edges, amount)); },
