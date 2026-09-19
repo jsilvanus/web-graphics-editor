@@ -41,14 +41,10 @@ export function connectGraphicsMeshEdges(
   topology = splitEdge(topology, firstEdgeId);
   pointIds.push(firstPoint);
 
-  for (const crossingEdgeId of path.crossingEdges) {
-    const edge = topology.edges.find(candidate => candidate.id === crossingEdgeId);
-    if (!edge) throw new Error(`Cut path edge disappeared: ${crossingEdgeId}`);
+  for (const [a, b] of path.crossingEdges) {
     const point = topology.positions.length / 3;
-    const a = topology.halfEdges[edge.halfEdge].vertex;
-    const b = topology.halfEdges[topology.halfEdges[edge.halfEdge].next].vertex;
     const currentEdgeId = edgeIdForVertices(topology, a, b);
-    if (currentEdgeId === null) throw new Error("Cut path edge could not be resolved");
+    if (currentEdgeId === null) throw new Error(`Cut path edge disappeared: ${a}:${b}`);
     topology = splitEdge(topology, currentEdgeId);
     pointIds.push(point);
   }
@@ -79,17 +75,17 @@ export function connectGraphicsMeshEdges(
   return { mesh: graphicsMeshFromTopology(source, topology), newFaceIds };
 }
 
-function findFacePath(mesh: HalfEdgeMesh, startEdgeId: number, endEdgeId: number): { crossingEdges: number[] } | null {
+function findFacePath(mesh: HalfEdgeMesh, startEdgeId: number, endEdgeId: number): { crossingEdges: [number, number][] } | null {
   const startFaces = edgeFaces(mesh, startEdgeId);
   const targetFaces = new Set(edgeFaces(mesh, endEdgeId));
   const queue = [...startFaces];
-  const previous = new Map<number, { face: number; edge: number }>();
+  const previous = new Map<number, { face: number; edge: [number, number] }>();
   const seen = new Set(queue);
 
   while (queue.length) {
     const face = queue.shift()!;
     if (targetFaces.has(face)) {
-      const crossingEdges: number[] = [];
+      const crossingEdges: [number, number][] = [];
       let current = face;
       while (!startFaces.includes(current)) {
         const step = previous.get(current);
@@ -107,11 +103,18 @@ function findFacePath(mesh: HalfEdgeMesh, startEdgeId: number, endEdgeId: number
       const neighbor = mesh.halfEdges[h.twin].face;
       if (edge.id === startEdgeId || edge.id === endEdgeId || seen.has(neighbor)) continue;
       seen.add(neighbor);
-      previous.set(neighbor, { face, edge: edge.id });
+      previous.set(neighbor, { face, edge: edgeVertices(mesh, edge.id) });
       queue.push(neighbor);
     }
   }
   return null;
+}
+
+function edgeVertices(mesh: HalfEdgeMesh, edgeId: number): [number, number] {
+  const edge = mesh.edges.find(candidate => candidate.id === edgeId);
+  if (!edge) throw new Error(`Missing edge ${edgeId}`);
+  const h = mesh.halfEdges[edge.halfEdge];
+  return [h.vertex, mesh.halfEdges[h.next].vertex];
 }
 
 function findFaceContainingVertices(mesh: HalfEdgeMesh, a: number, b: number): number | null {
