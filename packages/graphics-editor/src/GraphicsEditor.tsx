@@ -29,6 +29,27 @@ import type { GraphicsAsset, GraphicsEditorProps, GraphicsDocument, Graphics3DVi
 export function GraphicsEditor({ document: initialDocument, assets = [], onChange }: GraphicsEditorProps) {
   const { document, setDocument, executeCommand, undo, redo, canUndo, canRedo, resetHistory, history } = useEditorHistory(initialDocument);
   useEditorKeyboard(undo, redo);
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!selectedIds.size || event.ctrlKey || event.metaKey || event.altKey) return;
+      if (!["ArrowLeft","ArrowRight","ArrowUp","ArrowDown","[","]"].includes(event.key)) return;
+      const step = event.shiftKey ? 10 : 1;
+      const ids = new Set(selectedIds);
+      const next = { ...document, layers: document.layers.map(layer => {
+        if (!ids.has(layer.id)) return layer;
+        if (event.key === "ArrowLeft") return { ...layer, x: layer.x - step };
+        if (event.key === "ArrowRight") return { ...layer, x: layer.x + step };
+        if (event.key === "ArrowUp") return { ...layer, y: layer.y - step };
+        if (event.key === "ArrowDown") return { ...layer, y: layer.y + step };
+        const delta = event.key === "[" ? -15 : 15;
+        return { ...layer, rotation: (layer.rotation ?? 0) + delta };
+      }) };
+      event.preventDefault();
+      setDocument(next, true);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [document, selectedIds, setDocument]);
   const initialDocumentRef = useRef(initialDocument);
   const { selectedIds, primaryId, select, clear } = useEditorSelection(document.layers[0]?.id ?? null);
   const [grid, setGrid] = useState(false), [safe, setSafe] = useState(false), [aspectLock, setAspectLock] = useState(true), [assetPicker, setAssetPicker] = useState(false);
