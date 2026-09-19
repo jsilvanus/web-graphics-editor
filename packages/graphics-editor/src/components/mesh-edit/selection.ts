@@ -79,3 +79,134 @@ export function faceHandleGeometry(data: Graphics3DMesh, mesh: THREE.Mesh, face:
   geometry.setAttribute("position", new THREE.BufferAttribute(values, 3));
   return geometry;
 }
+
+/**
+ * Selects a geometric edge loop. At each endpoint the continuation is the
+ * incident edge whose direction is most opposite to the incoming edge.
+ * This remains useful on triangulated meshes, where a strict quad-only
+ * topological loop is not always defined.
+ */
+export function selectEdgeLoop(data: Graphics3DMesh, startKey: string): Set<string> {
+  const edges = meshEdges(data);
+  const byVertex = new Map<number, typeof edges>();
+  for (const edge of edges) {
+    for (const vertex of [edge.a, edge.b]) {
+      const list = byVertex.get(vertex) ?? [];
+      list.push(edge);
+      byVertex.set(vertex, list);
+    }
+  }
+  const start = edges.find(edge => edgeKey(edge.a, edge.b) === startKey);
+  if (!start) return new Set();
+
+  const result = new Set<string>([edgeKey(start.a, start.b)]);
+  walkEdgeChain(data, start.a, start.b, start, byVertex, result);
+  walkEdgeChain(data, start.b, start.a, start, byVertex, result);
+  return result;
+}
+
+function walkEdgeChain(
+  data: Graphics3DMesh,
+  vertex: number,
+  previousVertex: number,
+  previousEdge: { a: number; b: number },
+  byVertex: Map<number, ReturnType<typeof meshEdges>>,
+  result: Set<string>,
+) {
+  const visitedVertices = new Set<number>();
+  let currentVertex = vertex;
+  let incomingVertex = previousVertex;
+  let incomingEdge = previousEdge;
+
+  while (!visitedVertices.has(currentVertex)) {
+    visitedVertices.add(currentVertex);
+    const candidates = (byVertex.get(currentVertex) ?? []).filter(edge =>
+      edgeKey(edge.a, edge.b) !== edgeKey(incomingEdge.a, incomingEdge.b)
+    );
+    const next = bestContinuation(data, currentVertex, incomingVertex, candidates);
+    if (!next) return;
+
+    const key = edgeKey(next.a, next.b);
+    if (result.has(key)) return;
+    result.add(key);
+
+    const nextVertex = next.a === currentVertex ? next.b : next.a;
+    incomingVertex = currentVertex;
+    currentVertex = nextVertex;
+    incomingEdge = next;
+  }
+}
+
+function bestContinuation(
+  data: Graphics3DMesh,
+  vertex: number,
+  previousVertex: number,
+  candidates: ReturnType<typeof meshEdges>,
+) {
+  if (!candidates.length) return undefined;
+  const previous = vertexDirection(data, vertex, previousVertex);
+  let best = candidates[0];
+  let bestScore = -Infinity;
+
+  for (const candidate of candidates) {
+    const other = candidate.a === vertex ? candidate.b : candidate.a;
+    const direction = vertexDirection(data, vertex, other);
+    const denominator = Math.max(previous.length() * direction.length(), 1e-8);
+    const score = -(previous.dot(direction)) / denominator;
+    if (score > bestScore) {
+      bestScore = score;
+      best = candidate;
+    }
+  }
+  return best;
+}
+
+function vertexDirection(data: Graphics3DMesh, from: number, to: number): THREE.Vector3 {
+  const a = new THREE.Vector3().fromArray(data.geometry.vertices, from * 3);
+  const b = new THREE.Vector3().fromArray(data.geometry.vertices, to * 3);
+  return b.sub(a);
+}
+
+/**
+ * Selects the edge ring around a selected edge. For triangular meshes this is
+ * the geometric continuation of the loop on the adjacent face strip: at each
+ * step we choose the edge in the neighboring face whose direction is most
+ * parallel to the original edge direction.
+ */
+export function selectEdgeRing(data: Graphics3DMesh, startKey: string): Set<string> {
+  const edges = meshEdges(data);
+  const start = edges.find(edge => edgeKey(edge.a, edge.b) === startKey);
+  if (!start) return new Set();
+
+  const result = new Set<string>([startKey]);
+  const queue = [startKey];
+  const target = vertexDirection(data, start.a, start.b).normalize();
+  const edgeByKey = new Map(edges.map(edge => [edgeKey(edge.a, edge.b), edge]));
+
+  while (queue.length) {
+    const key = queue.shift()!;
+    const edge = edgeByKey.get(key);
+    if (!edge) continue;
+
+    for (const face of edge.faces) {
+      const ids = faceVertexIndices(data, face);
+      if (!ids) continue;
+      for (let i = 0; i < ids.length; i++) {
+        const a = ids[i];
+        const b = ids[(i + 1) % ids.length];
+        const candidateKey = edgeKey(a, b);
+        if (candidateKey === key) continue;
+        const candidate = edgeByKey.get(candidateKey);
+        if (!candidate || result.has(candidateKey)) continue;
+
+        const direction = vertexDirection(data, candidate.a, candidate.b).normalize();
+        const parallel = Math.abs(target.dot(direction));
+        if (parallel >= 0.85) {
+          result.add(candidateKey);
+          queue.push(candidateKey);
+        }
+      }
+    }
+  }
+  return result;
+}
