@@ -64,6 +64,40 @@ describe("half-edge mesh validation", () => {
     expect(result.errors).toContain("positions length is not divisible by 3");
   });
 
+  it("reports duplicate directed edges", () => {
+    const mesh = fromPolygons({
+      positions: [0,0,0, 1,0,0, 0,1,0, 1,1,0],
+      faces: [[0,1,2], [0,1,3]],
+    });
+
+    const result = validateHalfEdgeMesh(mesh);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some(error => error.includes("duplicate directed half-edge 0:1"))).toBe(true);
+  });
+
+  it("reports a non-manifold edge", () => {
+    const mesh = fromPolygons({
+      positions: [0,0,0, 1,0,0, 0,1,0, 0,-1,0, 0,0,1],
+      faces: [[0,1,2], [1,0,3], [0,1,4]],
+    });
+
+    const result = validateHalfEdgeMesh(mesh);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some(error => error.includes("non-manifold edge 0:1"))).toBe(true);
+  });
+
+  it("reports an unreferenced half-edge", () => {
+    const mesh = fromPolygons({
+      positions: [0,0,0, 1,0,0, 0,1,0],
+      faces: [[0,1,2]],
+    });
+    mesh.halfEdges.push({ id: 99, vertex: 0, twin: null, next: 1, face: 0 });
+
+    const result = validateHalfEdgeMesh(mesh);
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("half-edge 99: not referenced by any face cycle");
+  });
+
   it("reports boundary cycles that do not close", () => {
     const mesh = fromPolygons({
       positions: [0,0,0, 1,0,0, 0,1,0],
