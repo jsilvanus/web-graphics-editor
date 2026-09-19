@@ -27,6 +27,7 @@ export interface ThreeDMeshEditController {
   redo: () => void;
   canUndo: () => boolean;
   canRedo: () => boolean;
+  subscribeHistory: (listener: () => void) => () => void;
   addVertex: (position: [number, number, number]) => void;
   addFaceFromSelection: () => void;
   moveSelectedVertices: (delta: [number, number, number]) => void;
