@@ -32,8 +32,8 @@ export function ThreeDMeshEditControls({ mode, controller, disabled = false }: T
     </>}
     {mode === "edges" && <>
       <span style={{ fontSize: 12 }}>Edge</span>
-      <label style={{ fontSize: 12 }}>Amount <input aria-label="Edge operation amount" type="number" min="0" step="0.1" value={distance} onChange={event => setDistance(Number(event.target.value) || 0)} style={{ width: 64 }} /></label>
-      <button disabled={disabled || !controller} onClick={() => controller?.bevelSelectedEdges(distance)}>Bevel</button>
+      <span style={{ fontSize: 12 }}>Drag gizmo for amount</span>
+      <button disabled={disabled || !controller} onClick={() => controller?.setFaceAction("bevel")}>Bevel</button>
       <button disabled={disabled || !controller} onClick={() => controller?.splitSelectedEdges()}>Split</button>
       <button disabled={disabled || !controller} onClick={() => controller?.connectSelectedEdges()}>Connect (2)</button>
     </>}
@@ -43,7 +43,7 @@ export function ThreeDMeshEditControls({ mode, controller, disabled = false }: T
       <button disabled={disabled || !controller} onClick={() => controller?.setFaceAction("translate")}>Move</button>
       <button disabled={disabled || !controller} onClick={() => controller?.setFaceAction("scale")}>Scale</button>
       <button disabled={disabled || !controller} onClick={() => controller?.extrudeSelectedFaces(distance)}>Extrude</button>
-      <button disabled={disabled || !controller} onClick={() => controller?.insetSelectedFace(distance)}>Inset</button>
+      <button disabled={disabled || !controller} onClick={() => controller?.setFaceAction("inset")}>Inset</button>
       <button disabled={disabled || !controller} onClick={() => controller?.growSelectedFaces()}>Grow</button>
       <button disabled={disabled || !controller} onClick={() => controller?.shrinkSelectedFaces()}>Shrink</button>
       <button disabled={disabled || !controller} onClick={() => controller?.deleteSelectedFaces()}>Delete</button>
