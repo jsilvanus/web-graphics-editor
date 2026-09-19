@@ -24,6 +24,7 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
   const syncTransform = () => {
     transform.detach();
     if (state.mode !== "faces" || !["translate", "extrude"].includes(state.faceAction)) return;
+    transform.setSpace(state.faceAction === "extrude" ? "local" : "world");
     const pivot = handles.group.userData.pivot as THREE.Group | undefined;
     if (pivot && selection.faces.size) transform.attach(pivot);
   };
