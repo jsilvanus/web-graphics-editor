@@ -8,6 +8,7 @@ import { addVertex } from "../../mesh/add-vertex";
 import { addGraphicsMeshFace, deleteGraphicsMeshFace } from "../../mesh/graphics-mesh-faces";
 import { moveVertices } from "../../mesh/move-vertices";
 import { scaleVertices } from "../../mesh/scale-vertices";
+import { duplicateFaces, extractFaces } from "../../mesh/extract-faces";
 import { translateFaces } from "../../mesh/translate-faces";
 import { weldVertices } from "../../mesh/weld-vertices";
 import { deleteVertices } from "../../mesh/delete-vertices";
@@ -219,6 +220,23 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
       updateGeometry(next, before);
       dragData = null;
       dragOrigin = null;
+    },
+    duplicateSelectedFaces() {
+      if (!state.data || state.mode !== "faces" || !selection.faces.size) return;
+      const before = currentSnapshot();
+      updateGeometry(duplicateFaces(state.data, selection.faces), before);
+    },
+    extractSelectedFaces() {
+      if (!state.data || state.mode !== "faces" || !selection.faces.size) return;
+      const extracted = extractFaces(state.data, selection.faces);
+      if (!extracted) return;
+      const before = currentSnapshot();
+      let next = state.data;
+      for (const faceId of [...selection.faces].sort((a, b) => b - a)) {
+        next = deleteGraphicsMeshFace(next, faceId);
+      }
+      clearSelection(selection);
+      updateGeometry(next, before);
     },
     extrudeSelectedFaces(distance) {
       if (!state.data || state.mode !== "faces" || !selection.faces.size) return;
