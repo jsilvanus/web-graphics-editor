@@ -3,13 +3,14 @@ import type { Graphics3DMesh } from "../../types";
 import { edgeKey, meshEdges } from "../../3d-mesh-topology";
 import type { MeshEditMode, MeshEditSelection } from "./types";
 import { faceHandleGeometry } from "./selection";
+import { faceNormal } from "../../3d-mesh-operations";
 
 export interface HandleManager {
   group: THREE.Group;
   clear: () => void;
   rebuild: () => void;
   removePivot: () => void;
-  setPivot: (position: THREE.Vector3) => void;
+  setPivot: (position: THREE.Vector3, orientation?: THREE.Quaternion) => void;
 }
 
 export function createHandleManager(scene: THREE.Scene, selection: MeshEditSelection, state: { mesh?: THREE.Mesh; data?: Graphics3DMesh; mode: MeshEditMode }): HandleManager {
@@ -31,10 +32,11 @@ export function createHandleManager(scene: THREE.Scene, selection: MeshEditSelec
     const pivot = group.userData.pivot as THREE.Object3D | undefined;
     if (pivot) { scene.remove(pivot); group.userData.pivot = undefined; }
   };
-  const setPivot = (position: THREE.Vector3) => {
+  const setPivot = (position: THREE.Vector3, orientation?: THREE.Quaternion) => {
     removePivot();
     const pivot = new THREE.Group();
     pivot.position.copy(position);
+    if (orientation) pivot.quaternion.copy(orientation);
     group.userData.pivot = pivot;
     scene.add(pivot);
   };
@@ -64,7 +66,18 @@ export function createHandleManager(scene: THREE.Scene, selection: MeshEditSelec
         handle.userData.faceIndex = face; handle.renderOrder = 10; group.add(handle);
         const ids = geometry.getAttribute("position"); for (let i = 0; i < ids.count; i++) { center.fromBufferAttribute(ids, i); count++; }
       }
-      if (count) setPivot(center.multiplyScalar(1 / count));
+      if (count) {
+        const averageNormal = new THREE.Vector3();
+        for (const face of selection.faces) {
+          const normal = faceNormal(data, face);
+          if (normal) averageNormal.add(new THREE.Vector3(normal[0], normal[1], normal[2]));
+        }
+        averageNormal.normalize();
+        const orientation = averageNormal.lengthSq() > 1e-8
+          ? new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), averageNormal)
+          : undefined;
+        setPivot(center.multiplyScalar(1 / count), orientation);
+      }
     }
   };
   return { group, clear, rebuild, removePivot, setPivot };
