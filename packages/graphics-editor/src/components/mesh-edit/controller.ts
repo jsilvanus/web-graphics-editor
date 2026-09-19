@@ -3,7 +3,7 @@ import { TransformControls } from "three/examples/jsm/controls/TransformControls
 import type { Graphics3DMesh } from "../../types";
 import { createHandleManager } from "./handles";
 import { bevel, connectEdges, extrude, flipMeshFaces, insetKernel, insetLegacy, recalculateMeshNormals, splitEdges } from "./operations";
-import { clearSelection, createSelection, growFaceSelection as growSelection, selectedVertexIds, shrinkFaceSelection as shrinkSelection } from "./selection";
+import { clearSelection, createSelection, growFaceSelection as growSelection, selectedVertexIds, selectEdgeLoop, selectEdgeRing, shrinkFaceSelection as shrinkSelection } from "./selection";
 import { addVertex } from "../../mesh/add-vertex";
 import { addGraphicsMeshFace, deleteGraphicsMeshFace } from "../../mesh/graphics-mesh-faces";
 import { moveVertices } from "../../mesh/move-vertices";
@@ -243,6 +243,18 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
       const next = connectEdges(state.data, new Set(selection.edges));
       clearSelection(selection);
       updateGeometry(next, before);
+    },
+    selectEdgeLoop() {
+      if (!state.data || state.mode !== "edges" || selection.edges.size !== 1) return;
+      const key = [...selection.edges][0];
+      selection.edges = selectEdgeLoop(state.data, key);
+      rebuild();
+    },
+    selectEdgeRing() {
+      if (!state.data || state.mode !== "edges" || selection.edges.size !== 1) return;
+      const key = [...selection.edges][0];
+      selection.edges = selectEdgeRing(state.data, key);
+      rebuild();
     },
     growSelectedFaces() {
       if (!state.data || state.mode !== "faces" || !selection.faces.size) return;
