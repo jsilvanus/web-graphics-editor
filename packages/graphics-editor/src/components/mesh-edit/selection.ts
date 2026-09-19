@@ -81,12 +81,44 @@ export function faceHandleGeometry(data: Graphics3DMesh, mesh: THREE.Mesh, face:
 }
 
 /**
- * Selects a geometric edge loop. At each endpoint the continuation is the
- * incident edge whose direction is most opposite to the incoming edge.
- * This remains useful on triangulated meshes, where a strict quad-only
- * topological loop is not always defined.
+ * Selects an edge loop using inferred quad topology where possible. A pair of
+ * coplanar triangles sharing a diagonal is treated as one logical quad; loop
+ * traversal then crosses the quad through opposite boundary edges. The
+ * geometric traversal remains the fallback for genuinely triangular regions.
  */
 export function selectEdgeLoop(data: Graphics3DMesh, startKey: string): Set<string> {
+  const edges = meshEdges(data);
+  const start = edges.find(edge => edgeKey(edge.a, edge.b) === startKey);
+  if (!start) return new Set();
+
+  const quads = inferLogicalQuads(data);
+  const opposite = new Map<string, string>();
+  for (const quad of quads) {
+    for (let i = 0; i < quad.boundary.length; i++) {
+      opposite.set(quad.boundary[i], quad.boundary[(i + 2) % quad.boundary.length]);
+    }
+  }
+
+  if (opposite.has(startKey)) {
+    const result = new Set<string>([startKey]);
+    walkOppositeEdges(startKey, opposite, result);
+    return result;
+  }
+
+  return selectGeometricEdgeLoop(data, startKey);
+}
+
+function walkOppositeEdges(startKey: string, opposite: Map<string, string>, result: Set<string>) {
+  let current = startKey;
+  while (true) {
+    const next = opposite.get(current);
+    if (!next || result.has(next)) return;
+    result.add(next);
+    current = next;
+  }
+}
+
+function selectGeometricEdgeLoop(data: Graphics3DMesh, startKey: string): Set<string> {
   const edges = meshEdges(data);
   const byVertex = new Map<number, typeof edges>();
   for (const edge of edges) {
@@ -98,8 +130,7 @@ export function selectEdgeLoop(data: Graphics3DMesh, startKey: string): Set<stri
   }
   const start = edges.find(edge => edgeKey(edge.a, edge.b) === startKey);
   if (!start) return new Set();
-
-  const result = new Set<string>([edgeKey(start.a, start.b)]);
+  const result = new Set<string>([startKey]);
   walkEdgeChain(data, start.a, start.b, start, byVertex, result);
   walkEdgeChain(data, start.b, start.a, start, byVertex, result);
   return result;
@@ -125,11 +156,9 @@ function walkEdgeChain(
     );
     const next = bestContinuation(data, currentVertex, incomingVertex, candidates);
     if (!next) return;
-
     const key = edgeKey(next.a, next.b);
     if (result.has(key)) return;
     result.add(key);
-
     const nextVertex = next.a === currentVertex ? next.b : next.a;
     incomingVertex = currentVertex;
     currentVertex = nextVertex;
@@ -147,7 +176,6 @@ function bestContinuation(
   const previous = vertexDirection(data, vertex, previousVertex);
   let best = candidates[0];
   let bestScore = -Infinity;
-
   for (const candidate of candidates) {
     const other = candidate.a === vertex ? candidate.b : candidate.a;
     const direction = vertexDirection(data, vertex, other);
@@ -167,68 +195,103 @@ function vertexDirection(data: Graphics3DMesh, from: number, to: number): THREE.
   return b.sub(a);
 }
 
+type LogicalQuad = { vertices: [number, number, number, number]; boundary: string[] };
+
+/** Infer quads from adjacent, nearly coplanar triangles sharing a diagonal. */
+function inferLogicalQuads(data: Graphics3DMesh): LogicalQuad[] {
+  const faces = Array.from({ length: data.geometry.indices.length / 3 }, (_, face) => faceVertexIndices(data, face));
+  const owners = new Map<string, number[]>();
+  faces.forEach((ids, face) => {
+    if (!ids) return;
+    for (let i = 0; i < ids.length; i++) {
+      const key = edgeKey(ids[i], ids[(i + 1) % ids.length]);
+      owners.set(key, [...(owners.get(key) ?? []), face]);
+    }
+  });
+
+  const used = new Set<number>();
+  const result: LogicalQuad[] = [];
+  for (const fs of owners.values()) {
+    if (fs.length !== 2) continue;
+    const [first, second] = fs;
+    if (used.has(first) || used.has(second)) continue;
+    const a = faces[first];
+    const b = faces[second];
+    if (!a || !b || !trianglesAreCoplanar(data, a, b)) continue;
+    const vertices = [...new Set([...a, ...b])];
+    if (vertices.length !== 4) continue;
+
+    const shared = a.filter(vertex => b.includes(vertex));
+    if (shared.length !== 2) continue;
+    const boundary = vertices
+      .flatMap((vertex, index) => [edgeKey(vertex, vertices[(index + 1) % vertices.length])])
+      .filter(key => key !== edgeKey(shared[0], shared[1]));
+    if (boundary.length !== 4) continue;
+
+    used.add(first);
+    used.add(second);
+    result.push({ vertices: vertices as LogicalQuad["vertices"], boundary });
+  }
+  return result;
+}
+
+function trianglesAreCoplanar(data: Graphics3DMesh, a: number[], b: number[]): boolean {
+  if (a.length !== 3 || b.length !== 3) return false;
+  const normal = triangleNormal(data, a[0], a[1], a[2]);
+  const other = triangleNormal(data, b[0], b[1], b[2]);
+  return normal.lengthSq() > 1e-12 && other.lengthSq() > 1e-12 && Math.abs(normal.normalize().dot(other.normalize())) >= 0.999;
+}
+
+function triangleNormal(data: Graphics3DMesh, a: number, b: number, c: number): THREE.Vector3 {
+  const pa = new THREE.Vector3().fromArray(data.geometry.vertices, a * 3);
+  const pb = new THREE.Vector3().fromArray(data.geometry.vertices, b * 3);
+  const pc = new THREE.Vector3().fromArray(data.geometry.vertices, c * 3);
+  return pb.sub(pa).cross(pc.sub(pa));
+}
+
 /**
- * Selects the geometric edge ring: all edges whose direction is parallel to
- * the starting edge. On triangulated meshes this gives a useful ring even
- * when the original quad structure is no longer explicitly represented.
+ * Selects an edge ring from inferred quad strips. Parallel edges connected
+ * through logical quads are preferred; disconnected parallel edges are not
+ * pulled in. If no logical quad connectivity exists, use the geometric
+ * triangulated-mesh fallback.
  */
 export function selectEdgeRing(data: Graphics3DMesh, startKey: string): Set<string> {
   const edges = meshEdges(data);
   const start = edges.find(edge => edgeKey(edge.a, edge.b) === startKey);
   if (!start) return new Set();
 
-  const byFace = new Map<number, { a: number; b: number }[]>();
-  const owners = new Map<string, number[]>();
-  for (let face = 0; face < data.geometry.indices.length / 3; face++) {
-    const ids = faceVertexIndices(data, face);
-    if (!ids) continue;
-    const faceEdges = ids.map((id, i) => ({
-      a: id,
-      b: ids[(i + 1) % ids.length],
-    }));
-    byFace.set(face, faceEdges);
-    for (const edge of faceEdges) {
-      const key = edgeKey(edge.a, edge.b);
-      owners.set(key, [...(owners.get(key) ?? []), face]);
+  const quads = inferLogicalQuads(data);
+  const target = vertexDirection(data, start.a, start.b).normalize();
+  const result = new Set<string>([startKey]);
+  const queue = [startKey];
+  const connections = new Map<string, Set<string>>();
+
+  for (const quad of quads) {
+    const compatible = quad.boundary.filter(key => {
+      const [a, b] = key.split(":").map(Number);
+      return Math.abs(target.dot(vertexDirection(data, a, b).normalize())) >= 0.85;
+    });
+    for (const key of compatible) {
+      const set = connections.get(key) ?? new Set<string>();
+      for (const other of compatible) if (other !== key) set.add(other);
+      connections.set(key, set);
     }
   }
-
-  const target = vertexDirection(data, start.a, start.b).normalize();
-  const result = new Set<string>([edgeKey(start.a, start.b)]);
-  const queue = [edgeKey(start.a, start.b)];
-  let foundConnectedContinuation = false;
 
   while (queue.length) {
-    const currentKey = queue.shift()!;
-    for (const face of owners.get(currentKey) ?? []) {
-      const candidates = (byFace.get(face) ?? []).filter(edge => edgeKey(edge.a, edge.b) !== currentKey);
-      const parallel = candidates
-        .map(edge => ({
-          edge,
-          score: Math.abs(target.dot(vertexDirection(data, edge.a, edge.b).normalize())),
-        }))
-        .filter(item => item.score >= 0.85)
-        .sort((a, b) => b.score - a.score);
-
-      const next = parallel[0]?.edge;
-      if (!next) continue;
-      foundConnectedContinuation = true;
-      const key = edgeKey(next.a, next.b);
-      if (!result.has(key)) {
-        result.add(key);
-        queue.push(key);
-      }
+    const current = queue.shift()!;
+    for (const next of connections.get(current) ?? []) {
+      if (result.has(next)) continue;
+      result.add(next);
+      queue.push(next);
     }
   }
 
-  // Triangulated meshes often do not preserve the original quad-ring
-  // connectivity. Keep the previous geometric fallback for those meshes.
-  if (!foundConnectedContinuation) {
-    for (const edge of edges) {
-      const direction = vertexDirection(data, edge.a, edge.b).normalize();
-      if (Math.abs(target.dot(direction)) >= 0.85) result.add(edgeKey(edge.a, edge.b));
-    }
-  }
+  if (result.size > 1) return result;
 
+  for (const edge of edges) {
+    const direction = vertexDirection(data, edge.a, edge.b).normalize();
+    if (Math.abs(target.dot(direction)) >= 0.85) result.add(edgeKey(edge.a, edge.b));
+  }
   return result;
 }
