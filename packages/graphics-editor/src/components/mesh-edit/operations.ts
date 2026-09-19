@@ -5,6 +5,7 @@ import { insetGraphicsMeshFace } from "../../mesh/graphics-mesh-inset";
 import { bevelMeshEdges } from "../../mesh/graphics-mesh-bevel";
 import { extrudeRegion } from "../../mesh/extrude/extrude-region";
 import { splitGraphicsMeshEdges } from "../../mesh/graphics-mesh-split-edge";
+import { connectGraphicsMeshEdges } from "../../mesh/graphics-mesh-connect-edges";
 
 export function insetKernel(data: Graphics3DMesh, faces: Set<number>, amount: number): Graphics3DMesh {
   let next = data;
@@ -34,4 +35,10 @@ export function bevel(data: Graphics3DMesh, edges: Set<string>, amount: number):
 
 export function splitEdges(data: Graphics3DMesh, edges: Set<string>): Graphics3DMesh {
   return splitGraphicsMeshEdges(data, edges);
+}
+
+export function connectEdges(data: Graphics3DMesh, edges: Set<string>): Graphics3DMesh {
+  if (edges.size !== 2) return data;
+  const [first, second] = [...edges];
+  return connectGraphicsMeshEdges(data, first, second).mesh;
 }
