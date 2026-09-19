@@ -177,11 +177,58 @@ export function selectEdgeRing(data: Graphics3DMesh, startKey: string): Set<stri
   const start = edges.find(edge => edgeKey(edge.a, edge.b) === startKey);
   if (!start) return new Set();
 
-  const target = vertexDirection(data, start.a, start.b).normalize();
-  const result = new Set<string>();
-  for (const edge of edges) {
-    const direction = vertexDirection(data, edge.a, edge.b).normalize();
-    if (Math.abs(target.dot(direction)) >= 0.85) result.add(edgeKey(edge.a, edge.b));
+  const byFace = new Map<number, { a: number; b: number }[]>();
+  const owners = new Map<string, number[]>();
+  for (let face = 0; face < data.geometry.indices.length / 3; face++) {
+    const ids = faceVertexIndices(data, face);
+    if (!ids) continue;
+    const faceEdges = ids.map((id, i) => ({
+      a: id,
+      b: ids[(i + 1) % ids.length],
+    }));
+    byFace.set(face, faceEdges);
+    for (const edge of faceEdges) {
+      const key = edgeKey(edge.a, edge.b);
+      owners.set(key, [...(owners.get(key) ?? []), face]);
+    }
   }
+
+  const target = vertexDirection(data, start.a, start.b).normalize();
+  const result = new Set<string>([edgeKey(start.a, start.b)]);
+  const queue = [edgeKey(start.a, start.b)];
+  let foundConnectedContinuation = false;
+
+  while (queue.length) {
+    const currentKey = queue.shift()!;
+    for (const face of owners.get(currentKey) ?? []) {
+      const candidates = (byFace.get(face) ?? []).filter(edge => edgeKey(edge.a, edge.b) !== currentKey);
+      const parallel = candidates
+        .map(edge => ({
+          edge,
+          score: Math.abs(target.dot(vertexDirection(data, edge.a, edge.b).normalize())),
+        }))
+        .filter(item => item.score >= 0.85)
+        .sort((a, b) => b.score - a.score);
+
+      const next = parallel[0]?.edge;
+      if (!next) continue;
+      foundConnectedContinuation = true;
+      const key = edgeKey(next.a, next.b);
+      if (!result.has(key)) {
+        result.add(key);
+        queue.push(key);
+      }
+    }
+  }
+
+  // Triangulated meshes often do not preserve the original quad-ring
+  // connectivity. Keep the previous geometric fallback for those meshes.
+  if (!foundConnectedContinuation) {
+    for (const edge of edges) {
+      const direction = vertexDirection(data, edge.a, edge.b).normalize();
+      if (Math.abs(target.dot(direction)) >= 0.85) result.add(edgeKey(edge.a, edge.b));
+    }
+  }
+
   return result;
 }
