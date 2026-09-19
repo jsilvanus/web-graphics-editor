@@ -2,7 +2,7 @@ import type * as THREE from "three";
 import type { Graphics3DMesh } from "../../types";
 
 export type MeshEditMode = "object" | "vertices" | "edges" | "faces";
-export type FaceEditAction = "translate" | "extrude" | "inset" | "bevel";
+export type FaceEditAction = "translate" | "extrude" | "inset" | "bevel" | "scale";
 
 export interface MeshEditContext {
   scene: THREE.Scene;
@@ -23,6 +23,10 @@ export interface ThreeDMeshEditController {
   updateData: (data: Graphics3DMesh | undefined) => void;
   setMode: (mode: MeshEditMode) => void;
   setFaceAction: (action: FaceEditAction) => void;
+  undo: () => void;
+  redo: () => void;
+  canUndo: () => boolean;
+  canRedo: () => boolean;
   addVertex: (position: [number, number, number]) => void;
   addFaceFromSelection: () => void;
   moveSelectedVertices: (delta: [number, number, number]) => void;
