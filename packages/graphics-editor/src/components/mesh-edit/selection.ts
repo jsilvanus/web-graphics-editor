@@ -223,9 +223,11 @@ function inferLogicalQuads(data: Graphics3DMesh): LogicalQuad[] {
 
     const shared = a.filter(vertex => b.includes(vertex));
     if (shared.length !== 2) continue;
-    const boundary = vertices
-      .flatMap((vertex, index) => [edgeKey(vertex, vertices[(index + 1) % vertices.length])])
-      .filter(key => key !== edgeKey(shared[0], shared[1]));
+    const sharedKey = edgeKey(shared[0], shared[1]);
+    const boundary = [...new Set([
+      ...a.map((vertex, index) => edgeKey(vertex, a[(index + 1) % a.length])),
+      ...b.map((vertex, index) => edgeKey(vertex, b[(index + 1) % b.length])),
+    ])].filter(key => key !== sharedKey);
     if (boundary.length !== 4) continue;
 
     used.add(first);
