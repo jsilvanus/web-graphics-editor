@@ -7,6 +7,7 @@ function mesh(indices: number[], vertices: number[] = [
   0, 0, 0,
   1, 0, 0,
   0, 1, 0,
+  1, 1, 0,
 ]): Graphics3DMesh {
   return {
     id: "test",
@@ -16,30 +17,26 @@ function mesh(indices: number[], vertices: number[] = [
 }
 
 describe("connectGraphicsMeshEdges", () => {
-  it("connects two edges of one triangle through their midpoints", () => {
-    const source = mesh([0, 1, 2]);
+  it("creates a cut path between edges across adjacent triangles", () => {
+    const source = mesh([0, 1, 2, 1, 3, 2]);
     const result = connectGraphicsMeshEdges(
       source,
       edgeKey(0, 1),
-      edgeKey(0, 2),
+      edgeKey(2, 3),
     );
 
-    expect(result.mesh.geometry.vertices).toHaveLength(15);
+    expect(result.mesh.geometry.vertices).toHaveLength(21);
     expect(result.mesh.geometry.indices).toHaveLength(12);
-    expect(result.newFaceId).toBeGreaterThanOrEqual(0);
-    expect(meshEdges(result.mesh)).toHaveLength(5);
+    expect(result.mesh.geometry.normals).toBeUndefined();
+    expect(meshEdges(result.mesh)).toHaveLength(7);
   });
 
-  it("rejects edges that do not meet in a common face", () => {
-    const source = mesh(
-      [0, 1, 2, 1, 3, 2],
-      [0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0],
-    );
-
+  it("rejects an edge selected twice", () => {
+    const source = mesh([0, 1, 2]);
     expect(() => connectGraphicsMeshEdges(
       source,
       edgeKey(0, 1),
-      edgeKey(2, 3),
-    )).toThrow(/common face/);
+      edgeKey(0, 1),
+    )).toThrow(/itself/);
   });
 });
