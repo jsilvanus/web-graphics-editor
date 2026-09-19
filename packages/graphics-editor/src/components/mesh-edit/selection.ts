@@ -274,16 +274,20 @@ export function selectEdgeRing(data: Graphics3DMesh, startKey: string): Set<stri
   const queue = [startKey];
   const connections = new Map<string, Set<string>>();
 
-  for (const quad of quads) {
-    const compatible = quad.boundary.filter(key => {
-      const [a, b] = key.split(":").map(Number);
-      return Math.abs(target.dot(vertexDirection(data, a, b).normalize())) >= 0.85;
-    });
-    for (const key of compatible) {
-      const set = connections.get(key) ?? new Set<string>();
-      for (const other of compatible) if (other !== key) set.add(other);
-      connections.set(key, set);
+  const logicalBoundary = new Set(quads.flatMap(quad => quad.boundary));
+  const compatible = [...logicalBoundary].filter(key => {
+    const [a, b] = key.split(":").map(Number);
+    return Math.abs(target.dot(vertexDirection(data, a, b).normalize())) >= 0.85;
+  });
+  for (const key of compatible) {
+    const [a, b] = key.split(":").map(Number);
+    const set = connections.get(key) ?? new Set<string>();
+    for (const other of compatible) {
+      if (other === key) continue;
+      const [c, d] = other.split(":").map(Number);
+      if (a === c || a === d || b === c || b === d) set.add(other);
     }
+    connections.set(key, set);
   }
 
   while (queue.length) {
