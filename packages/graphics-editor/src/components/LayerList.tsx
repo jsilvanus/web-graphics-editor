@@ -12,7 +12,9 @@ export const LayerList: FC<{
   onBack?: (id: string) => void;
   onGroup?: () => void;
   onUngroup?: (id: string) => void;
-}> = ({ layers, selectedIds, onSelect, onForward, onBackward, onFront, onBack, onGroup, onUngroup }) => {
+  onToggleVisibility?: (id: string) => void;
+  onToggleLock?: (id: string) => void;
+}> = ({ layers, selectedIds, onSelect, onForward, onBackward, onFront, onBack, onGroup, onUngroup, onToggleVisibility, onToggleLock }) => {
   const roots = useMemo(() => [...getRootLayers(layers)].reverse(), [layers]);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const toggle = (id: string) => setCollapsed(previous => { const next = new Set(previous); if (next.has(id)) next.delete(id); else next.add(id); return next; });
@@ -22,7 +24,7 @@ export const LayerList: FC<{
       <div style={{ display: "grid", gridTemplateColumns: isGroup ? "20px minmax(0,1fr) auto" : "20px minmax(0,1fr)", alignItems: "center", gap: 4, paddingLeft: depth * 14 }}>
         {isGroup ? <button type="button" aria-label={isCollapsed ? `Expand ${layer.id}` : `Collapse ${layer.id}`} onClick={() => toggle(layer.id)} style={{ padding: 0, width: 20 }}>{isCollapsed ? "▸" : "▾"}</button> : <span />}
         <button type="button" className={selectedIds.has(layer.id) ? "ge-layer-selected" : ""} onClick={() => onSelect(layer.id)} style={{ minWidth: 0, textAlign: "left", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}><span style={{ opacity: .7, marginRight: 6 }}>{layer.type}</span><span>{layer.id}</span></button>
-        <span style={{ display: "flex", gap: 2 }}>
+        <span style={{ display: "flex", gap: 2 }}>{onToggleVisibility && <button type="button" title={layer.visible === false ? "Show" : "Hide"} aria-label={layer.visible === false ? "Show" : "Hide"} onClick={() => onToggleVisibility(layer.id)}>{layer.visible === false ? "○" : "●"}</button>}{onToggleLock && <button type="button" title={layer.locked ? "Unlock" : "Lock"} aria-label={layer.locked ? "Unlock" : "Lock"} onClick={() => onToggleLock(layer.id)}>{layer.locked ? "🔒" : "🔓"}</button>}
           {onForward && <button type="button" title="Bring forward" aria-label="Bring forward" onClick={() => onForward(layer.id)}>↑</button>}
           {onBackward && <button type="button" title="Send backward" aria-label="Send backward" onClick={() => onBackward(layer.id)}>↓</button>}
           {onFront && <button type="button" title="Bring to front" aria-label="Bring to front" onClick={() => onFront(layer.id)}>⇈</button>}
