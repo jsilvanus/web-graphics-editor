@@ -32,6 +32,44 @@ export function selectedVertexIds(data: Graphics3DMesh, selection: MeshEditSelec
   return new Set();
 }
 
+export function growFaceSelection(data: Graphics3DMesh, faces: Set<number>): Set<number> {
+  if (!faces.size) return new Set();
+  const selected = new Set(faces);
+  const owners = new Map<string, number[]>();
+  for (let face = 0; face < data.geometry.indices.length / 3; face++) {
+    const ids = faceVertexIndices(data, face);
+    if (!ids) continue;
+    for (let i = 0; i < ids.length; i++) {
+      const key = edgeKey(ids[i], ids[(i + 1) % ids.length]);
+      owners.set(key, [...(owners.get(key) ?? []), face]);
+    }
+  }
+  for (const fs of owners.values()) {
+    if (fs.some(face => faces.has(face))) fs.forEach(face => selected.add(face));
+  }
+  return selected;
+}
+
+export function shrinkFaceSelection(data: Graphics3DMesh, faces: Set<number>): Set<number> {
+  if (!faces.size) return new Set();
+  const owners = new Map<string, number[]>();
+  for (let face = 0; face < data.geometry.indices.length / 3; face++) {
+    const ids = faceVertexIndices(data, face);
+    if (!ids) continue;
+    for (let i = 0; i < ids.length; i++) {
+      const key = edgeKey(ids[i], ids[(i + 1) % ids.length]);
+      owners.set(key, [...(owners.get(key) ?? []), face]);
+    }
+  }
+  const result = new Set(faces);
+  for (const face of faces) {
+    const ids = faceVertexIndices(data, face);
+    if (!ids) continue;
+    if (ids.some((id, i) => (owners.get(edgeKey(id, ids[(i + 1) % ids.length])) ?? []).some(other => !faces.has(other)))) result.delete(face);
+  }
+  return result;
+}
+
 export function faceHandleGeometry(data: Graphics3DMesh, mesh: THREE.Mesh, face: number): THREE.BufferGeometry | undefined {
   const ids = faceVertexIndices(data, face);
   if (!ids) return undefined;
