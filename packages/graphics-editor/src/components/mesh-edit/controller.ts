@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls.js";
 import type { Graphics3DMesh } from "../../types";
 import { createHandleManager } from "./handles";
-import { bevel, connectEdges, extrude, flipMeshFaces, growFaceSelection, insetKernel, insetLegacy, recalculateMeshNormals, shrinkFaceSelection, splitEdges } from "./operations";
+import { bevel, connectEdges, extrude, flipMeshFaces, insetKernel, insetLegacy, recalculateMeshNormals, splitEdges } from "./operations";
 import { clearSelection, createSelection, growFaceSelection as growSelection, selectedVertexIds, shrinkFaceSelection as shrinkSelection } from "./selection";
 import { addVertex } from "../../mesh/add-vertex";
 import { addGraphicsMeshFace, deleteGraphicsMeshFace } from "../../mesh/graphics-mesh-faces";
