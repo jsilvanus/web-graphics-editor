@@ -33,6 +33,13 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
   const { selectedIds, primaryId, select, clear } = useEditorSelection(document.layers[0]?.id ?? null);
   const [grid, setGrid] = useState(false), [safe, setSafe] = useState(false), [aspectLock, setAspectLock] = useState(true), [assetPicker, setAssetPicker] = useState(false);
   const artboardRef = useRef<HTMLDivElement>(null);
+  const marqueeRef = useRef<{ x: number; y: number; startX: number; startY: number; additive: boolean } | null>(null);
+  const [marquee, setMarquee] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const canvasPoint = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    const rect = artboardRef.current?.getBoundingClientRect();
+    if (!rect) return null;
+    return { x: (event.clientX - rect.left) / viewport.viewport.zoom, y: (event.clientY - rect.top) / viewport.viewport.zoom };
+  }, [viewport.viewport.zoom]);
   const viewport = useCanvasViewport(document.width, document.height);
   const { timeline, setTimeline, seek, changeTimeline, context, enterWorld, exitWorld, world, worldTimeline, worldCurrentTime, updateWorldTimeline } = useGraphicsEditorTimeline(document, executeCommand);
   const [playing, setPlaying] = useState(false);
@@ -58,9 +65,44 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
   const addFont = useCallback((asset: GraphicsAsset) => { if (!primaryId) return; setDocument(d => ({ ...d, assets: [...(d.assets ?? []).filter(a => a.id !== asset.id), asset] })); updateLayer(primaryId, { textStyle: { ...(selectedLayer?.textStyle ?? {}), fontAssetId: asset.id, fontFamily: String(asset.metadata?.family ?? asset.name) } }); }, [primaryId, selectedLayer, setDocument, updateLayer]);
   const commitText = useCallback((id: string, text: string) => { updateLayer(id, { text }); }, [updateLayer]);
   const commitTextRuns = useCallback((id: string, runs: TextRun[] | undefined) => { updateLayer(id, { textRuns: runs }); }, [updateLayer]);
-  const onCanvasPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => { if (drawing.activeTool === "select") return; drawing.onPointerDown(event, artboardRef); }, [drawing]);
-  const onCanvasPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => { drawing.onPointerMove(event, artboardRef); if (drawing.drawingRef.current?.tool === "line") return; interaction.pointerMove(event); }, [drawing, interaction]);
-  const onCanvasPointerUp = useCallback(() => { if (drawing.drawingRef.current?.tool === "line") drawing.finishDrawing(); else { interaction.pointerUp(); transaction.end(document); } }, [drawing, interaction, transaction, document]);
+  const onCanvasPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (drawing.activeTool === "select") {
+      if (event.target !== event.currentTarget) return;
+      const point = canvasPoint(event);
+      if (!point) return;
+      marqueeRef.current = { x: point.x, y: point.y, startX: point.x, startY: point.y, additive: event.shiftKey };
+      setMarquee({ x: point.x, y: point.y, width: 0, height: 0 });
+      (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+      return;
+    }
+    drawing.onPointerDown(event, artboardRef);
+  }, [drawing, canvasPoint]);
+  const onCanvasPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    const m = marqueeRef.current;
+    if (m) {
+      const point = canvasPoint(event);
+      if (point) setMarquee({ x: Math.min(m.startX, point.x), y: Math.min(m.startY, point.y), width: Math.abs(point.x - m.startX), height: Math.abs(point.y - m.startY) });
+      return;
+    }
+    drawing.onPointerMove(event, artboardRef);
+    if (drawing.drawingRef.current?.tool === "line") return;
+    interaction.pointerMove(event);
+  }, [drawing, interaction, canvasPoint]);
+  const onCanvasPointerUp = useCallback(() => {
+    const m = marqueeRef.current;
+    if (m) {
+      marqueeRef.current = null;
+      setMarquee(null);
+      const x = Math.min(m.startX, m.x), y = Math.min(m.startY, m.y);
+      const right = Math.max(m.startX, m.x), bottom = Math.max(m.startY, m.y);
+      const hit = document.layers.filter(layer => layer.visible !== false && layer.x < right && layer.x + layer.width > x && layer.y < bottom && layer.y + layer.height > y).map(layer => layer.id);
+      if (m.additive) hit.forEach(id => select(id, true));
+      else if (hit.length) hit.forEach((id, i) => select(id, i > 0));
+      else clear();
+      return;
+    }
+    if (drawing.drawingRef.current?.tool === "line") drawing.finishDrawing(); else { interaction.pointerUp(); transaction.end(document); }
+  }, [drawing, interaction, transaction, document, select, clear]);
   const onLayerPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>, id: string, kind: string, handle?: string) => { if (drawing.activeTool !== "select") return; if (kind === "move") select(id, event.shiftKey); transaction.begin(document); interaction.pointerDown(event, id, kind, handle); }, [drawing.activeTool, select, transaction, document, interaction]);
   const total = timelineDuration(timeline);
   const selectedCamera = selected3DView && selected3DWorld ? selected3DWorld.cameras.find((camera: Graphics3DCamera) => camera.id === selected3DView.cameraId) : undefined;
