@@ -2,6 +2,7 @@ import type { GraphicsDocument, Layer } from "../types";
 import { alignLayers, distributeLayers, type AlignMode, type AlignReference, type DistributeMode } from "../alignment";
 import { bringLayerForward, bringLayerToFront, sendLayerBackward, sendLayerToBack, groupLayers, ungroupLayer, updateLayer, updateLayerStyle } from "./operations";
 import { diffOperations, type DocumentOperation, type GroupChildSnapshot } from "../history/operations";
+import { booleanPolygons, pathNodesToPolygon, polygonToPathNodes, type BooleanOperation, type PolygonPoint } from "../geometry/boolean";
 
 export interface CommandResult { document: GraphicsDocument; operation?: DocumentOperation }
 function batchOrSingle(operations: DocumentOperation[]): DocumentOperation | undefined { return operations.length === 1 ? operations[0] : operations.length ? { type: "batch", operations } : undefined; }
@@ -47,3 +48,35 @@ export function removeLayerCommand(document: GraphicsDocument, id: string): Comm
 export function addLayerCommand(document: GraphicsDocument, layer: Layer, index?: number): CommandResult { const target = Math.max(0, Math.min(index ?? document.layers.length, document.layers.length)); const layers = [...document.layers]; layers.splice(target, 0, layer); return { document: { ...document, layers }, operation: { type: "add-layer", layer, index: target } }; }
 export function alignLayersCommand(document: GraphicsDocument, ids: Set<string>, mode: AlignMode, reference: AlignReference): CommandResult { const layers = alignLayers(document.layers, ids, mode, reference, document.width, document.height); const next = layers === document.layers ? document : { ...document, layers }; return { document: next, operation: batchOrSingle(diffOperations(document, next)) }; }
 export function distributeLayersCommand(document: GraphicsDocument, ids: Set<string>, mode: DistributeMode): CommandResult { const layers = distributeLayers(document.layers, ids, mode); const next = layers === document.layers ? document : { ...document, layers }; return { document: next, operation: batchOrSingle(diffOperations(document, next)) }; }
+
+
+function layerPolygon(layer: Layer): PolygonPoint[] | null {
+  if (layer.type === "path" && layer.nodes) {
+    const polygon = pathNodesToPolygon(layer.nodes);
+    return polygon?.map(p => ({ x: p.x + layer.x, y: p.y + layer.y })) ?? null;
+  }
+  if (layer.type === "rectangle") {
+    return [{x:layer.x,y:layer.y},{x:layer.x+layer.width,y:layer.y},{x:layer.x+layer.width,y:layer.y+layer.height},{x:layer.x,y:layer.y+layer.height}];
+  }
+  if (layer.type === "ellipse") {
+    return Array.from({length:64},(_,i)=>{const a=i*Math.PI*2/64;return{x:layer.x+layer.width/2+Math.cos(a)*layer.width/2,y:layer.y+layer.height/2+Math.sin(a)*layer.height/2}});
+  }
+  return null;
+}
+
+export function booleanLayersCommand(document: GraphicsDocument, ids: string[], operation: BooleanOperation): CommandResult {
+  if (ids.length !== 2) return { document };
+  const a = document.layers.find(layer => layer.id === ids[0]), b = document.layers.find(layer => layer.id === ids[1]);
+  if (!a || !b || a.locked || b.locked) return { document };
+  const pa = layerPolygon(a), pb = layerPolygon(b);
+  if (!pa || !pb) return { document };
+  const polygons = booleanPolygons(pa, pb, operation);
+  if (!polygons.length) return { document };
+  const baseStyle = { ...(a.style ?? {}) };
+  const copies = polygons.map((poly,index) => {
+    const minX=Math.min(...poly.map(p=>p.x)), minY=Math.min(...poly.map(p=>p.y)), maxX=Math.max(...poly.map(p=>p.x)), maxY=Math.max(...poly.map(p=>p.y));
+    return { ...a, id: `boolean-${operation}-${Date.now()}-${index}-${Math.random().toString(36).slice(2,5)}`, type:"path" as const, x:minX,y:minY,width:Math.max(1,maxX-minX),height:Math.max(1,maxY-minY),nodes:polygonToPathNodes(poly.map(p=>({x:p.x-minX,y:p.y-minY}))),path:undefined,pathCommands:undefined,closed:true,style:baseStyle };
+  });
+  const next={...document,layers:document.layers.filter(layer=>layer.id!==a.id&&layer.id!==b.id).concat(copies)};
+  return { document: next, operation: batchOrSingle(diffOperations(document,next)) };
+}
