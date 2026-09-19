@@ -13,12 +13,18 @@ function quad(): Graphics3DMesh {
         1, 1, 0,
         2, 0, 0,
         2, 1, 0,
+        10, 0, 0,
+        11, 0, 0,
+        10, 1, 0,
+        11, 1, 0,
       ],
       indices: [
         0, 1, 2,
         1, 3, 2,
         1, 4, 3,
         4, 5, 3,
+        6, 7, 8,
+        7, 9, 8,
       ],
     },
     transform: { position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] },
@@ -31,9 +37,15 @@ describe("edge loop and ring selection", () => {
     expect([...selectEdgeLoop(data, "1:3")].sort()).toEqual(["0:1", "0:2", "1:3", "2:3"]);
   });
 
-  it("selects a geometric ring of parallel edges", () => {
+  it("infers a logical quad for loop traversal across triangulated faces", () => {
+    const data = quad();
+    expect([...selectEdgeLoop(data, "0:1")].sort()).toEqual(["0:1", "2:3"]);
+  });
+
+  it("selects a connected ring without pulling in disconnected parallel edges", () => {
     const data = quad();
     expect([...selectEdgeRing(data, "0:1")].sort()).toEqual(["0:1", "1:4", "2:3", "4:5"]);
+    expect(selectEdgeRing(data, "0:1")).not.toContain("6:7");
   });
 });
 
