@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { createBoxMesh } from "../../3d-primitives";
 import { extrudeRegion } from "./extrude-region";
+import { fromPolygons } from "../from-polygons";
+import { validateHalfEdgeMesh } from "../validate";
 
 function vertices(mesh: ReturnType<typeof createBoxMesh>, ids: number[]) {
   return ids.map(id => mesh.geometry.vertices.slice(id * 3, id * 3 + 3));
@@ -13,6 +15,8 @@ describe("extrudeRegion", () => {
 
     expect(result.geometry.vertices).toHaveLength(mesh.geometry.vertices.length + 4 * 3);
     expect(result.geometry.indices).toHaveLength(mesh.geometry.indices.length + 4 * 6);
+    const topology = fromPolygons({ positions: result.geometry.vertices, faces: Array.from({ length: result.geometry.indices.length / 3 }, (_, i) => result.geometry.indices.slice(i * 3, i * 3 + 3)) });
+    expect(validateHalfEdgeMesh(topology).valid).toBe(true);
     expect(vertices(result, [8, 9, 10, 11])).toEqual([
       [-0.5, -0.5, -1.5],
       [0.5, -0.5, -1.5],
