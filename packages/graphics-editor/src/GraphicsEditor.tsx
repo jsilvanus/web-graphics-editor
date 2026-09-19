@@ -81,7 +81,7 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
     const m = marqueeRef.current;
     if (m) {
       const point = canvasPoint(event);
-      if (point) setMarquee({ x: Math.min(m.startX, point.x), y: Math.min(m.startY, point.y), width: Math.abs(point.x - m.startX), height: Math.abs(point.y - m.startY) });
+      if (point) { m.x = point.x; m.y = point.y; setMarquee({ x: Math.min(m.startX, point.x), y: Math.min(m.startY, point.y), width: Math.abs(point.x - m.startX), height: Math.abs(point.y - m.startY) }); }
       return;
     }
     drawing.onPointerMove(event, artboardRef);
