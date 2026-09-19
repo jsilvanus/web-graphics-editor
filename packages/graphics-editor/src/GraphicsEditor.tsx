@@ -12,6 +12,7 @@ import { useCanvasViewport } from "./hooks/useCanvasViewport";
 import { useEditorHistory } from "./hooks/useEditorHistory";
 import { useEditorSelection } from "./hooks/useEditorSelection";
 import { useEditorTransaction } from "./hooks/useEditorTransaction";
+import { useEditorKeyboard } from "./hooks/useEditorKeyboard";
 import { useLayerOperations } from "./hooks/useLayerOperations";
 import { useLayerCommands } from "./hooks/useLayerCommands";
 import { useGraphicsEditorTimeline, createDefaultTimeline } from "./hooks/useGraphicsEditorTimeline";
@@ -27,6 +28,7 @@ import type { GraphicsAsset, GraphicsEditorProps, GraphicsDocument, Graphics3DVi
 
 export function GraphicsEditor({ document: initialDocument, assets = [], onChange }: GraphicsEditorProps) {
   const { document, setDocument, executeCommand, undo, redo, canUndo, canRedo, resetHistory, history } = useEditorHistory(initialDocument);
+  useEditorKeyboard(undo, redo);
   const initialDocumentRef = useRef(initialDocument);
   const { selectedIds, primaryId, select, clear } = useEditorSelection(document.layers[0]?.id ?? null);
   const [grid, setGrid] = useState(false), [safe, setSafe] = useState(false), [aspectLock, setAspectLock] = useState(true), [assetPicker, setAssetPicker] = useState(false);
