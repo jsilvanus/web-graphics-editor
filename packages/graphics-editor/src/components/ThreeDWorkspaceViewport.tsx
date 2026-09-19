@@ -26,7 +26,26 @@ export function ThreeDWorkspaceViewport({ world, cameraId, selectedId, mode, edi
     const camera = makeWorkspaceCamera(active, (host.clientWidth || 800) / (host.clientHeight || 520)); cameraRef.current = camera;
     const orbit = new OrbitControls(camera, renderer.domElement); orbit.enableDamping = true; orbitRef.current = orbit;
     const transform = new TransformControls(camera, renderer.domElement); transformRef.current = transform; scene.add(transform.getHelper());
-    const meshEdit = createThreeDMeshEditController(scene, camera, renderer, geometry => { const id = selectedRef.current; if (!id) return; const current = worldRef.current.meshes.find(item => item.id === id); if (!current) return; onChange(updateWorldMesh(worldRef.current, id, { geometry })); }); meshEditRef.current = meshEdit; setMeshEditController(meshEdit);
+    const meshEdit = createThreeDMeshEditController(
+      scene,
+      camera,
+      renderer,
+      geometry => {
+        const id = selectedRef.current;
+        if (!id) return;
+        const current = worldRef.current.meshes.find(item => item.id === id);
+        if (!current) return;
+        onChange(updateWorldMesh(worldRef.current, id, { geometry }));
+      },
+      extracted => {
+        const sourceId = selectedRef.current;
+        if (!sourceId) return;
+        const id = `${sourceId}-extract-${Date.now()}`;
+        const mesh = { ...extracted, id, name: `${extracted.name ?? "Mesh"} Extract` };
+        onChange({ ...worldRef.current, meshes: [...worldRef.current.meshes, mesh] });
+        onSelect(id);
+      },
+    ); meshEditRef.current = meshEdit; setMeshEditController(meshEdit);
     const syncLights = () => {
       const current = worldRef.current;
       for (const light of current.lights ?? []) {
