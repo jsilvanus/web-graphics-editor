@@ -40,6 +40,8 @@ export interface ThreeDMeshEditController {
   bevelSelectedEdges: (amount: number) => void;
   splitSelectedEdges: () => void;
   connectSelectedEdges: () => void;
+  selectEdgeLoop: () => void;
+  selectEdgeRing: () => void;
   growSelectedFaces: () => void;
   shrinkSelectedFaces: () => void;
   recalculateNormals: () => void;
