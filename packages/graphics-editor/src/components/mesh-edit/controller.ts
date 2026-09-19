@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls.js";
 import type { Graphics3DMesh } from "../../types";
 import { createHandleManager } from "./handles";
-import { bevel, extrude, insetKernel, insetLegacy, splitEdges } from "./operations";
+import { bevel, connectEdges, extrude, insetKernel, insetLegacy, splitEdges } from "./operations";
 import { clearSelection, createSelection, selectedVertexIds } from "./selection";
 import { addVertex } from "../../mesh/add-vertex";
 import { addGraphicsMeshFace, deleteGraphicsMeshFace } from "../../mesh/graphics-mesh-faces";
@@ -96,6 +96,13 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
       if (!state.data || state.mode !== "edges" || !selection.edges.size) return;
       const keys = new Set(selection.edges);
       const next = splitEdges(state.data, keys);
+      clearSelection(selection);
+      updateGeometry(next);
+    },
+    connectSelectedEdges() {
+      if (!state.data || state.mode !== "edges" || selection.edges.size !== 2) return;
+      const keys = new Set(selection.edges);
+      const next = connectEdges(state.data, keys);
       clearSelection(selection);
       updateGeometry(next);
     },
