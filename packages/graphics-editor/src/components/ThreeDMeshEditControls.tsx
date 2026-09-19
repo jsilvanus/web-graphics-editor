@@ -34,6 +34,8 @@ export function ThreeDMeshEditControls({ mode, controller, disabled = false }: T
       <span style={{ fontSize: 12 }}>Edge</span>
       <span style={{ fontSize: 12 }}>Drag gizmo for amount</span>
       <button disabled={disabled || !controller} onClick={() => controller?.setFaceAction("bevel")}>Bevel</button>
+      <button disabled={disabled || !controller} onClick={() => controller?.selectEdgeLoop()}>Loop</button>
+      <button disabled={disabled || !controller} onClick={() => controller?.selectEdgeRing()}>Ring</button>
       <button disabled={disabled || !controller} onClick={() => controller?.splitSelectedEdges()}>Split</button>
       <button disabled={disabled || !controller} onClick={() => controller?.connectSelectedEdges()}>Connect (2)</button>
     </>}
