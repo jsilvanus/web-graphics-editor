@@ -3,7 +3,7 @@ import { TransformControls } from "three/examples/jsm/controls/TransformControls
 import type { Graphics3DMesh } from "../../types";
 import { createHandleManager } from "./handles";
 import { bevel, connectEdges, extrude, insetKernel, insetLegacy, splitEdges } from "./operations";
-import { clearSelection, createSelection, selectedVertexIds } from "./selection";
+import { clearSelection, createSelection, growFaceSelection, selectedVertexIds, shrinkFaceSelection } from "./selection";
 import { addVertex } from "../../mesh/add-vertex";
 import { addGraphicsMeshFace, deleteGraphicsMeshFace } from "../../mesh/graphics-mesh-faces";
 import { moveVertices } from "../../mesh/move-vertices";
@@ -105,6 +105,16 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
       const next = connectEdges(state.data, keys);
       clearSelection(selection);
       updateGeometry(next);
+    },
+    growSelectedFaces() {
+      if (!state.data || state.mode !== "faces" || !selection.faces.size) return;
+      selection.faces = growFaceSelection(state.data, selection.faces);
+      rebuild();
+    },
+    shrinkSelectedFaces() {
+      if (!state.data || state.mode !== "faces" || !selection.faces.size) return;
+      selection.faces = shrinkFaceSelection(state.data, selection.faces);
+      rebuild();
     },
     dispose() { renderer.domElement.removeEventListener("pointerdown", onPointerDown); transform.removeEventListener("objectChange", onTransform); transform.removeEventListener("dragging-changed", onTransformDraggingChanged); transform.detach(); transform.dispose(); handles.removePivot(); handles.clear(); scene.remove(handles.group); }
   };
