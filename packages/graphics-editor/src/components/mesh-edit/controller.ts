@@ -24,6 +24,8 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
   const handles = createHandleManager(scene, selection, state);
   const past: MeshEditHistoryState[] = [];
   const future: MeshEditHistoryState[] = [];
+  const historyListeners = new Set<() => void>();
+  const notifyHistory = () => { for (const listener of historyListeners) listener(); };
   let dragData: Graphics3DMesh | null = null;
   let dragOrigin: THREE.Vector3 | null = null;
   let dragScaleOrigin: THREE.Vector3 | null = null;
@@ -47,6 +49,7 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
     past.push(before);
     if (past.length > MAX_HISTORY) past.shift();
     future.length = 0;
+    notifyHistory();
   };
 
   const updateGeometry = (data: Graphics3DMesh, before: MeshEditHistoryState | null = currentSnapshot()) => {
@@ -68,6 +71,7 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
     dragScaleOrigin = null;
     onChange(state.data.geometry);
     rebuild();
+    notifyHistory();
   };
 
   const undo = () => {
@@ -152,6 +156,7 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
       clearSelection(selection);
       past.length = 0;
       future.length = 0;
+      notifyHistory();
       dragData = null;
       dragOrigin = null;
       dragScaleOrigin = null;
@@ -168,6 +173,10 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
     redo,
     canUndo: () => past.length > 0,
     canRedo: () => future.length > 0,
+    subscribeHistory(listener) {
+      historyListeners.add(listener);
+      return () => historyListeners.delete(listener);
+    },
     addVertex(position) { if (!state.data || state.mode !== "vertices") return; const before = currentSnapshot(); const beforeCount = state.data.geometry.vertices.length / 3; const next = addVertex(state.data, position); if (next === state.data) return; selection.vertices.clear(); selection.vertices.add(beforeCount); updateGeometry(next, before); },
     addFaceFromSelection() {
       if (!state.data || state.mode !== "vertices" || selection.vertices.size !== 3) return;
@@ -238,7 +247,7 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
       dragData = null;
       dragOrigin = null;
     },
-    dispose() { renderer.domElement.removeEventListener("pointerdown", onPointerDown); transform.removeEventListener("objectChange", onTransform); transform.removeEventListener("dragging-changed", onTransformDraggingChanged); transform.detach(); transform.dispose(); handles.removePivot(); handles.clear(); scene.remove(handles.group); }
+    dispose() { historyListeners.clear(); renderer.domElement.removeEventListener("pointerdown", onPointerDown); transform.removeEventListener("objectChange", onTransform); transform.removeEventListener("dragging-changed", onTransformDraggingChanged); transform.detach(); transform.dispose(); handles.removePivot(); handles.clear(); scene.remove(handles.group); }
   };
 }
 
