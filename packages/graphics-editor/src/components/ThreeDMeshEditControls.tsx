@@ -36,6 +36,8 @@ export function ThreeDMeshEditControls({ mode, controller, disabled = false }: T
       <button disabled={disabled || !controller} onClick={() => controller?.setFaceAction("translate")}>Move</button>
       <button disabled={disabled || !controller} onClick={() => controller?.extrudeSelectedFace(distance)}>Extrude</button>
       <button disabled={disabled || !controller} onClick={() => controller?.insetSelectedFace(distance)}>Inset</button>
+      <button disabled={disabled || !controller} onClick={() => controller?.growSelectedFaces()}>Grow</button>
+      <button disabled={disabled || !controller} onClick={() => controller?.shrinkSelectedFaces()}>Shrink</button>
       <button disabled={disabled || !controller} onClick={() => controller?.deleteSelectedFaces()}>Delete</button>
     </>}
   </div>;
