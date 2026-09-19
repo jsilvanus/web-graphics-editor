@@ -28,7 +28,7 @@ function quad(): Graphics3DMesh {
 describe("edge loop and ring selection", () => {
   it("follows a geometric edge loop through opposite directions", () => {
     const data = quad();
-    expect([...selectEdgeLoop(data, "1:3")].sort()).toEqual(["0:1", "1:3", "3:4"]);
+    expect([...selectEdgeLoop(data, "1:3")].sort()).toEqual(["0:1", "0:2", "1:3", "2:3"]);
   });
 
   it("selects a geometric ring of parallel edges", () => {
