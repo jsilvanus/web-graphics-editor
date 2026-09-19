@@ -33,9 +33,13 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
   const rebuild = () => { handles.rebuild(); syncTransform(); };
   const syncTransform = () => {
     transform.detach();
-    if (state.mode !== "faces" || !["translate", "extrude", "scale"].includes(state.faceAction)) return;
-    transform.setMode(state.faceAction === "scale" ? "scale" : "translate");
-    transform.setSpace(state.faceAction === "translate" ? "world" : "local");
+    if (state.mode === "faces" && ["translate", "extrude", "scale", "inset"].includes(state.faceAction)) {
+      transform.setMode(state.faceAction === "scale" ? "scale" : "translate");
+      transform.setSpace(state.faceAction === "translate" ? "world" : "local");
+    } else if (state.mode === "edges" && state.faceAction === "bevel") {
+      transform.setMode("translate");
+      transform.setSpace("world");
+    } else return;
     const pivot = handles.group.userData.pivot as THREE.Group | undefined;
     if (pivot && selection.faces.size) transform.attach(pivot);
   };
@@ -113,6 +117,24 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
     const pivot = handles.group.userData.pivot as THREE.Group | undefined;
     if (!pivot) return;
 
+    if (state.mode === "faces" && state.faceAction === "inset" && dragOrigin) {
+      const delta = pivot.position.clone().sub(dragOrigin);
+      const amount = delta.length();
+      if (amount < 1e-8) return;
+      state.data = insetKernel(dragData, selection.faces, amount);
+      onChange(state.data.geometry);
+      return;
+    }
+
+    if (state.mode === "edges" && state.faceAction === "bevel" && dragOrigin) {
+      const delta = pivot.position.clone().sub(dragOrigin);
+      const amount = delta.length();
+      if (amount < 1e-8) return;
+      state.data = bevel(dragData, selection.edges, amount);
+      onChange(state.data.geometry);
+      return;
+    }
+
     if (state.mode === "faces" && state.faceAction === "scale" && dragScaleOrigin) {
       const scale = new THREE.Vector3(
         pivot.scale.x / dragScaleOrigin.x,
@@ -166,7 +188,8 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
     setMode(mode) { state.mode = mode; clearSelection(selection); dragData = null; dragOrigin = null; dragScaleOrigin = null; rebuild(); },
     setFaceAction(action) {
       state.faceAction = action;
-      if ((action === "translate" || action === "extrude" || action === "scale") && state.mode === "faces") rebuild();
+      if ((action === "translate" || action === "extrude" || action === "scale" || action === "inset") && state.mode === "faces") rebuild();
+      else if (action === "bevel" && state.mode === "edges") rebuild();
       else transform.detach();
     },
     undo,
