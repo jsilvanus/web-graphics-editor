@@ -12,7 +12,12 @@ export function ThreeDMeshEditControls({ mode, controller, disabled = false }: T
   const [weldTolerance, setWeldTolerance] = useState(0.05);
   if (mode === "object") return null;
 
+  const canUndo = controller?.canUndo() ?? false;
+  const canRedo = controller?.canRedo() ?? false;
+
   return <div style={{ position: "absolute", top: 42, left: 10, zIndex: 2, display: "flex", alignItems: "center", gap: 6, padding: 6, background: "rgba(16,18,22,.9)", border: "1px solid #30343b", borderRadius: 6 }}>
+    <button disabled={disabled || !controller || !canUndo} onClick={() => controller?.undo()} title="Undo (Ctrl/Cmd+Z)">Undo</button>
+    <button disabled={disabled || !controller || !canRedo} onClick={() => controller?.redo()} title="Redo (Ctrl/Cmd+Shift+Z)">Redo</button>
     {mode === "vertices" && <>
       <span style={{ fontSize: 12 }}>Vertex</span>
       <button disabled={disabled || !controller} onClick={() => controller?.addVertex([0, 0, 0])}>Add</button>
