@@ -11,8 +11,8 @@ export const PathEditor: FC<{ layer: Layer; onNodes: (nodes: PathNode[]) => void
   const clone = () => nodes.map(n => ({ ...n, handleIn: n.handleIn && { ...n.handleIn }, handleOut: n.handleOut && { ...n.handleOut } }));
   const begin = (event: ReactPointerEvent, index: number, part: "node" | "in" | "out") => { const svg = event.currentTarget.ownerSVGElement; if (!svg) return; event.stopPropagation(); const nextSelection = event.shiftKey ? (selected.includes(index) ? selected.filter(i => i !== index) : [...selected, index]) : [index]; const broken = event.altKey || event.metaKey; if (broken && part !== "node") { const next = clone(); next[index].kind = "corner"; onNodes(next); } const current = clone(); setDrag({ index, part, start: point(event, svg), nodes: current, selected: nextSelection, broken }); (event.currentTarget as Element).setPointerCapture?.(event.pointerId); };
   const move = (event: ReactPointerEvent) => { if (!drag) return; const svg = event.currentTarget as SVGSVGElement; const p = point(event, svg); const dx = p.x - drag.start.x, dy = p.y - drag.start.y; const next = drag.nodes.map((node, i) => {
-    if (!drag.selected.includes(i)) return node;
-    if (drag.part === "node") return { ...node, x: node.x + dx, y: node.y + dy, handleIn: node.handleIn && { x: node.handleIn.x + dx, y: node.handleIn.y + dy }, handleOut: node.handleOut && { x: node.handleOut.x + dx, y: node.handleOut.y + dy } };
+    if (drag.part !== "node" && i !== drag.index) return node;
+    if (drag.part === "node" && !drag.selected.includes(i)) return node; return { ...node, x: node.x + dx, y: node.y + dy, handleIn: node.handleIn && { x: node.handleIn.x + dx, y: node.handleIn.y + dy }, handleOut: node.handleOut && { x: node.handleOut.x + dx, y: node.handleOut.y + dy } };
     if (drag.broken) return { ...node, [drag.part === "in" ? "handleIn" : "handleOut"]: p };
     return mirrorHandle(node, drag.part, p);
   }); onNodes(next); setDrag({ ...drag, start: p, nodes: next }); };
