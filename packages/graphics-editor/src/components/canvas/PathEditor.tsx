@@ -22,7 +22,7 @@ function splitCubic(a:Point,c1:Point,c2:Point,b:Point,t:number) {
   const abc={x:ab.x+(bc.x-ab.x)*t,y:ab.y+(bc.y-ab.y)*t};
   const bcd={x:bc.x+(cd.x-bc.x)*t,y:bc.y+(cd.y-bc.y)*t};
   const p={x:abc.x+(bcd.x-abc.x)*t,y:abc.y+(bcd.y-abc.y)*t};
-  return { leftOut:ab, leftEnd:p, rightIn:bcd, rightStart:p };
+  return { leftOut:ab, leftEnd:abc, rightIn:bcd, rightStart:p };
 }
 
 export const PathEditor: FC<{ layer:Layer; onNodes:(nodes:PathNode[])=>void }> = ({layer,onNodes}) => {
