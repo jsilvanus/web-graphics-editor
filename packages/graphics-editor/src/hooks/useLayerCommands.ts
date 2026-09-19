@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { alignLayersCommand, distributeLayersCommand } from "../document/commands";
+import { alignLayersCommand, distributeLayersCommand, booleanLayersCommand } from "../document/commands";
 import type { GraphicsDocument } from "../types";
 import type { EditorOperationOptions } from "./useEditorHistory";
 import { useLayerOperations } from "./useLayerOperations";
@@ -37,6 +37,8 @@ export function useLayerCommands(
     executeCommand(alignLayersCommand(document, selectedIds, mode, reference), { label: `Align ${mode}` });
   }, [selectedIds, document, executeCommand]);
 
+  const applyBoolean = useCallback((operation: import("../geometry/boolean").BooleanOperation) => { if (selectedIds.size !== 2) return; executeCommand(booleanLayersCommand(document, [...selectedIds], operation), { label: `Boolean ${operation}` }); }, [selectedIds, document, executeCommand]);
+
   const applyDistribute = useCallback((mode: DistributeMode) => {
     if (selectedIds.size < 3) return;
     executeCommand(distributeLayersCommand(document, selectedIds, mode), { label: `Distribute ${mode}` });
@@ -56,6 +58,7 @@ export function useLayerCommands(
     deleteSelected,
     duplicateSelected,
     applyAlign,
+    applyBoolean,
     applyDistribute,
     primaryId,
   };
