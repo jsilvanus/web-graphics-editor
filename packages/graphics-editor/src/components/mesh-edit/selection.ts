@@ -94,8 +94,14 @@ export function selectEdgeLoop(data: Graphics3DMesh, startKey: string): Set<stri
   const quads = inferLogicalQuads(data);
   const opposite = new Map<string, string>();
   for (const quad of quads) {
-    for (let i = 0; i < quad.boundary.length; i++) {
-      opposite.set(quad.boundary[i], quad.boundary[(i + 2) % quad.boundary.length]);
+    for (const key of quad.boundary) {
+      const [a, b] = key.split(":").map(Number);
+      const other = quad.boundary.find(candidate => {
+        if (candidate === key) return false;
+        const [c, d] = candidate.split(":").map(Number);
+        return a !== c && a !== d && b !== c && b !== d;
+      });
+      if (other) opposite.set(key, other);
     }
   }
 
