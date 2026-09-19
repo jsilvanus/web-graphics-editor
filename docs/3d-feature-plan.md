@@ -18,12 +18,12 @@ This is the implementation roadmap for the 3D editor. Keep the architecture modu
 - [x] robust multi-face extrusion
 - [x] move/add/delete vertices
 - [x] add/delete faces
-- [ ] edge split/subdivide
+- [x] edge split/subdivide
 - [x] merge/weld vertices
-- [ ] loop/ring selection
+- [x] loop/ring selection
 - [ ] duplicate/extract faces
-- [ ] normals/recalculate/flip normals
-- [ ] basic topology validation
+- [x] normals/recalculate/flip normals
+- [x] basic topology validation
 
 ## 2. Materials & appearance
 
