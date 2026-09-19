@@ -11,3 +11,4 @@ export * from "./delete-face";
 export * from "./split-edge";
 export * from "./split-face";
 export * from "./inset-face";
+export * from "./normals";
