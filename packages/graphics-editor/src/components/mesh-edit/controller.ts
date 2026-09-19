@@ -120,7 +120,6 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
     if (state.mode === "faces" && state.faceAction === "inset" && dragOrigin) {
       const delta = pivot.position.clone().sub(dragOrigin);
       const amount = delta.length();
-      if (amount < 1e-8) return;
       state.data = insetKernel(dragData, selection.faces, amount);
       onChange(state.data.geometry);
       return;
@@ -129,7 +128,6 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
     if (state.mode === "edges" && state.faceAction === "bevel" && dragOrigin) {
       const delta = pivot.position.clone().sub(dragOrigin);
       const amount = delta.length();
-      if (amount < 1e-8) return;
       state.data = bevel(dragData, selection.edges, amount);
       onChange(state.data.geometry);
       return;
