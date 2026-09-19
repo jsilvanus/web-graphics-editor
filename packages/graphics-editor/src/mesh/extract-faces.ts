@@ -68,5 +68,5 @@ export function duplicateFaces(source: Graphics3DMesh, faceIds: Set<number>): Gr
     for (let i = 1; i < mapped.length - 1; i++) indices.push(mapped[0], mapped[i], mapped[i + 1]);
   }
 
-  return { ...source, geometry: { ...source.geometry, vertices, indices } };
+  return { ...source, geometry: { vertices, indices } };
 }
