@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { MeshEditMode, ThreeDMeshEditController } from "./ThreeDMeshEditOverlay";
 
 export interface ThreeDMeshEditControlsProps {
@@ -10,6 +10,8 @@ export interface ThreeDMeshEditControlsProps {
 export function ThreeDMeshEditControls({ mode, controller, disabled = false }: ThreeDMeshEditControlsProps) {
   const [distance, setDistance] = useState(0.5);
   const [weldTolerance, setWeldTolerance] = useState(0.05);
+  const [, refreshHistory] = useState(0);
+  useEffect(() => controller?.subscribeHistory(() => refreshHistory(value => value + 1)), [controller]);
   if (mode === "object") return null;
 
   const canUndo = controller?.canUndo() ?? false;
@@ -39,6 +41,7 @@ export function ThreeDMeshEditControls({ mode, controller, disabled = false }: T
       <span style={{ fontSize: 12 }}>Face</span>
       <label style={{ fontSize: 12 }}>Amount <input aria-label="Face operation amount" type="number" step="0.1" value={distance} onChange={event => setDistance(Number(event.target.value) || 0)} style={{ width: 64 }} /></label>
       <button disabled={disabled || !controller} onClick={() => controller?.setFaceAction("translate")}>Move</button>
+      <button disabled={disabled || !controller} onClick={() => controller?.setFaceAction("scale")}>Scale</button>
       <button disabled={disabled || !controller} onClick={() => controller?.extrudeSelectedFaces(distance)}>Extrude</button>
       <button disabled={disabled || !controller} onClick={() => controller?.insetSelectedFace(distance)}>Inset</button>
       <button disabled={disabled || !controller} onClick={() => controller?.growSelectedFaces()}>Grow</button>
