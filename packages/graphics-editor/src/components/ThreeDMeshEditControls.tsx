@@ -27,6 +27,7 @@ export function ThreeDMeshEditControls({ mode, controller, disabled = false }: T
       <span style={{ fontSize: 12 }}>Edge</span>
       <label style={{ fontSize: 12 }}>Amount <input aria-label="Edge operation amount" type="number" min="0" step="0.1" value={distance} onChange={event => setDistance(Number(event.target.value) || 0)} style={{ width: 64 }} /></label>
       <button disabled={disabled || !controller} onClick={() => controller?.bevelSelectedEdges(distance)}>Bevel</button>
+      <button disabled={disabled || !controller} onClick={() => controller?.splitSelectedEdges()}>Split</button>
     </>}
     {mode === "faces" && <>
       <span style={{ fontSize: 12 }}>Face</span>
