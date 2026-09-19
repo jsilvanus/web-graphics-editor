@@ -34,6 +34,9 @@ export interface ThreeDMeshEditController {
   insetSelectedFaceLegacy: (amount: number) => void;
   bevelSelectedEdges: (amount: number) => void;
   splitSelectedEdges: () => void;
+  connectSelectedEdges: () => void;
+  growSelectedFaces: () => void;
+  shrinkSelectedFaces: () => void;
   recalculateNormals: () => void;
   flipSelectedFaces: () => void;
   dispose: () => void;
