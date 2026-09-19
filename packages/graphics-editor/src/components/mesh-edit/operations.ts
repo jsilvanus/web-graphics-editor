@@ -5,6 +5,7 @@ import { insetGraphicsMeshFace } from "../../mesh/graphics-mesh-inset";
 import { bevelMeshEdges } from "../../mesh/graphics-mesh-bevel";
 import { extrudeRegion } from "../../mesh/extrude/extrude-region";
 import { splitGraphicsMeshEdges } from "../../mesh/graphics-mesh-split-edge";
+import { flipFaces, recalculateNormals } from "../../mesh/normals";
 
 export function insetKernel(data: Graphics3DMesh, faces: Set<number>, amount: number): Graphics3DMesh {
   let next = data;
@@ -34,4 +35,12 @@ export function bevel(data: Graphics3DMesh, edges: Set<string>, amount: number):
 
 export function splitEdges(data: Graphics3DMesh, edges: Set<string>): Graphics3DMesh {
   return splitGraphicsMeshEdges(data, edges);
+}
+
+export function recalculateMeshNormals(data: Graphics3DMesh): Graphics3DMesh {
+  return recalculateNormals(data);
+}
+
+export function flipMeshFaces(data: Graphics3DMesh, faces: Set<number>): Graphics3DMesh {
+  return flipFaces(data, faces);
 }
