@@ -21,7 +21,7 @@ This is the implementation roadmap for the 3D editor. Keep the architecture modu
 - [x] edge split/subdivide
 - [x] merge/weld vertices
 - [x] loop/ring selection
-- [ ] duplicate/extract faces
+- [x] duplicate/extract faces
 - [x] normals/recalculate/flip normals
 - [x] basic topology validation
 
