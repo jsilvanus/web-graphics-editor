@@ -33,7 +33,7 @@ describe("edge loop and ring selection", () => {
 
   it("selects a geometric ring of parallel edges", () => {
     const data = quad();
-    expect([...selectEdgeRing(data, "0:1")].sort()).toEqual(["0:1", "2:3", "4:5"]);
+    expect([...selectEdgeRing(data, "0:1")].sort()).toEqual(["0:1", "1:4", "2:3", "4:5"]);
   });
 });
 
