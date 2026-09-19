@@ -10,5 +10,5 @@ export function createThreeDMeshEditController(
   renderer: THREE.WebGLRenderer,
   onChange: (geometry: Graphics3DMesh["geometry"]) => void,
 ): ThreeDMeshEditController {
-  return createMeshEditController(scene, camera, renderer, onChange);
+  return createMeshEditController(scene, camera, renderer, onChange, onExtract);
 }
