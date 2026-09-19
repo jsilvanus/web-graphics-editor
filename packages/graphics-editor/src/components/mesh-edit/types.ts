@@ -29,7 +29,7 @@ export interface ThreeDMeshEditController {
   weldSelectedVertices: (tolerance?: number) => void;
   deleteSelectedVertices: () => void;
   deleteSelectedFaces: () => void;
-  extrudeSelectedFace: (distance: number) => void;
+  extrudeSelectedFaces: (distance: number) => void;
   insetSelectedFace: (amount: number) => void;
   insetSelectedFaceLegacy: (amount: number) => void;
   bevelSelectedEdges: (amount: number) => void;
