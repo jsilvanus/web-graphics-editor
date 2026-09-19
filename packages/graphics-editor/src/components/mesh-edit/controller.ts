@@ -23,7 +23,7 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
 
   const syncTransform = () => {
     transform.detach();
-    if (state.mode !== "faces" || state.faceAction !== "translate") return;
+    if (state.mode !== "faces" || !["translate", "extrude"].includes(state.faceAction)) return;
     const pivot = handles.group.userData.pivot as THREE.Group | undefined;
     if (pivot && selection.faces.size) transform.attach(pivot);
   };
@@ -67,7 +67,11 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
     setMesh(mesh, data) { state.mesh = mesh; state.data = data; clearSelection(selection); dragData = null; dragOrigin = null; rebuild(); },
     updateData(data) { state.data = data; if (!transform.dragging) rebuild(); },
     setMode(mode) { state.mode = mode; clearSelection(selection); dragData = null; dragOrigin = null; rebuild(); },
-    setFaceAction(action) { state.faceAction = action; if (action === "translate" && state.mode === "faces") rebuild(); else if (action !== "translate") transform.detach(); },
+    setFaceAction(action) {
+      state.faceAction = action;
+      if ((action === "translate" || action === "extrude") && state.mode === "faces") rebuild();
+      else transform.detach();
+    },
     addVertex(position) { if (!state.data || state.mode !== "vertices") return; const before = state.data.geometry.vertices.length / 3; const next = addVertex(state.data, position); if (next === state.data) return; selection.vertices.clear(); selection.vertices.add(before); updateGeometry(next); },
     addFaceFromSelection() {
       if (!state.data || state.mode !== "vertices" || selection.vertices.size !== 3) return;
@@ -88,7 +92,12 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
       dragData = null;
       dragOrigin = null;
     },
-    extrudeSelectedFaces(distance) { if (!state.data || state.mode !== "faces" || !selection.faces.size) return; updateGeometry(extrude(state.data, selection.faces, distance)); },
+    extrudeSelectedFaces(distance) {
+      if (!state.data || state.mode !== "faces" || !selection.faces.size) return;
+      updateGeometry(extrude(state.data, selection.faces, distance));
+      state.faceAction = "extrude";
+      syncTransform();
+    },
     insetSelectedFace(amount) { if (!state.data || !selection.faces.size) return; updateGeometry(insetKernel(state.data, selection.faces, amount)); },
     insetSelectedFaceLegacy(amount) { if (!state.data || !selection.faces.size) return; updateGeometry(insetLegacy(state.data, selection.faces, amount)); },
     bevelSelectedEdges(amount) { if (!state.data || !selection.edges.size) return; updateGeometry(bevel(state.data, selection.edges, amount)); },
