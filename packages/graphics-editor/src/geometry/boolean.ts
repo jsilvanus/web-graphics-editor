@@ -16,7 +16,7 @@ export function booleanPolygons(a:PolygonPoint[],b:PolygonPoint[],op:BooleanOper
  const A=ring(a),B=ring(b);let count=0;
  for(const x of A)for(const y of B){const h=hit(x.p,x.next.p,y.p,y.next.p);if(!h)continue;const an={p:h.p,intersection:true,alpha:h.t} as Node,bn={p:h.p,intersection:true,alpha:h.u} as Node;an.neighbor=bn;bn.neighbor=an;insert(x,an);insert(y,bn);count++}
  if(!count)return fallback(a,b,op);
- for(const n of [...A,...B])if(n.intersection){const q={x:n.p.x+(n.next.p.x-n.p.x)*1e-6,y:n.p.y+(n.next.p.y-n.p.y)*1e-6};const other=n.neighbor===undefined?false:inside(q,n.neighbor.prev.p===n.neighbor.p?b:a);n.entry=op==="intersect"?!other:op==="union"?other:!other}
+ for(const n of A)if(n.intersection){const q={x:n.p.x+(n.next.p.x-n.p.x)*1e-6,y:n.p.y+(n.next.p.y-n.p.y)*1e-6};const other=inside(q,b);n.entry=op==="intersect"?other:op==="union"?!other:other}\n for(const n of B)if(n.intersection){const q={x:n.p.x+(n.next.p.x-n.p.x)*1e-6,y:n.p.y+(n.next.p.y-n.p.y)*1e-6};const other=inside(q,a);n.entry=op==="intersect"?other:op==="union"?!other:other}
  const result:PolygonPoint[][]=[];
  for(const start of [...A,...B])if(start.intersection&&!start.visited&&start.entry){const out=[];let n=start,guard=0;do{n.visited=true;out.push(n.p);if(n.intersection&&n.neighbor){n=n.neighbor;if(n.visited)break}n=n.next;guard++}while(n!==start&&guard<10000);if(out.length>2&&Math.abs(area(out))>EPS)result.push(out)}
  return result.length?result:fallback(a,b,op);
