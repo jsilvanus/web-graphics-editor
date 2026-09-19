@@ -17,7 +17,7 @@ import type { FaceEditAction, MeshEditMode, ThreeDMeshEditController } from "./t
 
 const MAX_HISTORY = 100;
 
-export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camera, renderer: THREE.WebGLRenderer, onChange: (geometry: Graphics3DMesh["geometry"]) => void): ThreeDMeshEditController {
+export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camera, renderer: THREE.WebGLRenderer, onChange: (geometry: Graphics3DMesh["geometry"]) => void, onExtract?: (mesh: Graphics3DMesh) => void): ThreeDMeshEditController {
   const transform = new TransformControls(camera, renderer.domElement); scene.add(transform.getHelper());
   transform.setMode("translate");
   const raycaster = new THREE.Raycaster(), pointer = new THREE.Vector2(), selection = createSelection();
@@ -229,8 +229,9 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
     extractSelectedFaces() {
       if (!state.data || state.mode !== "faces" || !selection.faces.size) return;
       const extracted = extractFaces(state.data, selection.faces);
-      if (!extracted) return;
+      if (!extracted || !onExtract) return;
       const before = currentSnapshot();
+      onExtract(extracted);
       let next = state.data;
       for (const faceId of [...selection.faces].sort((a, b) => b - a)) {
         next = deleteGraphicsMeshFace(next, faceId);
