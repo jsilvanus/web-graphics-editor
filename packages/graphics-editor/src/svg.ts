@@ -4,7 +4,7 @@ import { buildRenderTree, type RenderNode } from "./render-model";
 
 function esc(value: string) { return value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 function attrs(style: Record<string, string | number> = {}) { return Object.entries(style).map(([k, v]) => `${k}="${esc(String(v))}"`).join(" "); }
-function transformFor(layer: Layer) { return `translate(${layer.x} ${layer.y}) rotate(${layer.rotation ?? 0} ${layer.width / 2} ${layer.height / 2})`; }
+function transformFor(layer: Layer) { const ox=layer.transformOrigin?.x ?? layer.width/2, oy=layer.transformOrigin?.y ?? layer.height/2; return `translate(${layer.x} ${layer.y}) translate(${ox} ${oy}) rotate(${layer.rotation ?? 0}) skewX(${layer.skewX ?? 0}) skewY(${layer.skewY ?? 0}) translate(${-ox} ${-oy})`; }
 function leafSvg(layer: Layer): string {
   const transform = transformFor(layer), style = attrs(layer.style);
   if (layer.type === "path" || layer.type === "line") return `<path d="${esc(layer.nodes?.length ? nodesToD(layer.nodes, layer.closed) : layer.path ?? "")}" ${style ? style + " " : ""}transform="${transform}"/>`;
