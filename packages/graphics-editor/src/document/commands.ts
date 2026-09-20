@@ -64,6 +64,42 @@ function layerPolygon(layer: Layer): PolygonPoint[] | null {
   return null;
 }
 
+export function moveLayerCommand(document: GraphicsDocument, id: string, targetId: string, position: "inside" | "before" | "after"): CommandResult {
+  if (id === targetId) return { document };
+  const moving = document.layers.find(layer => layer.id === id);
+  const target = document.layers.find(layer => layer.id === targetId);
+  if (!moving || !target || moving.locked) return { document };
+  const descendants = new Set<string>();
+  const visit = (layerId: string) => { if (descendants.has(layerId)) return; descendants.add(layerId); const layer = document.layers.find(item => item.id === layerId); layer?.children?.forEach(visit); };
+  visit(id);
+  if (descendants.has(targetId)) return { document };
+  const parentId = position === "inside" ? target.id : target.parentId;
+  const parent = parentId ? document.layers.find(layer => layer.id === parentId && layer.type === "group") : undefined;
+  if (position === "inside" && target.type !== "group") return { document };
+  if (parentId && !parent) return { document };
+  let next = { ...document, layers: document.layers.map(layer => ({ ...layer, children: layer.children ? [...layer.children] : layer.children })) };
+  const oldParent = moving.parentId ? next.layers.find(layer => layer.id === moving.parentId) : undefined;
+  if (oldParent?.children) oldParent.children = oldParent.children.filter(childId => childId !== id);
+  const updatedMoving = { ...moving, parentId: parentId || undefined };
+  next.layers = next.layers.map(layer => layer.id === id ? updatedMoving : layer);
+  const container = parentId ? next.layers.find(layer => layer.id === parentId) : undefined;
+  if (container?.children) {
+    container.children = container.children.filter(childId => childId !== id);
+    if (position === "inside") container.children.push(id);
+    else { const index = container.children.indexOf(targetId); container.children.splice(Math.max(0, position === "before" ? index : index + 1), 0, id); }
+  } else if (!parentId) {
+    const top = next.layers.filter(layer => !layer.parentId && !descendants.has(layer.id));
+    const targetIndex = top.findIndex(layer => layer.id === targetId);
+    const desired = Math.max(0, position === "before" ? targetIndex : targetIndex + 1);
+    const order = top.map(layer => layer.id).filter(layerId => layerId !== id);
+    order.splice(desired, 0, id);
+    const byId = new Map(next.layers.map(layer => [layer.id, layer]));
+    const rest = next.layers.filter(layer => layer.parentId || descendants.has(layer.id));
+    next.layers = [...order.map(layerId => byId.get(layerId)!), ...rest];
+  }
+  return { document: next, operation: { type: "batch", operations: diffOperations(document, next) } };
+}
+
 export function booleanLayersCommand(document: GraphicsDocument, ids: string[], operation: BooleanOperation): CommandResult {
   if (ids.length !== 2) return { document };
   const a = document.layers.find(layer => layer.id === ids[0]), b = document.layers.find(layer => layer.id === ids[1]);
