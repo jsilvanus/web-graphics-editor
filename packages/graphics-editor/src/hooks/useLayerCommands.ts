@@ -13,7 +13,7 @@ export function useLayerCommands(
   select: (id: string) => void,
   clear: () => void,
 ) {
-  const { add, remove, duplicate, bringForward, sendBackward, bringToFront, sendToBack, group, ungroup } = useLayerOperations(executeCommand, document);
+  const { add, remove, duplicate, bringForward, sendBackward, bringToFront, sendToBack, group, ungroup, move } = useLayerOperations(executeCommand, document);
 
   const addLayer = useCallback((type: Parameters<typeof add>[0]) => {
     const id = add(type);
@@ -43,6 +43,8 @@ export function useLayerCommands(
     if (selectedIds.size < 3) return;
     executeCommand(distributeLayersCommand(document, selectedIds, mode), { label: `Distribute ${mode}` });
   }, [selectedIds, document, executeCommand]);
+
+  const moveLayer = useCallback((id: string, targetId: string, position: "inside" | "before" | "after") => move(id, targetId, position), [move]);
 
   return {
     add,
