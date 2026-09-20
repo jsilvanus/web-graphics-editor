@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import type { GraphicsDocument, Layer, LayerType } from "../types";
-import { updateLayerCommand, updateLayerStyleCommand, addLayerCommand, removeLayerCommand, reorderLayerCommand, groupLayersCommand, ungroupLayerCommand } from "../document/commands";
+import { updateLayerCommand, updateLayerStyleCommand, addLayerCommand, removeLayerCommand, reorderLayerCommand, groupLayersCommand, ungroupLayerCommand, moveLayerCommand } from "../document/commands";
 import type { DocumentOperation } from "../history/operations";
 import type { EditorOperationOptions } from "./useEditorHistory";
 import { linePath } from "../geometry/path";
@@ -59,6 +59,7 @@ export function useLayerOperations(executeCommand: ExecuteCommand, document: Gra
   const sendToBack = useCallback((id: string) => reorder(id, "back"), [reorder]);
   const group = useCallback((ids: Set<string>) => { const result = groupLayersCommand(document, ids); execute(result, "Group layers"); return result.operation?.type === "group-layers" ? result.operation.group.id : ""; }, [document, execute]);
   const ungroup = useCallback((id: string) => execute(ungroupLayerCommand(document, id), "Ungroup layer"), [document, execute]);
+  const move = useCallback((id: string, targetId: string, position: "inside" | "before" | "after") => execute(moveLayerCommand(document, id, targetId, position), "Move layer"), [document, execute]);
 
-  return { updateLayer, updateStyle, add, remove, duplicate, bringForward, sendBackward, bringToFront, sendToBack, group, ungroup };
+  return { updateLayer, updateStyle, add, remove, duplicate, bringForward, sendBackward, bringToFront, sendToBack, group, ungroup, move };
 }
