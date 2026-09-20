@@ -29,7 +29,7 @@ export const LayerList: FC<{
   const beginRename = (layer: Layer) => {
     if (!onRename) return;
     setEditingId(layer.id);
-    setEditingName(layer.id);
+    setEditingName(layer.name ?? layer.id);
   };
   const commitRename = (layer: Layer) => {
     const name = editingName.trim();
@@ -43,9 +43,9 @@ export const LayerList: FC<{
     const isCollapsed = collapsed.has(layer.id);
     return <div key={layer.id}>
       <div style={{ display: "grid", gridTemplateColumns: isGroup ? "20px minmax(0,1fr) auto" : "20px minmax(0,1fr)", alignItems: "center", gap: 4, paddingLeft: depth * 14 }}>
-        {isGroup ? <button type="button" aria-label={isCollapsed ? `Expand ${layer.id}` : `Collapse ${layer.id}`} onClick={() => toggle(layer.id)} style={{ padding: 0, width: 20 }}>{isCollapsed ? "▸" : "▾"}</button> : <span />}
+        {isGroup ? <button type="button" aria-label={isCollapsed ? `Expand ${layer.name ?? layer.id}` : `Collapse ${layer.name ?? layer.id}`} onClick={() => toggle(layer.id)} style={{ padding: 0, width: 20 }}>{isCollapsed ? "▸" : "▾"}</button> : <span />}
         <button type="button" className={selectedIds.has(layer.id) ? "ge-layer-selected" : ""} onClick={() => onSelect(layer.id)} onDoubleClick={() => beginRename(layer)} style={{ minWidth: 0, textAlign: "left", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {editingId === layer.id ? <input autoFocus value={editingName} onChange={event => setEditingName(event.target.value)} onClick={event => event.stopPropagation()} onKeyDown={event => { event.stopPropagation(); if (event.key === "Enter") commitRename(layer); if (event.key === "Escape") setEditingId(null); }} onBlur={() => commitRename(layer)} style={{ width: "100%" }} /> : <><span style={{ opacity: .7, marginRight: 6 }}>{layer.type}</span><span>{layer.id}</span></>}
+          {editingId === layer.id ? <input autoFocus value={editingName} onChange={event => setEditingName(event.target.value)} onClick={event => event.stopPropagation()} onKeyDown={event => { event.stopPropagation(); if (event.key === "Enter") commitRename(layer); if (event.key === "Escape") setEditingId(null); }} onBlur={() => commitRename(layer)} style={{ width: "100%" }} /> : <><span style={{ opacity: .7, marginRight: 6 }}>{layer.type}</span><span>{layer.name ?? layer.id}</span></>}
         </button>
         <span style={{ display: "flex", gap: 2 }}>
           {onToggleVisibility && <button type="button" title={layer.visible === false ? "Show" : "Hide"} aria-label={layer.visible === false ? "Show" : "Hide"} onClick={event => { event.stopPropagation(); onToggleVisibility(layer.id); }}>{layer.visible === false ? "○" : "●"}</button>}
