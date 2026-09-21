@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { linePath, orthogonalPoint, pathCommandsToD, roundedRectPath } from "./path";
+import { flattenPathNodes } from "../geometry";
 
 describe("SVG path geometry", () => {
   it("serializes straight and curved commands", () => {
@@ -10,5 +11,20 @@ describe("SVG path geometry", () => {
   it("supports horizontal-first and vertical-first orthogonal segments", () => {
     expect(orthogonalPoint(10, 20, 50, 80, true)).toEqual({ x: 50, y: 20 });
     expect(orthogonalPoint(10, 20, 50, 80, false)).toEqual({ x: 10, y: 80 });
+  });
+});
+
+
+describe("Bézier path flattening",()=>{
+  it("subdivides a curved segment",()=>{
+    const result=flattenPathNodes([{x:0,y:0,kind:"smooth",handleOut:{x:0,y:100}},{x:100,y:100,kind:"smooth",handleIn:{x:100,y:0}}],false,0.5);
+    expect(result.points.length).toBeGreaterThan(3);
+    expect(result.points[0]).toEqual({x:0,y:0});
+    expect(result.points.at(-1)).toEqual({x:100,y:100});
+  });
+  it("closes without duplicating the first point",()=>{
+    const result=flattenPathNodes([{x:0,y:0,kind:"smooth",handleOut:{x:0,y:20}},{x:20,y:0,kind:"smooth",handleIn:{x:20,y:20}}],true,0.5);
+    expect(result.closed).toBe(true);
+    expect(result.points[0]).not.toEqual(result.points.at(-1));
   });
 });
