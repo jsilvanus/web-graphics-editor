@@ -1,7 +1,7 @@
 export type { GraphicsAsset, GraphicsDocument, GraphicsEditorProps, Layer, LayerType, PathCommand, PathNode, Point, Provenance, ProvenanceSource, Composition, CompositionTimeline, MediaTimeMapping, CompositionTime, EvaluationTime, EvaluatedVideo, Viewport, ViewportOverride, Scene, SceneTimeline, WorldTimeMapping, Graphics3DTransform, Graphics3DMaterial, Graphics3DMeshGeometry, Graphics3DMesh, Graphics3DLight, Graphics3DCamera, Graphics3DWorld, Graphics3DVisibility, Graphics3DRenderMode, Graphics3DView, Graphics3DAnimatedProperty, Graphics3DAnimationTarget, Graphics3DTrack, GraphicsOutput, OutputPlaybackMode, OutputBackgroundMode, OutputTransition, OutputTransitionType } from "./types";
 export { resolveComposition, resolveViewportComposition, resolveScene, resolveOutput, findComposition, findViewport, sceneAtTime as presentationSceneAtTime, viewportOverride } from "./presentation";
 export type { ResolvedLayer, ResolvedComposition, ResolvedScene } from "./presentation";
-export { evaluateComposition, evaluateScene, compositionForEvaluation, sceneForEvaluation } from "./composition-evaluator";
+export { evaluateComposition, evaluateCompositionAtTime, evaluateScene, compositionForEvaluation, sceneForEvaluation } from "./composition-evaluator";
 export type { CompositionEvaluation, SceneEvaluation } from "./composition-evaluator";
 export { composeDocumentAtTime, composeOutput } from "./compositor";
 export type { CompositorFrame } from "./compositor";
