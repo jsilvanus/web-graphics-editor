@@ -3,7 +3,7 @@ export type PathNodeKind="corner"|"smooth"; export interface PathNode{x:number;y
 export type LayerType="text"|"image"|"rectangle"|"ellipse"|"line"|"path"|"group"|"3d-view";
 export type PathCommand={type:"M"|"L";x:number;y:number}|{type:"H";x:number}|{type:"V";y:number}|{type:"C";x1:number;y1:number;x2:number;y2:number;x:number;y:number}|{type:"Q";x1:number;y1:number;x:number;y:number}|{type:"Z"};
 export type TextAlign="left"|"center"|"right"; export type VerticalAlign="top"|"middle"|"bottom"; export type TextOverflow="visible"|"hidden";
-export interface TextRun{text:string;fontFamily?:string;fontSize?:number;fontWeight?:number|string;fontStyle?:"normal"|"italic";color?:string;letterSpacing?:number|string}
+export interface TextRun{text:string;fontFamily?:string;fontSize?:number;fontWeight?:number|string;fontStyle?:"normal"|"italic";textDecoration?:"none"|"underline"|"line-through";color?:string;letterSpacing?:number|string}
 export interface GradientStop{offset:number;color:string;opacity?:number}
 export interface Gradient{type:"linear"|"radial";angle?:number;cx?:number;cy?:number;stops:GradientStop[]}
 export interface ViewportOverride{x?:number;y?:number;width?:number;height?:number;rotation?:number;opacity?:number;visible?:boolean}
