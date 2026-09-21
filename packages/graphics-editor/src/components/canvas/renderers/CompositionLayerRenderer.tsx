@@ -19,7 +19,6 @@ export interface CompositionLayerRendererProps {
 export const CompositionLayerRenderer: FC<CompositionLayerRendererProps> = ({
   node, selectedIds, worlds3d, views3d, currentTime = 0, onLayerPointerDown, onSelectLayer, onPathNodes, onTextCommit, onTextRunsCommit,
 }) => {
-  const layer = node.layer;
   return (
     <div style={{ position: "absolute", inset: 0, overflow: "visible", opacity: node.opacity }}>
       {node.children.map(child => (
