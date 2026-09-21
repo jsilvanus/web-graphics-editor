@@ -116,3 +116,19 @@ export function booleanLayersCommand(document: GraphicsDocument, ids: string[], 
   const next={...document,layers:document.layers.filter(layer=>layer.id!==a.id&&layer.id!==b.id).concat(copies)};
   return { document: next, operation: batchOrSingle(diffOperations(document,next)) };
 }
+
+
+export function joinPathLayersCommand(document: GraphicsDocument, ids: string[]): CommandResult {
+  if (ids.length !== 2) return { document };
+  const a = document.layers.find(layer => layer.id === ids[0]);
+  const b = document.layers.find(layer => layer.id === ids[1]);
+  if (!a || !b || a.type !== "path" || b.type !== "path" || a.locked || b.locked || a.closed || b.closed || !a.nodes?.length || !b.nodes?.length) return { document };
+  if (a.parentId !== b.parentId) return { document };
+  const aWorld = a.nodes.map(n => ({ ...n, x: n.x + a.x, y: n.y + a.y, handleIn: n.handleIn && { x:n.handleIn.x+a.x, y:n.handleIn.y+a.y }, handleOut: n.handleOut && { x:n.handleOut.x+a.x, y:n.handleOut.y+a.y } }));
+  const bWorld = b.nodes.map(n => ({ ...n, x: n.x + b.x, y: n.y + b.y, handleIn: n.handleIn && { x:n.handleIn.x+b.x, y:n.handleIn.y+b.y }, handleOut: n.handleOut && { x:n.handleOut.x+b.x, y:n.handleOut.y+b.y } }));
+  const all = [...aWorld, ...bWorld];
+  const minX=Math.min(...all.map(n=>n.x)), minY=Math.min(...all.map(n=>n.y)), maxX=Math.max(...all.map(n=>n.x)), maxY=Math.max(...all.map(n=>n.y));
+  const nodes = all.map(n => ({ ...n, x:n.x-minX, y:n.y-minY, handleIn:n.handleIn&&{x:n.handleIn.x-minX,y:n.handleIn.y-minY}, handleOut:n.handleOut&&{x:n.handleOut.x-minX,y:n.handleOut.y-minY} }));
+  const next={...document,layers:document.layers.filter(layer=>layer.id!==b.id).map(layer=>layer.id===a.id?{...layer,x:minX,y:minY,width:Math.max(1,maxX-minX),height:Math.max(1,maxY-minY),nodes,path:undefined,pathCommands:undefined,closed:false}:layer)};
+  return { document: next, operation: batchOrSingle(diffOperations(document,next)) };
+}
