@@ -35,7 +35,7 @@ export const OutputRenderer:FC<OutputRendererProps>=({document,output,showContro
   const runtimeRef=useRef(runtime); runtimeRef.current=runtime;
   const evaluation=useMemo(()=>document.timeline?.scenes.length
     ? evaluateScene(document,runtime.time,output.viewportId)
-    : (document.compositions?.[0] ? evaluateComposition(document,document.compositions[0].id,runtime.time) : undefined),
+    : (() => { const compositionId=document.viewports?.find(v=>v.id===output.viewportId)?.compositionIds?.[0] ?? document.compositions?.[0]?.id; return compositionId ? evaluateComposition(document,compositionId,runtime.time) : undefined; })(),
     [document,output.viewportId,runtime.time]);
   const layers=evaluation?.layers??[];
   const viewport=resolved&&"scene" in resolved?document.viewports?.find(v=>v.id===output.viewportId):document.viewports?.find(v=>v.id===output.viewportId);
