@@ -132,6 +132,27 @@ function mapNestedCompositionTime(
   return Math.min(mapped, composition.duration);
 }
 
+function nestedEvaluationSources(
+  document: GraphicsDocument,
+  layers: Layer[],
+  time: number,
+  stack: string[],
+): { videos: EvaluatedVideo[]; views3d: Graphics3DView[] } {
+  const videos: EvaluatedVideo[] = [];
+  const views3d: Graphics3DView[] = [];
+  for (const layer of layers) {
+    if (layer.type !== "composition" || !layer.compositionId || stack.includes(layer.compositionId)) continue;
+    const composition = (document.compositions ?? []).find(item => item.id === layer.compositionId);
+    if (!composition) continue;
+    const nestedTime = mapNestedCompositionTime(composition, time, layer);
+    const nested = evaluateCompositionInternal(document, composition.id, nestedTime, [...stack, composition.id]);
+    if (!nested) continue;
+    videos.push(...nested.videos);
+    views3d.push(...nested.views3d);
+  }
+  return { videos, views3d };
+}
+
 function evaluateCompositionInternal(
   document: GraphicsDocument,
   compositionId: string,
@@ -159,8 +180,8 @@ function evaluateCompositionInternal(
     timeDomain: { output: safeTime, composition: safeTime },
     layers: animatedLayers,
     renderTree: renderTreeForLayers(document, animatedLayers, safeTime, stack),
-    videos: evaluateVideos(document, animatedLayers, safeTime),
-    views3d: evaluateViews3d(document, animatedLayers, safeTime),
+    videos: [...evaluateVideos(document, animatedLayers, safeTime), ...nestedEvaluationSources(document, animatedLayers, safeTime, stack).videos],
+    views3d: [...evaluateViews3d(document, animatedLayers, safeTime), ...nestedEvaluationSources(document, animatedLayers, safeTime, stack).views3d],
   };
 }
 
