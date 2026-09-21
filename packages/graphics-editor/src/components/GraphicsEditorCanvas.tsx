@@ -35,7 +35,7 @@ export const GraphicsEditorCanvas: FC<{ frame?: CompositorFrame; marquee?: { x: 
           {grid && <div className="ge-grid" />}<div className="ge-guide ge-guide-v" /><div className="ge-guide ge-guide-h" />
           <CanvasLayerStack layers={layers} frame={frame} selectedIds={selectedIds} worlds3d={worlds3d} views3d={views3d} currentTime={currentTime} onLayerPointerDown={onLayerPointerDown} onSelectLayer={onSelectLayer} onPathNodes={onPathNodes} onTextCommit={onTextCommit} onTextRunsCommit={onTextRunsCommit} />
           {drawing && drawing.points.length > 0 && <svg className="ge-drawing-preview" width="100%" height="100%" viewBox={`0 0 ${WIDTH} ${HEIGHT}`} style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 200 }} onDoubleClick={onDrawingDoubleClick}><polyline points={drawing.points.map(point => `${point.x},${point.y}`).join(" ")} fill="none" stroke="#38bdf8" strokeWidth="4" strokeDasharray="8 6" />{drawing.points.map((point, index) => <circle key={index} cx={point.x} cy={point.y} r="6" fill="#fff" stroke="#38bdf8" strokeWidth="3" />)}</svg>}
-          <CanvasSelectionOverlay layers={layers} selectedIds={selectedIds} onPointerDown={onLayerPointerDown} />
+          <CanvasSelectionOverlay layers={frame?.layers ?? layers} selectedIds={selectedIds} onPointerDown={onLayerPointerDown} />
           {marquee && <div aria-label="Selection marquee" style={{ position: "absolute", left: marquee.x, top: marquee.y, width: marquee.width, height: marquee.height, border: "1px dashed #38bdf8", background: "rgba(56,189,248,.12)", pointerEvents: "none", zIndex: 400, boxSizing: "border-box" }} />}
           {safe && <><div className="ge-safe safe90" /><div className="ge-safe safe80" /></>}
         </div>
