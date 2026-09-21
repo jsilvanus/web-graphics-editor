@@ -2,7 +2,7 @@ import type { GraphicsDocument, Layer } from "../types";
 import { alignLayers, distributeLayers, type AlignMode, type AlignReference, type DistributeMode } from "../alignment";
 import { bringLayerForward, bringLayerToFront, sendLayerBackward, sendLayerToBack, groupLayers, ungroupLayer, updateLayer, updateLayerStyle } from "./operations";
 import { diffOperations, type DocumentOperation, type GroupChildSnapshot } from "../history/operations";
-import { offsetPathNodes } from "../geometry";
+import { flattenPathNodes, offsetPathNodes } from "../geometry";
 import { booleanContours, pathNodesToPolygon, type BooleanOperation, type PolygonPoint } from "../geometry/boolean";
 
 export interface CommandResult { document: GraphicsDocument; operation?: DocumentOperation }
@@ -143,6 +143,17 @@ export function joinPathLayersCommand(document: GraphicsDocument, ids: string[])
 }
 
 export function offsetPathCommand(document: GraphicsDocument, id: string, distance: number): CommandResult { const layer=document.layers.find(l=>l.id===id); if(!layer || layer.type!=="path" || !layer.nodes?.length || !Number.isFinite(distance) || distance===0) return {document}; const nodes=offsetPathNodes(layer.nodes,distance,!!layer.closed); const xs=nodes.map(n=>n.x),ys=nodes.map(n=>n.y),minX=Math.min(...xs),minY=Math.min(...ys),maxX=Math.max(...xs),maxY=Math.max(...ys); const normalized=nodes.map(n=>({...n,x:n.x-minX,y:n.y-minY})); const next=updateLayer(document,id,{x:layer.x+minX,y:layer.y+minY,width:Math.max(1,maxX-minX),height:Math.max(1,maxY-minY),nodes:normalized,path:undefined,pathCommands:undefined}); return {document:next,operation:batchOrSingle(diffOperations(document,next))}; }
+
+export function flattenPathCommand(document: GraphicsDocument, id: string, tolerance=0.75): CommandResult {
+  const layer=document.layers.find(l=>l.id===id);
+  if(!layer || layer.type!=="path" || !layer.nodes?.length) return {document};
+  const flattened=flattenPathNodes(layer.nodes,!!layer.closed,tolerance);
+  const xs=flattened.points.map(p=>p.x),ys=flattened.points.map(p=>p.y);
+  const minX=Math.min(...xs),minY=Math.min(...ys),maxX=Math.max(...xs),maxY=Math.max(...ys);
+  const nodes=flattened.points.map(p=>({x:p.x-minX,y:p.y-minY,kind:"corner" as const}));
+  const next=updateLayer(document,id,{x:layer.x+minX,y:layer.y+minY,width:Math.max(1,maxX-minX),height:Math.max(1,maxY-minY),nodes,path:undefined,pathCommands:undefined,closed:flattened.closed});
+  return {document:next,operation:batchOrSingle(diffOperations(document,next))};
+}
 
 export function convertLayerToPathCommand(document: GraphicsDocument, id: string): CommandResult {
   const layer=document.layers.find(l=>l.id===id);
