@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { alignLayersCommand, distributeLayersCommand, booleanLayersCommand, joinPathLayersCommand, offsetPathCommand, convertLayerToPathCommand, convertPathToShapeCommand } from "../document/commands";
+import { alignLayersCommand, distributeLayersCommand, booleanLayersCommand, joinPathLayersCommand, offsetPathCommand, flattenPathCommand, convertLayerToPathCommand, convertPathToShapeCommand } from "../document/commands";
 import type { GraphicsDocument } from "../types";
 import type { EditorOperationOptions } from "./useEditorHistory";
 import { useLayerOperations } from "./useLayerOperations";
@@ -40,6 +40,8 @@ export function useLayerCommands(
   const convertToPath = useCallback((id: string) => executeCommand(convertLayerToPathCommand(document,id), { label: "Convert shape to path" }), [document, executeCommand]);
   const convertToShape = useCallback((id: string) => executeCommand(convertPathToShapeCommand(document,id), { label: "Convert path to shape" }), [document, executeCommand]);
 
+  const flattenPath = useCallback((id: string) => executeCommand(flattenPathCommand(document,id), { label: "Flatten path" }), [document, executeCommand]);
+
   const applyOffset = useCallback((distance: number) => { if (!primaryId) return; executeCommand(offsetPathCommand(document, primaryId, distance), { label: `Offset path ${distance}` }); }, [primaryId, document, executeCommand]);
 
   const applyJoinPaths = useCallback(() => { if (selectedIds.size !== 2) return; const ids = [...selectedIds]; executeCommand(joinPathLayersCommand(document, ids), { label: "Join paths" }); }, [selectedIds, document, executeCommand]);
@@ -70,6 +72,7 @@ export function useLayerCommands(
     applyBoolean,
     applyJoinPaths,
     applyOffset,
+    flattenPath,
     convertToPath,
     convertToShape,
     applyDistribute,
