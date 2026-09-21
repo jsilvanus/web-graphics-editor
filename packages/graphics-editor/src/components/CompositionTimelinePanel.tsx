@@ -31,11 +31,7 @@ export const CompositionTimelinePanel: FC<{
    const duration=asset?.metadata?.duration;
    return typeof duration==="number"&&Number.isFinite(duration)&&duration>0?duration:undefined;
  };
- const seekFromClientX=(clientX:number,element:HTMLElement)=>{
-   const rect=element.getBoundingClientRect();
-   onSeek(Math.max(0,Math.min(total,(clientX-rect.left)/rect.width*total)));
- };
- const dragVideo=(layer:Layer,kind:"move"|"in"|"out",startX:number,bar:HTMLElement)=>{
+ const seekFromClientX=(clientX:number,element:HTMLElement)=>{ const rect=element.getBoundingClientRect(); onSeek(Math.max(0,Math.min(total,(clientX-rect.left)/rect.width*total))); };\n const scrub=(event:React.PointerEvent<HTMLDivElement>)=>{ event.currentTarget.setPointerCapture?.(event.pointerId); seekFromClientX(event.clientX,event.currentTarget); const move=(moveEvent:PointerEvent)=>seekFromClientX(moveEvent.clientX,event.currentTarget); const up=()=>{window.removeEventListener("pointermove",move);window.removeEventListener("pointerup",up)}; window.addEventListener("pointermove",move); window.addEventListener("pointerup",up,{once:true}); };\n const dragVideo=(layer:Layer,kind:"move"|"in"|"out",startX:number,bar:HTMLElement)=>{
    const initial={offset:Math.max(0,layer.timeOffset??0),sourceIn:Math.max(0,layer.sourceIn??0),sourceOut:layer.sourceOut};
    const duration=videoDuration(layer) ?? Math.max(initial.sourceOut??10,initial.sourceIn+0.01);
    const sourceSpan=Math.max(0,(initial.sourceOut??duration)-initial.sourceIn);
@@ -64,8 +60,7 @@ export const CompositionTimelinePanel: FC<{
    window.addEventListener("pointerup",up,{once:true});
  };
  return <section className="ge-timeline" aria-label="Composition timeline">
-  <div className="ge-timeline-subhead">{composition.name} timeline · {currentTime.toFixed(2)}s / {total.toFixed(2)}s</div>
-  <div className="ge-timeline-body" onPointerDown={e=>seekFromClientX(e.clientX,e.currentTarget)}>
+  <div className="ge-timeline-subhead">{composition.name} timeline · {currentTime.toFixed(2)}s / {total.toFixed(2)}s</div>\n  <div className="ge-timeline-ruler" style={{position:"relative",height:22,display:"flex",justifyContent:"space-between",fontSize:10,userSelect:"none"}} onPointerDown={scrub}>{Array.from({length:Math.ceil(total)+1},(_,i)=><span key={i}>{i}s</span>)}<span aria-hidden="true" style={{position:"absolute",left:`${Math.max(0,Math.min(100,currentTime/total*100))}%`,top:0,bottom:0,width:2,background:"currentColor",pointerEvents:"none"}} /></div>\n  <div className="ge-timeline-body" style={{position:"relative"}} onPointerDown={scrub}><div aria-hidden="true" style={{position:"absolute",left:`${Math.max(0,Math.min(100,currentTime/total*100))}%`,top:0,bottom:0,width:2,background:"currentColor",zIndex:20,pointerEvents:"none"}} />seekFromClientX(e.clientX,e.currentTarget)}>
    <div className="ge-track-list">{layers.filter(l=>l.type!=="group").map(layer=><div key={layer.id} className="ge-tree-object"><b>{layer.name??layer.text??layer.id}</b>{["x","y","width","height","rotation","opacity"].map(property=>{const t=tracks.find(x=>x.targetId===layer.id&&x.property===property);return <TimelineTrackRow key={property} label={property} keyframeCount={t?.keyframes.length??0} onAdd={()=>add(layer,property)}>{t&&<div className="ge-track-key-area"><TimelineKeyMarkers keyframes={t.keyframes} total={total} selectedKeyId={selected?.keyId} onSelect={keyId=>setSelected({trackId:t.id,keyId})} onMove={(keyId,time)=>update(tracks.map(x=>x.id===t.id?moveKeyframe(x,keyId,time):x))} onDelete={keyId=>update(tracks.map(x=>x.id===t.id?removeKeyframe(x,keyId):x))}/></div>}</TimelineTrackRow>})}</div>)}</div>
   </div>
   <div style={{marginTop:12}}><b>Video clips</b>
