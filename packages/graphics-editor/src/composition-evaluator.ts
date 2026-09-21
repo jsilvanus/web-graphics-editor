@@ -192,6 +192,8 @@ function evaluateCompositionInternal(
  * This is intentionally a pure function. The document remains the source of
  * truth; callers receive a render-ready snapshot for a single point in time.
  */
+export function evaluateCompositionAtTime(document: GraphicsDocument, compositionId: string, time = 0): CompositionEvaluation | undefined { return evaluateComposition(document, compositionId, time); }
+
 export function evaluateComposition(
   document: GraphicsDocument,
   compositionId: string,
