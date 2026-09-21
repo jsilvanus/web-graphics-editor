@@ -1,9 +1,10 @@
 import { useMemo, useState, type FC, type ReactNode } from "react";
-import type { Layer } from "../types";
+import type { Composition, Layer } from "../types";
 import { getChildLayers, getRootLayers } from "../layer-tree";
 
 export const LayerList: FC<{
   layers: Layer[];
+  compositions?: Composition[];
   selectedIds: Set<string>;
   onSelect: (id: string) => void;
   onForward?: (id: string) => void;
@@ -15,7 +16,7 @@ export const LayerList: FC<{
   onToggleVisibility?: (id: string) => void;
   onToggleLock?: (id: string) => void;
   onRename?: (id: string, name: string) => void;\n  onMove?: (id: string, targetId: string, position: "inside" | "before" | "after") => void;\n  onDuplicate?: (id: string) => void;\n  onDelete?: (id: string) => void;
-}> = ({ layers, selectedIds, onSelect, onForward, onBackward, onFront, onBack, onGroup, onUngroup, onToggleVisibility, onToggleLock, onRename, onMove, onDuplicate, onDelete }) => {
+}> = ({ layers, compositions = [], selectedIds, onSelect, onForward, onBackward, onFront, onBack, onGroup, onUngroup, onToggleVisibility, onToggleLock, onRename, onMove, onDuplicate, onDelete }) => {
   const roots = useMemo(() => [...getRootLayers(layers)].reverse(), [layers]);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -38,7 +39,7 @@ export const LayerList: FC<{
   };
 
   const renderLayer = (layer: Layer, depth: number): ReactNode => {
-    const children = isComposition ? [] : getChildLayers(layers, layer.id);
+    const children = isComposition ? (compositions.find(c => c.id === layer.compositionId)?.layerIds ?? []).map(id => layers.find(item => item.id === id)).filter((item): item is Layer => !!item) : getChildLayers(layers, layer.id);
     const isGroup = layer.type === "group";
     const isComposition = layer.type === "composition";
     const isCollapsed = collapsed.has(layer.id);
@@ -58,7 +59,7 @@ export const LayerList: FC<{
           {isGroup && onUngroup && <button type="button" title="Ungroup" onClick={() => onUngroup(layer.id)}>↗</button>}
         </span>
       </div>
-      {isGroup && !isCollapsed && children.slice().reverse().map(child => renderLayer(child, depth + 1))}
+      {(isGroup || isComposition) && !isCollapsed && children.slice().reverse().map(child => renderLayer(child, depth + 1))}
     </div>;
   };
 
