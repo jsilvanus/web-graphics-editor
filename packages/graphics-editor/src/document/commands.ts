@@ -2,6 +2,7 @@ import type { GraphicsDocument, Layer } from "../types";
 import { alignLayers, distributeLayers, type AlignMode, type AlignReference, type DistributeMode } from "../alignment";
 import { bringLayerForward, bringLayerToFront, sendLayerBackward, sendLayerToBack, groupLayers, ungroupLayer, updateLayer, updateLayerStyle } from "./operations";
 import { diffOperations, type DocumentOperation, type GroupChildSnapshot } from "../history/operations";
+import { offsetPathNodes } from "../geometry";
 import { booleanPolygons, pathNodesToPolygon, polygonToPathNodes, type BooleanOperation, type PolygonPoint } from "../geometry/boolean";
 
 export interface CommandResult { document: GraphicsDocument; operation?: DocumentOperation }
@@ -132,3 +133,5 @@ export function joinPathLayersCommand(document: GraphicsDocument, ids: string[])
   const next={...document,layers:document.layers.filter(layer=>layer.id!==b.id).map(layer=>layer.id===a.id?{...layer,x:minX,y:minY,width:Math.max(1,maxX-minX),height:Math.max(1,maxY-minY),nodes,path:undefined,pathCommands:undefined,closed:false}:layer)};
   return { document: next, operation: batchOrSingle(diffOperations(document,next)) };
 }
+
+export function offsetPathCommand(document: GraphicsDocument, id: string, distance: number): CommandResult { const layer=document.layers.find(l=>l.id===id); if(!layer || layer.type!=="path" || !layer.nodes?.length || !Number.isFinite(distance) || distance===0) return {document}; const nodes=offsetPathNodes(layer.nodes,distance,!!layer.closed); const xs=nodes.map(n=>n.x),ys=nodes.map(n=>n.y),minX=Math.min(...xs),minY=Math.min(...ys),maxX=Math.max(...xs),maxY=Math.max(...ys); const normalized=nodes.map(n=>({...n,x:n.x-minX,y:n.y-minY})); const next=updateLayer(document,id,{x:layer.x+minX,y:layer.y+minY,width:Math.max(1,maxX-minX),height:Math.max(1,maxY-minY),nodes:normalized,path:undefined,pathCommands:undefined}); return {document:next,operation:batchOrSingle(diffOperations(document,next))}; }
