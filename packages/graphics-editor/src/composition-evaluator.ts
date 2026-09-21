@@ -36,6 +36,8 @@ export interface SceneEvaluation {
   time: number;
   layers: Layer[];
   renderTree: RenderNode[];
+  videos: EvaluatedVideo[];
+  views3d: Graphics3DView[];
 }
 
 function setProperty(target: Record<string, unknown>, property: string, value: AnimationValue): void {
