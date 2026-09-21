@@ -78,8 +78,6 @@ describe("composition evaluation boundary", () => {
     expect(result?.composition).not.toBe(document.compositions?.[0]);
     expect(result?.layers[0]).not.toBe(document.layers[0]);
   });
-});
-
 
   it("evaluates composition-local animation tracks", () => {
     const animated = {
@@ -141,3 +139,4 @@ describe("composition evaluation boundary", () => {
     expect(result?.layers[0].style?.color).toBe("#808080");
     expect(original.style?.color).toBeUndefined();
   });
+});
