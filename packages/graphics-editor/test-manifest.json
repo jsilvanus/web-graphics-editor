@@ -61,7 +61,8 @@
             "src/mesh/bevel/bevel-edge.test.ts",
             "src/mesh/extract-faces.test.ts",
             "src/mesh/graphics-mesh-connect-edges.test.ts",
-            "src/mesh/normals.test.ts"
+            "src/mesh/normals.test.ts",
+            "src/mesh/graphics-mesh-split-edge.test.ts"
           ]
         },
         {
