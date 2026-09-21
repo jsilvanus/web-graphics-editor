@@ -2,8 +2,8 @@ import type { GraphicsDocument, Layer } from "../types";
 import { alignLayers, distributeLayers, type AlignMode, type AlignReference, type DistributeMode } from "../alignment";
 import { bringLayerForward, bringLayerToFront, sendLayerBackward, sendLayerToBack, groupLayers, ungroupLayer, updateLayer, updateLayerStyle } from "./operations";
 import { diffOperations, type DocumentOperation, type GroupChildSnapshot } from "../history/operations";
-import { flattenPathNodes, offsetPathNodes } from "../geometry";
-import { booleanContours, pathNodesToPolygon, polygonToPathNodes, type BooleanOperation, type PolygonPoint } from "../geometry/boolean";
+import { offsetPathNodes } from "../geometry";
+import { booleanContours, pathNodesToPolygon, type BooleanOperation, type PolygonPoint } from "../geometry/boolean";
 
 export interface CommandResult { document: GraphicsDocument; operation?: DocumentOperation }
 function batchOrSingle(operations: DocumentOperation[]): DocumentOperation | undefined { return operations.length === 1 ? operations[0] : operations.length ? { type: "batch", operations } : undefined; }
