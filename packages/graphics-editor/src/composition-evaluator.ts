@@ -220,7 +220,7 @@ export function evaluateComposition(
     time: safeTime,
     timeDomain: { output: safeTime, composition: safeTime },
     layers: animatedLayers,
-    renderTree: renderTreeForLayers(document, animatedLayers, compositionTime, [resolved.composition.id]),
+    renderTree: renderTreeForLayers(document, animatedLayers, safeTime, [resolved.composition.id]),
     videos: evaluateVideos(document, animatedLayers, safeTime),
     views3d: evaluateViews3d(document, animatedLayers, safeTime),
   };
