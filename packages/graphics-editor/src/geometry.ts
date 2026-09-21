@@ -15,3 +15,20 @@ export function mirrorHandle(node:PathNode,moved:"in"|"out",point:Point):PathNod
 
 /** Reverse path traversal without changing its visual geometry. Handles swap sides when traversal reverses. */
 export function reversePathNodes(nodes:PathNode[]):PathNode[]{return nodes.slice().reverse().map(node=>({...node,handleIn:node.handleOut&&{...node.handleOut},handleOut:node.handleIn&&{...node.handleIn}}));}
+
+export function offsetPathNodes(nodes: PathNode[], distance: number, closed = false): PathNode[] {
+  if (nodes.length < 2 || !Number.isFinite(distance) || distance === 0) return nodes.map(n => ({...n}));
+  const points = nodes.map(n => ({x:n.x,y:n.y}));
+  const count = points.length;
+  const out: PathNode[] = [];
+  const sign = closed ? -1 : -1;
+  for (let i=0;i<count;i++) {
+    const prev = points[i===0 ? (closed ? count-1 : 0) : i-1];
+    const next = points[i===count-1 ? (closed ? 0 : count-1) : i+1];
+    const ax = next.x-prev.x, ay=next.y-prev.y;
+    const len=Math.hypot(ax,ay)||1;
+    const nx=-ay/len*distance*sign, ny=ax/len*distance*sign;
+    out.push({x:points[i].x+nx,y:points[i].y+ny,kind:"corner"});
+  }
+  return out;
+}
