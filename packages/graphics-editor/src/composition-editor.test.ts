@@ -41,6 +41,27 @@ describe("composition video evaluation", () => {
     expect(evaluation?.videos[0].mediaTime).toBe(11);
   });
 
+  it("maps nested composition time with offset, rate, source range, and loop", () => {
+    const document: GraphicsDocument = {
+      width: 100, height: 100,
+      layers: [{ id: "instance", type: "composition", x: 0, y: 0, width: 100, height: 100, compositionId: "child", timeOffset: 2, playbackRate: 2, compositionIn: 3, compositionOut: 7, loop: true }],
+      compositions: [
+        { id: "parent", name: "Parent", layerIds: ["instance"], duration: 20 },
+        { id: "child", name: "Child", layerIds: ["child-layer"], duration: 10 },
+      ],
+    };
+    const childLayer = { id: "child-layer", type: "rectangle" as const, x: 0, y: 0, width: 10, height: 10 };
+    const withChild = { ...document, layers: [document.layers[0], childLayer] };
+    const atOffset = evaluateComposition(withChild, "parent", 2);
+    expect(atOffset?.renderTree[0]?.children[0]?.layer.id).toBe("child-layer");
+    const before = evaluateComposition(withChild, "parent", 1.9);
+    expect(before?.renderTree[0]?.opacity).toBe(0);
+    const looped = evaluateComposition(withChild, "parent", 4.5);
+    expect(looped?.renderTree[0]?.children[0]?.layer.id).toBe("child-layer");
+    const after = evaluateComposition(withChild, "parent", 6);
+    expect(after?.renderTree[0]?.opacity).toBe(0);
+  });
+
   it("keeps nested composition instances inactive before their offset and after their out point", () => {
     const document: GraphicsDocument = {
       width: 100, height: 100,
