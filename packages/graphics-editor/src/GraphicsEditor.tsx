@@ -62,6 +62,16 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
     return { x: (event.clientX - rect.left) / viewport.viewport.zoom, y: (event.clientY - rect.top) / viewport.viewport.zoom };
   }, [viewport.viewport.zoom]);
   const viewport = useCanvasViewport(document.width, document.height);
+  const { timeline, setTimeline, seek, changeTimeline, context, enterWorld, exitWorld, world, worldTimeline, worldCurrentTime, updateWorldTimeline } = useGraphicsEditorTimeline(document, executeCommand);
+  const [playing, setPlaying] = useState(false);
+  const projectAssets = useProjectAssets(document, assets);
+  const commit = useCallback((next: GraphicsDocument) => setDocument(next, true), [setDocument]);
+  const transientChange = useCallback((next: GraphicsDocument) => setDocument(next, false), [setDocument]);
+  const transaction = useEditorTransaction(commit);
+  const { updateLayer, updateStyle } = useLayerOperations(executeCommand, document);
+  const commands = useLayerCommands(document, executeCommand, selectedIds, primaryId, select, clear);
+  const interaction = useCanvasInteraction(document, artboardRef, grid, aspectLock, transientChange, selectedIds, timeline.currentTime);
+  const drawing = useEditorDrawing(document, commit, select, clear);
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
@@ -75,16 +85,6 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [drawing, viewport]);
-  const { timeline, setTimeline, seek, changeTimeline, context, enterWorld, exitWorld, world, worldTimeline, worldCurrentTime, updateWorldTimeline } = useGraphicsEditorTimeline(document, executeCommand);
-  const [playing, setPlaying] = useState(false);
-  const projectAssets = useProjectAssets(document, assets);
-  const commit = useCallback((next: GraphicsDocument) => setDocument(next, true), [setDocument]);
-  const transientChange = useCallback((next: GraphicsDocument) => setDocument(next, false), [setDocument]);
-  const transaction = useEditorTransaction(commit);
-  const { updateLayer, updateStyle } = useLayerOperations(executeCommand, document);
-  const commands = useLayerCommands(document, executeCommand, selectedIds, primaryId, select, clear);
-  const interaction = useCanvasInteraction(document, artboardRef, grid, aspectLock, transientChange, selectedIds, timeline.currentTime);
-  const drawing = useEditorDrawing(document, commit, select, clear);
   const { add3DView, update3DView } = use3DViews(document, commit, select);
   const { saveWegra, openWegra } = useWegraIO(document, timeline, history, resetHistory, setTimeline, clear);
   const transientSeek = useCallback((next: typeof timeline) => setDocument({ ...document, timeline: next }, false), [document, setDocument]);
