@@ -2,8 +2,8 @@ import type { GraphicsDocument, Layer } from "../types";
 import { alignLayers, distributeLayers, type AlignMode, type AlignReference, type DistributeMode } from "../alignment";
 import { bringLayerForward, bringLayerToFront, sendLayerBackward, sendLayerToBack, groupLayers, ungroupLayer, updateLayer, updateLayerStyle } from "./operations";
 import { diffOperations, type DocumentOperation, type GroupChildSnapshot } from "../history/operations";
-import { offsetPathNodes } from "../geometry";
-import { booleanPolygons, pathNodesToPolygon, polygonToPathNodes, type BooleanOperation, type PolygonPoint } from "../geometry/boolean";
+import { flattenPathNodes, offsetPathNodes } from "../geometry";
+import { booleanContours, pathNodesToPolygon, polygonToPathNodes, type BooleanOperation, type PolygonPoint } from "../geometry/boolean";
 
 export interface CommandResult { document: GraphicsDocument; operation?: DocumentOperation }
 function batchOrSingle(operations: DocumentOperation[]): DocumentOperation | undefined { return operations.length === 1 ? operations[0] : operations.length ? { type: "batch", operations } : undefined; }
@@ -53,7 +53,7 @@ export function distributeLayersCommand(document: GraphicsDocument, ids: Set<str
 
 function layerPolygon(layer: Layer): PolygonPoint[] | null {
   if (layer.type === "path" && layer.nodes) {
-    const polygon = pathNodesToPolygon(layer.nodes);
+    const polygon = pathNodesToPolygon(layer.nodes, !!layer.closed);
     return polygon?.map(p => ({ x: p.x + layer.x, y: p.y + layer.y })) ?? null;
   }
   if (layer.type === "rectangle") {
@@ -107,13 +107,21 @@ export function booleanLayersCommand(document: GraphicsDocument, ids: string[], 
   if (!a || !b || a.locked || b.locked) return { document };
   const pa = layerPolygon(a), pb = layerPolygon(b);
   if (!pa || !pb) return { document };
-  const polygons = booleanPolygons(pa, pb, operation);
-  if (!polygons.length) return { document };
-  const baseStyle = { ...(a.style ?? {}) };
-  const copies = polygons.map((poly,index) => {
-    const minX=Math.min(...poly.map(p=>p.x)), minY=Math.min(...poly.map(p=>p.y)), maxX=Math.max(...poly.map(p=>p.x)), maxY=Math.max(...poly.map(p=>p.y));
-    return { ...a, id: `boolean-${operation}-${Date.now()}-${index}-${Math.random().toString(36).slice(2,5)}`, type:"path" as const, x:minX,y:minY,width:Math.max(1,maxX-minX),height:Math.max(1,maxY-minY),nodes:polygonToPathNodes(poly.map(p=>({x:p.x-minX,y:p.y-minY}))),path:undefined,pathCommands:undefined,closed:true,style:baseStyle };
-  });
+  const contours = booleanContours(pa, pb, operation);
+  if (!contours.length) return { document };
+  const allPoints = contours.flatMap(contour => contour.points);
+  const minX=Math.min(...allPoints.map(p=>p.x)), minY=Math.min(...allPoints.map(p=>p.y)), maxX=Math.max(...allPoints.map(p=>p.x)), maxY=Math.max(...allPoints.map(p=>p.y));
+  const commands: import("../types").PathCommand[] = [];
+  for (const contour of contours) {
+    const points = contour.points.map(p => ({x:p.x-minX,y:p.y-minY}));
+    if (!points.length) continue;
+    commands.push({type:"M",x:points[0].x,y:points[0].y});
+    for (const point of points.slice(1)) commands.push({type:"L",x:point.x,y:point.y});
+    commands.push({type:"Z"});
+  }
+  const baseStyle = { ...(a.style ?? {}), "fill-rule": contours.some(contour => contour.hole) ? "evenodd" : String(a.style?.["fill-rule"] ?? "nonzero") };
+  const copy = { ...a, id: `boolean-${operation}-${Date.now()}-${Math.random().toString(36).slice(2,5)}`, type:"path" as const, x:minX,y:minY,width:Math.max(1,maxX-minX),height:Math.max(1,maxY-minY),nodes:undefined,path:undefined,pathCommands:commands,closed:true,style:baseStyle };
+  const copies = [copy];
   const next={...document,layers:document.layers.filter(layer=>layer.id!==a.id&&layer.id!==b.id).concat(copies)};
   return { document: next, operation: batchOrSingle(diffOperations(document,next)) };
 }
