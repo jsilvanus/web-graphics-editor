@@ -17,7 +17,7 @@ export function CanvasLayerContent({ layer, layers = [], renderNode, selected, s
   if (layer.type === "video") {
     const evaluated = videos.find(video => video.layerId === layer.id);
     const asset = evaluated && assets.find(item => item.id === evaluated.assetId);
-    return asset ? <VideoLayerRenderer src={asset.url} mediaTime={evaluated?.mediaTime ?? 0} playing={evaluated?.playing} /> : null;
+    return asset ? <VideoLayerRenderer src={asset.url} mediaTime={evaluated?.mediaTime ?? 0}  /> : null;
   }
   if (layer.type === "group") return <GroupLayerRenderer layer={layer} layers={layers} selectedIds={selectedIds} worlds3d={worlds3d} views3d={views3d} currentTime={currentTime} onLayerPointerDown={onLayerPointerDown ?? (() => undefined)} onSelectLayer={onSelectLayer} onPathNodes={onNodes ? (id, nodes) => onNodes(nodes) : undefined} />;
   if (layer.type === "3d-view") { const view = views3d.find(item => item.id === layer.view3dId); const world = view && worlds3d.find(item => item.id === view.worldId); return view && world ? <ThreeDViewLayer layer={layer} view={view} world={world} currentTime={currentTime} /> : null; }
