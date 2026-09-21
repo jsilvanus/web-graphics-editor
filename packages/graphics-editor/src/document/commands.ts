@@ -135,3 +135,33 @@ export function joinPathLayersCommand(document: GraphicsDocument, ids: string[])
 }
 
 export function offsetPathCommand(document: GraphicsDocument, id: string, distance: number): CommandResult { const layer=document.layers.find(l=>l.id===id); if(!layer || layer.type!=="path" || !layer.nodes?.length || !Number.isFinite(distance) || distance===0) return {document}; const nodes=offsetPathNodes(layer.nodes,distance,!!layer.closed); const xs=nodes.map(n=>n.x),ys=nodes.map(n=>n.y),minX=Math.min(...xs),minY=Math.min(...ys),maxX=Math.max(...xs),maxY=Math.max(...ys); const normalized=nodes.map(n=>({...n,x:n.x-minX,y:n.y-minY})); const next=updateLayer(document,id,{x:layer.x+minX,y:layer.y+minY,width:Math.max(1,maxX-minX),height:Math.max(1,maxY-minY),nodes:normalized,path:undefined,pathCommands:undefined}); return {document:next,operation:batchOrSingle(diffOperations(document,next))}; }
+
+export function convertLayerToPathCommand(document: GraphicsDocument, id: string): CommandResult {
+  const layer=document.layers.find(l=>l.id===id);
+  if(!layer || (layer.type!=="rectangle" && layer.type!=="ellipse")) return {document};
+  let nodes: import("../types").PathNode[];
+  if(layer.type==="rectangle") nodes=[{x:0,y:0,kind:"corner"},{x:layer.width,y:0,kind:"corner"},{x:layer.width,y:layer.height,kind:"corner"},{x:0,y:layer.height,kind:"corner"}];
+  else {
+    const k=.5522847498,rx=layer.width/2,ry=layer.height/2,cx=rx,cy=ry;
+    nodes=[
+      {x:cx,y:0,kind:"smooth",handleIn:{x:cx-k*rx,y:0},handleOut:{x:cx+k*rx,y:0}},
+      {x:layer.width,y:cy,kind:"smooth",handleIn:{x:layer.width,y:cy-k*ry},handleOut:{x:layer.width,y:cy+k*ry}},
+      {x:cx,y:layer.height,kind:"smooth",handleIn:{x:cx+k*rx,y:layer.height},handleOut:{x:cx-k*rx,y:layer.height}},
+      {x:0,y:cy,kind:"smooth",handleIn:{x:0,y:cy+k*ry},handleOut:{x:0,y:cy-k*ry}}
+    ];
+  }
+  const next=updateLayer(document,id,{type:"path",nodes,closed:true,path:undefined,pathCommands:undefined});
+  return {document:next,operation:batchOrSingle(diffOperations(document,next))};
+}
+
+export function convertPathToShapeCommand(document: GraphicsDocument, id: string): CommandResult {
+  const layer=document.layers.find(l=>l.id===id);
+  if(!layer || layer.type!=="path" || !layer.nodes?.length) return {document};
+  const nodes=layer.nodes;
+  const minX=Math.min(...nodes.map(n=>n.x)),minY=Math.min(...nodes.map(n=>n.y)),maxX=Math.max(...nodes.map(n=>n.x)),maxY=Math.max(...nodes.map(n=>n.y));
+  const rectangleLike=nodes.length===4 && nodes.every(n=>!n.handleIn&&!n.handleOut);
+  const ellipseLike=nodes.length===4 && nodes.every(n=>n.kind==="smooth" && n.handleIn && n.handleOut);
+  if(!rectangleLike && !ellipseLike) return {document};
+  const next=updateLayer(document,id,{type:ellipseLike?"ellipse":"rectangle",x:layer.x+minX,y:layer.y+minY,width:Math.max(1,maxX-minX),height:Math.max(1,maxY-minY),nodes:undefined,path:undefined,pathCommands:undefined,closed:undefined});
+  return {document:next,operation:batchOrSingle(diffOperations(document,next))};
+}
