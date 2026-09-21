@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { booleanPolygons } from "./boolean";
+import { booleanContours, booleanPolygons, pathNodesToPolygon } from "./boolean";
 const r=(x:number,y:number,w:number,h:number)=>[{x,y},{x:x+w,y},{x:x+w,y:y+h},{x,y:y+h}];
 const signedArea=(p:{x:number;y:number}[])=>Math.abs(p.reduce((s,a,i)=>{const b=p[(i+1)%p.length];return s+a.x*b.y-a.y*b.x},0)/2);
 describe("polygon booleans",()=>{
