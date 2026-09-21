@@ -1,4 +1,4 @@
-import { useState, type FC } from "react";
+import { useState, type FC, type PointerEvent as ReactPointerEvent } from "react";
 import type { AnimationTrack, Composition, Layer } from "../types";
 import { TimelineKeyMarkers } from "./timeline/TimelineKeyMarkers";
 import { TimelineTrackRow } from "./timeline/TimelineTrackRow";
@@ -31,7 +31,7 @@ export const CompositionTimelinePanel: FC<{
    const duration=asset?.metadata?.duration;
    return typeof duration==="number"&&Number.isFinite(duration)&&duration>0?duration:undefined;
  };
- const seekFromClientX=(clientX:number,element:HTMLElement)=>{ const rect=element.getBoundingClientRect(); onSeek(Math.max(0,Math.min(total,(clientX-rect.left)/rect.width*total))); };\n const scrub=(event:React.PointerEvent<HTMLDivElement>)=>{ event.currentTarget.setPointerCapture?.(event.pointerId); seekFromClientX(event.clientX,event.currentTarget); const move=(moveEvent:PointerEvent)=>seekFromClientX(moveEvent.clientX,event.currentTarget); const up=()=>{window.removeEventListener("pointermove",move);window.removeEventListener("pointerup",up)}; window.addEventListener("pointermove",move); window.addEventListener("pointerup",up,{once:true}); };\n const dragVideo=(layer:Layer,kind:"move"|"in"|"out",startX:number,bar:HTMLElement)=>{
+ const seekFromClientX=(clientX:number,element:HTMLElement)=>{ const rect=element.getBoundingClientRect(); onSeek(Math.max(0,Math.min(total,(clientX-rect.left)/rect.width*total))); };\n const scrub=(event:ReactPointerEvent<HTMLDivElement>)=>{ event.currentTarget.setPointerCapture?.(event.pointerId); seekFromClientX(event.clientX,event.currentTarget); const move=(moveEvent:PointerEvent)=>seekFromClientX(moveEvent.clientX,event.currentTarget); const up=()=>{window.removeEventListener("pointermove",move);window.removeEventListener("pointerup",up)}; window.addEventListener("pointermove",move); window.addEventListener("pointerup",up,{once:true}); };\n const dragVideo=(layer:Layer,kind:"move"|"in"|"out",startX:number,bar:HTMLElement)=>{
    const initial={offset:Math.max(0,layer.timeOffset??0),sourceIn:Math.max(0,layer.sourceIn??0),sourceOut:layer.sourceOut};
    const duration=videoDuration(layer) ?? Math.max(initial.sourceOut??10,initial.sourceIn+0.01);
    const sourceSpan=Math.max(0,(initial.sourceOut??duration)-initial.sourceIn);
