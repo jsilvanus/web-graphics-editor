@@ -97,8 +97,70 @@ function evaluateViews3d(document: GraphicsDocument, layers: Layer[], time:numbe
   });
 }
 
-function renderTreeForLayers(document: GraphicsDocument, layers: Layer[]): RenderNode[] {
-  return buildRenderTree({ ...document, layers });
+function renderTreeForLayers(
+  document: GraphicsDocument,
+  layers: Layer[],
+  time: number,
+  stack: string[] = [],
+): RenderNode[] {
+  const tree = buildRenderTree({ ...document, layers });
+  return tree.map(node => {
+    if (node.layer.type !== "composition" || !node.layer.compositionId || stack.includes(node.layer.compositionId)) {
+      return node;
+    }
+    const composition = (document.compositions ?? []).find(item => item.id === node.layer.compositionId);
+    if (!composition) return node;
+    const nestedTime = mapNestedCompositionTime(composition, time, node.layer);
+    const nested = evaluateCompositionInternal(document, composition.id, nestedTime, [...stack, composition.id]);
+    return nested
+      ? { ...node, children: nested.renderTree }
+      : node;
+  });
+}
+
+function mapNestedCompositionTime(
+  composition: Composition,
+  parentTime: number,
+  layer: Layer,
+): number {
+  const offset = layer.timeOffset ?? 0;
+  const rate = layer.playbackRate ?? 1;
+  const mapped = Math.max(0, (parentTime - offset) * rate);
+  if (!composition.duration || composition.duration <= 0) return mapped;
+  if (layer.loop ?? composition.loop) return mapped % composition.duration;
+  return Math.min(mapped, composition.duration);
+}
+
+function evaluateCompositionInternal(
+  document: GraphicsDocument,
+  compositionId: string,
+  time: number,
+  stack: string[] = [],
+): CompositionEvaluation | undefined {
+  const resolved = resolveComposition(document, compositionId);
+  if (!resolved || stack.includes(compositionId)) return undefined;
+  const layers = resolved.layers.map(layer => ({
+    ...layer,
+    style: layer.style ? { ...layer.style } : layer.style,
+    textStyle: layer.textStyle ? { ...layer.textStyle } : layer.textStyle,
+    viewportOverrides: layer.viewportOverrides ? { ...layer.viewportOverrides } : layer.viewportOverrides,
+  }));
+  const requestedTime = Number.isFinite(time) ? Math.max(0, time) : 0;
+  const duration = resolved.composition.duration;
+  const safeTime = duration && duration > 0
+    ? (resolved.composition.loop ? requestedTime % duration : Math.min(requestedTime, duration))
+    : requestedTime;
+  const animatedLayers = applyCompositionAnimation(resolved.composition, layers, safeTime);
+  return {
+    kind: "composition",
+    composition: { ...resolved.composition },
+    time: safeTime,
+    timeDomain: { output: safeTime, composition: safeTime },
+    layers: animatedLayers,
+    renderTree: renderTreeForLayers(document, animatedLayers, safeTime, stack),
+    videos: evaluateVideos(document, animatedLayers, safeTime),
+    views3d: evaluateViews3d(document, animatedLayers, safeTime),
+  };
 }
 
 /**
@@ -135,7 +197,7 @@ export function evaluateComposition(
     time: safeTime,
     timeDomain: { output: safeTime, composition: safeTime },
     layers: animatedLayers,
-    renderTree: renderTreeForLayers(document, animatedLayers),
+    renderTree: renderTreeForLayers(document, animatedLayers, compositionTime, [resolved.composition.id]),
     videos: evaluateVideos(document, animatedLayers, safeTime),
     views3d: evaluateViews3d(document, animatedLayers, safeTime),
   };
