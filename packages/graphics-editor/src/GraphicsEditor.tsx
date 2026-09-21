@@ -29,6 +29,7 @@ import { timelineDuration } from "./timeline";
 import { deserializeGraphicsDocument, serializeGraphicsDocument } from "./serialization";
 import { composeDocumentAtTime } from "./compositor";
 import { evaluateCompositionAtTime } from "./composition-evaluator";
+import { enterCompositionPath, exitCompositionPath } from "./composition-navigation";
 import type { GraphicsAsset, GraphicsEditorProps, GraphicsDocument, Graphics3DView, Graphics3DCamera, TextRun } from "./types";
 
 export function GraphicsEditor({ document: initialDocument, assets = [], onChange }: GraphicsEditorProps) {
@@ -40,8 +41,9 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
       if (!["ArrowLeft","ArrowRight","ArrowUp","ArrowDown","[","]"].includes(event.key)) return;
       const step = event.shiftKey ? 10 : 1;
       const ids = new Set(selectedIds);
+      const editableIds = activeCompositionId ? new Set(activeComposition?.layerIds ?? []) : ids;
       const next = { ...document, layers: document.layers.map(layer => {
-        if (!ids.has(layer.id)) return layer;
+        if (!ids.has(layer.id) || (activeCompositionId && !editableIds.has(layer.id))) return layer;
         if (event.key === "ArrowLeft") return { ...layer, x: layer.x - step };
         if (event.key === "ArrowRight") return { ...layer, x: layer.x + step };
         if (event.key === "ArrowUp") return { ...layer, y: layer.y - step };
@@ -126,12 +128,12 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
   useEffect(() => { onChange?.(document); }, [document, onChange]);
   useEffect(() => { if (initialDocumentRef.current === initialDocument) return; initialDocumentRef.current = initialDocument; resetHistory({ ...initialDocument, timeline: initialDocument.timeline ?? createDefaultTimeline() }); }, [initialDocument, resetHistory]);
   const createComposition = useCallback(() => { const ids=[...selectedIds]; if (!ids.length) return; const id="composition-"+Date.now(); const composition={id,name:"Composition "+((document.compositions?.length ?? 0)+1),layerIds:ids,duration:10,loop:false,timeline:{tracks:[]}}; const instance={id:"layer-"+Date.now(),type:"composition" as const,x:0,y:0,width:document.width,height:document.height,compositionId:id,name:composition.name}; setDocument({...document,compositions:[...(document.compositions ?? []),composition],layers:[...document.layers,instance]},true); select(instance.id); }, [selectedIds,document,setDocument,select]);
-  const selectedLayer = animatedLayers.find(layer => layer.id === primaryId) ?? null;
+  const selectedLayer = editorLayers.find(layer => layer.id === primaryId) ?? null;
   const activeCompositionId = compositionPath[compositionPath.length - 1];
   const activeComposition = activeCompositionId ? document.compositions?.find(c => c.id === activeCompositionId) : undefined;
   const editorLayers = activeComposition ? document.layers.filter(layer => activeComposition.layerIds.includes(layer.id)) : document.layers;
-  const enterComposition = useCallback((id: string) => { if (!document.compositions?.some(c => c.id === id)) return; setCompositionPath(path => path.includes(id) ? path.slice(0, path.indexOf(id) + 1) : [...path, id]); seek(0); }, [document.compositions, seek]);
-  const exitComposition = useCallback(() => { setCompositionPath(path => path.slice(0, -1)); seek(0); }, [seek]); const copyStyle = useCallback(() => { if (!selectedLayer) return; setStyleClipboard(selectedLayer.style ? { ...selectedLayer.style } : {}); }, [selectedLayer]); const pasteStyle = useCallback(() => { if (!styleClipboard || !selectedIds.size) return; selectedIds.forEach(id => updateLayer(id, { style: { ...styleClipboard } })); }, [styleClipboard, selectedIds, updateLayer]);
+  const enterComposition = useCallback((id: string) => { if (!document.compositions?.some(c => c.id === id)) return; setCompositionPath(path => enterCompositionPath(path, id)); seek(0); }, [document.compositions, seek]);
+  const exitComposition = useCallback(() => { setCompositionPath(path => exitCompositionPath(path)); seek(0); }, [seek]); const copyStyle = useCallback(() => { if (!selectedLayer) return; setStyleClipboard(selectedLayer.style ? { ...selectedLayer.style } : {}); }, [selectedLayer]); const pasteStyle = useCallback(() => { if (!styleClipboard || !selectedIds.size) return; selectedIds.forEach(id => updateLayer(id, { style: { ...styleClipboard } })); }, [styleClipboard, selectedIds, updateLayer]);
   const selected3DView = selectedLayer?.type === "3d-view" ? document.views3d?.find(view => view.id === selectedLayer.view3dId) : undefined;
   const selected3DWorld = selected3DView ? document.worlds3d?.find(world => world.id === selected3DView.worldId) : undefined;
   const addFont = useCallback((asset: GraphicsAsset) => { if (!primaryId) return; setDocument(d => ({ ...d, assets: [...(d.assets ?? []).filter(a => a.id !== asset.id), asset] })); updateLayer(primaryId, { textStyle: { ...(selectedLayer?.textStyle ?? {}), fontAssetId: asset.id, fontFamily: String(asset.metadata?.family ?? asset.name) } }); }, [primaryId, selectedLayer, setDocument, updateLayer]);
@@ -167,7 +169,7 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
       setMarquee(null);
       const x = Math.min(m.startX, m.x), y = Math.min(m.startY, m.y);
       const right = Math.max(m.startX, m.x), bottom = Math.max(m.startY, m.y);
-      const hit = document.layers.filter(layer => layer.visible !== false && layer.x < right && layer.x + layer.width > x && layer.y < bottom && layer.y + layer.height > y).map(layer => layer.id);
+      const hit = editorLayers.filter(layer => layer.visible !== false && layer.x < right && layer.x + layer.width > x && layer.y < bottom && layer.y + layer.height > y).map(layer => layer.id);
       if (m.additive) hit.forEach(id => select(id, true));
       else if (hit.length) hit.forEach((id, i) => select(id, i > 0));
       else clear();
