@@ -1,4 +1,5 @@
-import type { Composition, GraphicsDocument, Layer, Scene } from "./types";
+import type { AnimationValue, Composition, GraphicsDocument, Layer, Scene } from "./types";
+import { evaluateAnimationKeyframes } from "./animation";
 import { buildRenderTree, type RenderNode } from "./render-model";
 import { resolveComposition, resolveScene, type ResolvedComposition, type ResolvedScene } from "./presentation";
 
@@ -32,6 +33,38 @@ export interface SceneEvaluation {
   renderTree: RenderNode[];
 }
 
+function setProperty(target: Record<string, unknown>, property: string, value: AnimationValue): void {
+  const parts = property.split(".").filter(Boolean);
+  if (!parts.length) return;
+  let cursor = target;
+  for (let i = 0; i < parts.length - 1; i++) {
+    const part = parts[i];
+    const next = cursor[part];
+    if (!next || typeof next !== "object" || Array.isArray(next)) cursor[part] = {};
+    cursor = cursor[part] as Record<string, unknown>;
+  }
+  cursor[parts[parts.length - 1]] = value;
+}
+
+function applyCompositionAnimation(
+  composition: Composition,
+  layers: Layer[],
+  time: number,
+): Layer[] {
+  const tracks = composition.timeline?.tracks ?? [];
+  if (!tracks.length) return layers;
+
+  const byId = new Map(layers.map(layer => [layer.id, layer]));
+  for (const track of tracks) {
+    const layer = byId.get(track.targetId);
+    if (!layer) continue;
+    const value = evaluateAnimationKeyframes(track.keyframes, time);
+    if (value === undefined) continue;
+    setProperty(layer as unknown as Record<string, unknown>, track.property, value);
+  }
+  return layers;
+}
+
 function renderTreeForLayers(document: GraphicsDocument, layers: Layer[]): RenderNode[] {
   return buildRenderTree({ ...document, layers });
 }
@@ -57,12 +90,14 @@ export function evaluateComposition(
     ? (resolved.composition.loop ? requestedTime % duration : Math.min(requestedTime, duration))
     : requestedTime;
 
+  const animatedLayers = applyCompositionAnimation(resolved.composition, layers, safeTime);
+
   return {
     kind: "composition",
     composition: { ...resolved.composition },
     time: safeTime,
-    layers,
-    renderTree: renderTreeForLayers(document, layers),
+    layers: animatedLayers,
+    renderTree: renderTreeForLayers(document, animatedLayers),
   };
 }
 
