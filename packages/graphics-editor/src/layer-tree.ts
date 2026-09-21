@@ -4,9 +4,12 @@ export interface LayerBounds { x: number; y: number; width: number; height: numb
 
 export function getChildLayers(layers: Layer[], parentId: string): Layer[] {
   const parent = layers.find(layer => layer.id === parentId);
-  if (!parent?.children?.length) return [];
+  if (!parent) return [];
   const byId = new Map(layers.map(layer => [layer.id, layer]));
-  return parent.children.map(id => byId.get(id)).filter((layer): layer is Layer => !!layer);
+  if (parent.children?.length) {
+    return parent.children.map(id => byId.get(id)).filter((layer): layer is Layer => !!layer);
+  }
+  return layers.filter(layer => layer.parentId === parentId);
 }
 
 export function getRootLayers(layers: Layer[]): Layer[] {
@@ -29,7 +32,12 @@ export function getLayerTreeBounds(layers: Layer[], layerId: string): LayerBound
   const layer = layers.find(item => item.id === layerId);
   if (!layer) return { x: 0, y: 0, width: 0, height: 0 };
   const children = getChildLayers(layers, layerId);
-  if (!children.length) return { x: layer.x, y: layer.y, width: layer.width, height: layer.height };
+  if (!children.length) {
+    const points = rotatedCorners(layer);
+    const xs = points.map(point => point.x), ys = points.map(point => point.y);
+    const x = Math.min(...xs), y = Math.min(...ys), right = Math.max(...xs), bottom = Math.max(...ys);
+    return { x, y, width: right - x, height: bottom - y };
+  }
   const points = children.flatMap(child => getTreeCorners(layers, child.id));
   if (!points.length) return { x: layer.x, y: layer.y, width: layer.width, height: layer.height };
   const xs = points.map(point => point.x), ys = points.map(point => point.y);
