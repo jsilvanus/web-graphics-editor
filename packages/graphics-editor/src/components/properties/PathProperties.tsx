@@ -5,6 +5,7 @@ export const PathProperties: FC<{ layer: Layer; onStyle: (key: string, value: st
   const reversed = String(layer.style?.["path-direction"] ?? "forward") === "reverse";
   return <div className="ge-section">
     <b>{layer.type === "line" ? "Line" : "Path"}</b>
+    {layer.type === "path" && <label>Fill rule<select value={String(layer.style?.["fill-rule"] ?? "nonzero")} onChange={e => onStyle("fill-rule", e.target.value)}><option value="nonzero">Non-zero</option><option value="evenodd">Even-odd</option></select></label>}
     {layer.type === "path" && <label>Fill<input value={String(layer.style?.fill ?? "none")} onChange={e => onStyle("fill", e.target.value)} placeholder="none / #ffffff" /></label>}
     <label>Stroke<input value={String(layer.style?.stroke ?? "#ffffff")} onChange={e => onStyle("stroke", e.target.value)} /></label>
     <label>Stroke width<input type="number" min="0" step="0.5" value={Number(layer.style?.["stroke-width"] ?? 4)} onChange={e => onStyle("stroke-width", e.target.value)} /></label>
