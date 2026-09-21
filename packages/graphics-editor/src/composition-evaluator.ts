@@ -1,4 +1,4 @@
-import type { AnimationValue, Composition, EvaluatedVideo, GraphicsDocument, Graphics3DView, Layer, Scene } from "./types";
+import type { AnimationValue, Composition, EvaluatedVideo, EvaluationTime, GraphicsDocument, Graphics3DView, Layer, Scene } from "./types";
 import { evaluateAnimationKeyframes } from "./animation";
 import { buildRenderTree, type RenderNode } from "./render-model";
 import { resolveComposition, resolveScene, type ResolvedComposition, type ResolvedScene } from "./presentation";
@@ -17,6 +17,7 @@ export interface CompositionEvaluation {
   composition: Composition;
   /** Time in the composition's own time domain. */
   time: number;
+  timeDomain: EvaluationTime;
   layers: Layer[];
   renderTree: RenderNode[];
   videos: EvaluatedVideo[];
@@ -130,6 +131,7 @@ export function evaluateComposition(
     kind: "composition",
     composition: { ...resolved.composition },
     time: safeTime,
+    timeDomain: { output: safeTime, composition: safeTime },
     layers: animatedLayers,
     renderTree: renderTreeForLayers(document, animatedLayers),
     videos: evaluateVideos(document, animatedLayers, safeTime),
@@ -162,6 +164,7 @@ export function evaluateScene(
     globalTime,
     localTime: resolved.localTime,
     time: resolved.localTime,
+    timeDomain: { output: globalTime, composition: resolved.localTime },
     layers,
     renderTree: renderTreeForLayers(document, layers),
   };
