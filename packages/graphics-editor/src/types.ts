@@ -33,6 +33,7 @@ export interface SceneTimeline{scenes:Scene[];currentSceneId:string;currentTime:
 export interface WorldTimeMapping{offset:number;rate:number;loop?:boolean;inPoint?:number;outPoint?:number}
 export interface MediaTimeMapping{offset:number;rate:number;loop?:boolean;inPoint?:number;outPoint?:number}
 export interface CompositionTime{output:number;composition:number}
+export interface EvaluationTime{output:number;composition:number;media?:number;world?:number}
 export interface EvaluatedVideo{layerId:string;assetId:string;mediaTime:number;playing:boolean;sourceIn?:number;sourceOut?:number}
 
 export type ProvenanceSource="user"|"generated"|"imported"|"derived"|"ai";
