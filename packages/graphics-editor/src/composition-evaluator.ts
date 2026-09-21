@@ -1,7 +1,9 @@
-import type { AnimationValue, Composition, GraphicsDocument, Layer, Scene } from "./types";
+import type { AnimationValue, Composition, EvaluatedVideo, GraphicsDocument, Graphics3DView, Layer, Scene } from "./types";
 import { evaluateAnimationKeyframes } from "./animation";
 import { buildRenderTree, type RenderNode } from "./render-model";
 import { resolveComposition, resolveScene, type ResolvedComposition, type ResolvedScene } from "./presentation";
+import { evaluate3DViewAtTime } from "./3d-animation";
+import { map3DViewTime, mapMediaTime } from "./time";
 
 /**
  * The runtime boundary between the persistent document and rendering.
@@ -17,6 +19,8 @@ export interface CompositionEvaluation {
   time: number;
   layers: Layer[];
   renderTree: RenderNode[];
+  videos: EvaluatedVideo[];
+  views3d: Graphics3DView[];
 }
 
 export interface SceneEvaluation {
@@ -65,6 +69,31 @@ function applyCompositionAnimation(
   return layers;
 }
 
+function evaluateVideos(document: GraphicsDocument, layers: Layer[], time:number): EvaluatedVideo[] {
+  const assets=new Map((document.assets??[]).map(asset=>[asset.id,asset]));
+  return layers.flatMap(layer=>{
+    if(layer.type!=="video"||!layer.videoAssetId)return [];
+    const asset=assets.get(layer.videoAssetId);
+    if(!asset||asset.type!=="video")return [];
+    const mediaTime=mapMediaTime(time,{
+      offset:layer.timeOffset??0,
+      rate:layer.playbackRate??1,
+      loop:layer.loop??false,
+      inPoint:layer.sourceIn,
+      outPoint:layer.sourceOut,
+    });
+    return [{layerId:layer.id,assetId:asset.id,mediaTime,playing:true,sourceIn:layer.sourceIn,sourceOut:layer.sourceOut}];
+  });
+}
+
+function evaluateViews3d(document: GraphicsDocument, layers: Layer[], time:number): Graphics3DView[] {
+  const ids=new Set(layers.filter(layer=>layer.type==="3d-view"&&layer.view3dId).map(layer=>layer.view3dId as string));
+  return (document.views3d??[]).filter(view=>ids.has(view.id)).map(view=>{
+    const worldTime=map3DViewTime(time,view);
+    return evaluate3DViewAtTime(view, document.timeline, worldTime);
+  });
+}
+
 function renderTreeForLayers(document: GraphicsDocument, layers: Layer[]): RenderNode[] {
   return buildRenderTree({ ...document, layers });
 }
@@ -103,6 +132,8 @@ export function evaluateComposition(
     time: safeTime,
     layers: animatedLayers,
     renderTree: renderTreeForLayers(document, animatedLayers),
+    videos: evaluateVideos(document, animatedLayers, safeTime),
+    views3d: evaluateViews3d(document, animatedLayers, safeTime),
   };
 }
 
