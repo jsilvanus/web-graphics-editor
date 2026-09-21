@@ -1,7 +1,7 @@
 import type { FC } from "react";
 import type { Layer } from "../../types";
 
-export const PathProperties: FC<{ layer: Layer; onStyle: (key: string, value: string) => void; onLayer?: (patch: Partial<Layer>) => void }> = ({ layer, onStyle, onLayer }) => {
+export const PathProperties: FC<{ layer: Layer; onStyle: (key: string, value: string) => void; onLayer?: (patch: Partial<Layer>) => void; onOffset?: (distance: number) => void }> = ({ layer, onStyle, onLayer, onOffset }) => {
   const reversed = String(layer.style?.["path-direction"] ?? "forward") === "reverse";
   return <div className="ge-section">
     <b>{layer.type === "line" ? "Line" : "Path"}</b>
@@ -12,7 +12,9 @@ export const PathProperties: FC<{ layer: Layer; onStyle: (key: string, value: st
       <label>Cap<select value={String(layer.style?.["stroke-linecap"] ?? "round")} onChange={e => onStyle("stroke-linecap", e.target.value)}><option>butt</option><option>round</option><option>square</option></select></label>
       <label>Join<select value={String(layer.style?.["stroke-linejoin"] ?? "round")} onChange={e => onStyle("stroke-linejoin", e.target.value)}><option>miter</option><option>round</option><option>bevel</option></select></label>
     </div>
-    {layer.type === "path" && <div className="ge-two"><button type="button" onClick={() => onLayer?.({ closed: !layer.closed })}>{layer.closed ? "Open path" : "Close path"}</button><button type="button" onClick={() => onStyle("path-direction", reversed ? "forward" : "reverse")}>Reverse</button></div>}\n    <label>Direction<select value={reversed ? "reverse" : "forward"} onChange={e => onStyle("path-direction", e.target.value)}><option value="forward">Forward</option><option value="reverse">Reverse</option></select></label>
+    {layer.type === "path" && <label>Offset<input type="number" step="1" defaultValue="10" onKeyDown={e => { if(e.key==="Enter") onOffset?.(Number((e.target as HTMLInputElement).value)); }} /><button type="button" onClick={e => { const input=(e.currentTarget.previousElementSibling as HTMLInputElement); onOffset?.(Number(input.value)); }}>Apply offset</button></label>}
+    {layer.type === "path" && <div className="ge-two"><button type="button" onClick={() => onLayer?.({ closed: !layer.closed })}>{layer.closed ? "Open path" : "Close path"}</button><button type="button" onClick={() => onStyle("path-direction", reversed ? "forward" : "reverse")}>Reverse</button></div>}
+    <label>Direction<select value={reversed ? "reverse" : "forward"} onChange={e => onStyle("path-direction", e.target.value)}><option value="forward">Forward</option><option value="reverse">Reverse</option></select></label>
     <small>Double-click a segment to add a node. Drag nodes or Bézier handles. Double-click a node toggles corner/smooth. Alt/Option-drag makes a handle independent. Delete removes selected nodes.</small>
   </div>;
 };
