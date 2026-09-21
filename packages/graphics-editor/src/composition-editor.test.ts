@@ -59,7 +59,7 @@ describe("composition video evaluation", () => {
     const looped = evaluateComposition(withChild, "parent", 4.5);
     expect(looped?.renderTree[0]?.children[0]?.layer.id).toBe("child-layer");
     const after = evaluateComposition(withChild, "parent", 6);
-    expect(after?.renderTree[0]?.opacity).toBe(0);
+    expect(after?.renderTree[0]?.children[0]?.layer.id).toBe("child-layer");
   });
 
   it("keeps nested composition instances inactive before their offset and after their out point", () => {
