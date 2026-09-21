@@ -56,6 +56,35 @@ describe("composition evaluation boundary", () => {
     expect(evaluateComposition(document, "main", 5)?.time).toBe(0);
   });
 
+  it("evaluates nested composition layers and maps their local time", () => {
+    const nested: GraphicsDocument = {
+      ...document,
+      layers: [
+        { id: "outer", type: "composition", compositionId: "child", x: 0, y: 0, width: 800, height: 600 },
+        { id: "child-title", type: "text", x: 10, y: 20, width: 100, height: 40, text: "Child" },
+      ],
+      compositions: [
+        { id: "main", name: "Main", layerIds: ["outer"], duration: 10 },
+        { id: "child", name: "Child", layerIds: ["child-title"], duration: 4 },
+      ],
+    };
+    const result = evaluateComposition(nested, "main", 2);
+    expect(result?.renderTree[0]?.layer.id).toBe("outer");
+    expect(result?.renderTree[0]?.children[0]?.layer.id).toBe("child-title");
+  });
+
+  it("prevents recursive composition cycles", () => {
+    const cyclic: GraphicsDocument = {
+      ...document,
+      layers: [
+        { id: "a", type: "composition", compositionId: "a-comp", x: 0, y: 0, width: 100, height: 100 },
+      ],
+      compositions: [{ id: "a-comp", name: "A", layerIds: ["a"], duration: 1 }],
+    };
+    const result = evaluateComposition(cyclic, "a-comp", 0);
+    expect(result?.renderTree[0]?.children).toEqual([]);
+  });
+
   it("returns undefined for an unknown composition", () => {
     expect(evaluateComposition(document, "missing", 1)).toBeUndefined();
   });
