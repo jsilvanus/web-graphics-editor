@@ -1,6 +1,7 @@
 import type { GraphicsAsset, GraphicsDocument } from "./types";
 import type { ActorVocabulary } from "./history/operations";
 import type { DocumentHistory } from "./history/store";
+import { assertValidGraphicsDocument } from "./validation";
 
 export const WEGRA_FORMAT = "wegra" as const;
 export const WEGRA_VERSION = 2 as const;
@@ -141,9 +142,12 @@ export function deserializeWegra(bytes: Uint8Array): WegraProject {
     } else if (sig === 0x06054b50) break;
     else p++;
   }
-  const rawManifest = JSON.parse(decoder.decode(files["manifest.json"] ?? new Uint8Array())) as unknown;
+  if (!files["manifest.json"]) throw new Error("WEGRA archive is missing manifest.json");
+  const rawManifest = JSON.parse(decoder.decode(files["manifest.json"])) as unknown;
   const manifest = migrateWegraManifest(rawManifest);
+  if (!files["document.json"]) throw new Error("WEGRA archive is missing document.json");
   const document = JSON.parse(decoder.decode(files["document.json"])) as GraphicsDocument;
+  assertValidGraphicsDocument(document);
   document.assets = (document.assets ?? []).map(asset => {
     const data = files[asset.url];
     if (!data) return asset;
