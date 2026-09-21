@@ -1,4 +1,4 @@
-export type { GraphicsAsset, GraphicsDocument, GraphicsEditorProps, Layer, LayerType, PathCommand, PathNode, Point, Provenance, ProvenanceSource, Composition, CompositionTimeline, Viewport, ViewportOverride, Scene, SceneTimeline, WorldTimeMapping, Graphics3DTransform, Graphics3DMaterial, Graphics3DMeshGeometry, Graphics3DMesh, Graphics3DLight, Graphics3DCamera, Graphics3DWorld, Graphics3DVisibility, Graphics3DRenderMode, Graphics3DView, Graphics3DAnimatedProperty, Graphics3DAnimationTarget, Graphics3DTrack, GraphicsOutput, OutputPlaybackMode, OutputBackgroundMode, OutputTransition, OutputTransitionType } from "./types";
+export type { GraphicsAsset, GraphicsDocument, GraphicsEditorProps, Layer, LayerType, PathCommand, PathNode, Point, Provenance, ProvenanceSource, Composition, CompositionTimeline, MediaTimeMapping, CompositionTime, EvaluationTime, EvaluatedVideo, Viewport, ViewportOverride, Scene, SceneTimeline, WorldTimeMapping, Graphics3DTransform, Graphics3DMaterial, Graphics3DMeshGeometry, Graphics3DMesh, Graphics3DLight, Graphics3DCamera, Graphics3DWorld, Graphics3DVisibility, Graphics3DRenderMode, Graphics3DView, Graphics3DAnimatedProperty, Graphics3DAnimationTarget, Graphics3DTrack, GraphicsOutput, OutputPlaybackMode, OutputBackgroundMode, OutputTransition, OutputTransitionType } from "./types";
 export { resolveComposition, resolveViewportComposition, resolveScene, resolveOutput, findComposition, findViewport, sceneAtTime as presentationSceneAtTime, viewportOverride } from "./presentation";
 export type { ResolvedLayer, ResolvedComposition, ResolvedScene } from "./presentation";
 export { evaluateComposition, evaluateScene, compositionForEvaluation, sceneForEvaluation } from "./composition-evaluator";
@@ -33,3 +33,5 @@ export type { OutputRendererProps } from "./OutputRenderer";
 export { createOutputRuntime, outputTransitionProgress, tickOutputRuntime, takeOutput, takeOffOutput, playOutput, pauseOutput, seekOutput, resetOutput, dispatchOutputRuntime } from "./outputs-runtime";
 export type { OutputCommand, OutputEvent } from "./output-protocol";
 export { isOutputCommand, outputStateEvent } from "./output-protocol";
+
+export { compositionTime, mapMediaTime, mapWorldTime, map3DViewTime } from "./time";
