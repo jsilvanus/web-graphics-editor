@@ -1,6 +1,6 @@
 import type { Composition, GraphicsDocument, Layer, Scene } from "./types";
 import { buildRenderTree, type RenderNode } from "./render-model";
-import { findComposition, resolveComposition, resolveScene, type ResolvedComposition, type ResolvedScene } from "./presentation";
+import { resolveComposition, resolveScene, type ResolvedComposition, type ResolvedScene } from "./presentation";
 
 /**
  * The runtime boundary between the persistent document and rendering.
@@ -18,13 +18,18 @@ export interface CompositionEvaluation {
   renderTree: RenderNode[];
 }
 
-export interface SceneEvaluation extends CompositionEvaluation {
+export interface SceneEvaluation {
   kind: "scene";
+  composition: Composition;
   scene: Scene;
   /** Time in the outer document/presentation timeline. */
   globalTime: number;
   /** Time relative to the active scene. */
   localTime: number;
+  /** Alias for the composition-local evaluation time. */
+  time: number;
+  layers: Layer[];
+  renderTree: RenderNode[];
 }
 
 function renderTreeForLayers(document: GraphicsDocument, layers: Layer[]): RenderNode[] {
@@ -95,9 +100,7 @@ export function compositionForEvaluation(
   document: GraphicsDocument,
   compositionId: string,
 ): ResolvedComposition | undefined {
-  return findComposition(document, compositionId)
-    ? resolveComposition(document, compositionId)
-    : undefined;
+  return resolveComposition(document, compositionId);
 }
 
 /**
