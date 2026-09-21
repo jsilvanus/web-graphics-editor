@@ -112,6 +112,7 @@ function renderTreeForLayers(
     const composition = (document.compositions ?? []).find(item => item.id === node.layer.compositionId);
     if (!composition) return node;
     const nestedTime = mapNestedCompositionTime(composition, time, node.layer);
+    if (nestedTime === undefined) return { ...node, opacity: 0, children: [] };
     const nested = evaluateCompositionInternal(document, composition.id, nestedTime, [...stack, composition.id]);
     return nested
       ? { ...node, children: nested.renderTree }
@@ -123,13 +124,21 @@ function mapNestedCompositionTime(
   composition: Composition,
   parentTime: number,
   layer: Layer,
-): number {
+): number | undefined {
   const offset = layer.timeOffset ?? 0;
-  const rate = layer.playbackRate ?? 1;
-  const mapped = Math.max(0, (parentTime - offset) * rate);
-  if (!composition.duration || composition.duration <= 0) return mapped;
-  if (layer.loop ?? composition.loop) return mapped % composition.duration;
-  return Math.min(mapped, composition.duration);
+  const rate = Number.isFinite(layer.playbackRate) && (layer.playbackRate ?? 0) > 0 ? layer.playbackRate! : 1;
+  const sourceIn = Math.max(0, layer.compositionIn ?? 0);
+  const sourceOut = layer.compositionOut ?? composition.duration;
+  if (parentTime < offset) return undefined;
+  const elapsed = (parentTime - offset) * rate;
+  const looping = layer.loop ?? composition.loop;
+  if (sourceOut !== undefined && sourceOut > sourceIn && elapsed > sourceOut - sourceIn && !looping) return undefined;
+  const span = sourceOut !== undefined && sourceOut > sourceIn ? sourceOut - sourceIn : composition.duration;
+  if (span && span > 0 && looping) return sourceIn + (elapsed % span);
+  const local = sourceIn + elapsed;
+  if (sourceOut !== undefined && sourceOut > sourceIn) return Math.min(local, sourceOut);
+  if (composition.duration && composition.duration > 0) return Math.min(local, composition.duration);
+  return local;
 }
 
 function nestedEvaluationSources(
@@ -145,6 +154,7 @@ function nestedEvaluationSources(
     const composition = (document.compositions ?? []).find(item => item.id === layer.compositionId);
     if (!composition) continue;
     const nestedTime = mapNestedCompositionTime(composition, time, layer);
+    if (nestedTime === undefined) continue;
     const nested = evaluateCompositionInternal(document, composition.id, nestedTime, [...stack, composition.id]);
     if (!nested) continue;
     videos.push(...nested.videos);
