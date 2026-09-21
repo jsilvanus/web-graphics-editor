@@ -83,7 +83,12 @@ export function evaluateComposition(
   const resolved = resolveComposition(document, compositionId);
   if (!resolved) return undefined;
 
-  const layers = resolved.layers.map(layer => ({ ...layer }));
+  const layers = resolved.layers.map(layer => ({
+    ...layer,
+    style: layer.style ? { ...layer.style } : layer.style,
+    textStyle: layer.textStyle ? { ...layer.textStyle } : layer.textStyle,
+    viewportOverrides: layer.viewportOverrides ? { ...layer.viewportOverrides } : layer.viewportOverrides,
+  }));
   const requestedTime = Number.isFinite(time) ? Math.max(0, time) : 0;
   const duration = resolved.composition.duration;
   const safeTime = duration && duration > 0
