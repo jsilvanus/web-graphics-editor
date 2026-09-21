@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { alignLayersCommand, distributeLayersCommand, booleanLayersCommand, joinPathLayersCommand } from "../document/commands";
+import { alignLayersCommand, distributeLayersCommand, booleanLayersCommand, joinPathLayersCommand, offsetPathCommand } from "../document/commands";
 import type { GraphicsDocument } from "../types";
 import type { EditorOperationOptions } from "./useEditorHistory";
 import { useLayerOperations } from "./useLayerOperations";
@@ -37,6 +37,8 @@ export function useLayerCommands(
     executeCommand(alignLayersCommand(document, selectedIds, mode, reference), { label: `Align ${mode}` });
   }, [selectedIds, document, executeCommand]);
 
+  const applyOffset = useCallback((distance: number) => { if (!primaryId) return; executeCommand(offsetPathCommand(document, primaryId, distance), { label: `Offset path ${distance}` }); }, [primaryId, document, executeCommand]);
+
   const applyJoinPaths = useCallback(() => { if (selectedIds.size !== 2) return; const ids = [...selectedIds]; executeCommand(joinPathLayersCommand(document, ids), { label: "Join paths" }); }, [selectedIds, document, executeCommand]);
 
   const applyBoolean = useCallback((operation: import("../geometry/boolean").BooleanOperation) => { if (selectedIds.size !== 2) return; executeCommand(booleanLayersCommand(document, [...selectedIds], operation), { label: `Boolean ${operation}` }); }, [selectedIds, document, executeCommand]);
@@ -64,6 +66,7 @@ export function useLayerCommands(
     applyAlign,
     applyBoolean,
     applyJoinPaths,
+    applyOffset,
     applyDistribute,
     primaryId,
   };
