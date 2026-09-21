@@ -34,6 +34,7 @@ export interface SceneEvaluation {
   localTime: number;
   /** Alias for the composition-local evaluation time. */
   time: number;
+  timeDomain: EvaluationTime;
   layers: Layer[];
   renderTree: RenderNode[];
   videos: EvaluatedVideo[];
