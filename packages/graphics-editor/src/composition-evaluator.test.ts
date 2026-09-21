@@ -136,7 +136,7 @@ describe("composition evaluation boundary", () => {
       }],
     };
     const result = evaluateComposition(animated, "main", 0.5);
-    expect(result?.layers[0].style?.color).toBe("#808080");
+    expect(result?.layers[0].style?.color).toBe("#808080ff");
     expect(original.style?.color).toBeUndefined();
   });
 });
