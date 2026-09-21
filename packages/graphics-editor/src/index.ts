@@ -3,6 +3,8 @@ export { resolveComposition, resolveViewportComposition, resolveScene, resolveOu
 export type { ResolvedLayer, ResolvedComposition, ResolvedScene } from "./presentation";
 export { evaluateComposition, evaluateScene, compositionForEvaluation, sceneForEvaluation } from "./composition-evaluator";
 export type { CompositionEvaluation, SceneEvaluation } from "./composition-evaluator";
+export { composeDocumentAtTime, composeOutput } from "./compositor";
+export type { CompositorFrame } from "./compositor";
 export { GraphicsEditor, defaultGraphicsDocument } from "./GraphicsEditor";
 export { GRAPHICS_DOCUMENT_VERSION, serializeGraphicsDocument, deserializeGraphicsDocument } from "./serialization";
 export { validateDocumentReferences, assertValidDocumentReferences } from "./validate-references";
