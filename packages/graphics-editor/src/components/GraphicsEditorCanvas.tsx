@@ -23,13 +23,13 @@ export const GraphicsEditorCanvas: FC<{ marquee?: { x: number; y: number; width:
   };
   return <div className="ge-canvas-wrap">
     <div className="ge-viewport" ref={viewportRef} onWheel={onWheel} onPointerDown={onViewportPointerDown} onPointerMove={onViewportPointerMove} onPointerUp={onViewportPointerUp} style={{ position: "relative", overflow: "hidden", touchAction: "none" }}>
-      <div className="ge-ruler-corner" aria-hidden="true" />
-      <div className="ge-ruler ge-ruler-x" aria-hidden="true">{ticks.map(x => <span key={x} style={{ left: panX + x * zoom }}>{x}</span>)}</div>
-      <div className="ge-ruler ge-ruler-y" aria-hidden="true">{yticks.map(y => <span key={y} style={{ top: panY + y * zoom }}>{y}</span>)}</div>
+      <div aria-hidden="true" style={{ position: "absolute", left: 0, top: 0, width: 28, height: 22, zIndex: 900, background: "#171717", borderRight: "1px solid #444", borderBottom: "1px solid #444" }} />
+      <div aria-hidden="true" style={{ position: "absolute", left: 28, right: 0, top: 0, height: 22, zIndex: 899, overflow: "hidden", background: "#171717", borderBottom: "1px solid #444", color: "#aaa", fontSize: 9, pointerEvents: "none" }}>{ticks.map(x => <span key={x} style={{ position: "absolute", left: panX + x * zoom, top: 4, transform: "translateX(-50%)", whiteSpace: "nowrap" }}>{x}</span>)}</div>
+      <div aria-hidden="true" style={{ position: "absolute", left: 0, top: 22, bottom: 0, width: 28, zIndex: 899, overflow: "hidden", background: "#171717", borderRight: "1px solid #444", color: "#aaa", fontSize: 9, pointerEvents: "none" }}>{yticks.map(y => <span key={y} style={{ position: "absolute", left: 3, top: panY + y * zoom, transform: "translateY(-50%)", whiteSpace: "nowrap" }}>{y}</span>)}</div>
       <div className="ge-viewport-controls" style={{ position: "absolute", right: 8, top: 8, zIndex: 1000, display: "flex", gap: 4 }}>
         <button onClick={onZoomOut} type="button" title="Zoom out">−</button><button onClick={onZoomReset} type="button" title="100%">100%</button><span style={{ padding: "4px 7px", background: "#222", color: "#fff", fontSize: 12 }}>{Math.round(zoom * 100)}%</span><button onClick={onZoomIn} type="button" title="Zoom in">+</button><button onClick={onFit} type="button" title="Fit canvas">Fit</button>
       </div>
-      <div className="ge-canvas" onPointerMove={handleMove} onPointerUp={onPointerUp} onPointerLeave={() => { setCursor(null); onPointerUp(); }}>
+      <div className="ge-canvas" style={{ position: "absolute", inset: "22px 0 0 28px" }} onPointerMove={handleMove} onPointerUp={onPointerUp} onPointerLeave={() => { setCursor(null); onPointerUp(); }}>
         <div ref={artboardRef} className="ge-artboard" onPointerDown={onCanvasPointerDown} style={{ background, transform: `translate(${panX}px,${panY}px) scale(${zoom})`, transformOrigin: "0 0" }}>
           {grid && <div className="ge-grid" />}<div className="ge-guide ge-guide-v" /><div className="ge-guide ge-guide-h" />
           <CanvasLayerStack layers={layers} selectedIds={selectedIds} worlds3d={worlds3d} views3d={views3d} currentTime={currentTime} onLayerPointerDown={onLayerPointerDown} onSelectLayer={onSelectLayer} onPathNodes={onPathNodes} onTextCommit={onTextCommit} onTextRunsCommit={onTextRunsCommit} />
@@ -39,7 +39,7 @@ export const GraphicsEditorCanvas: FC<{ marquee?: { x: number; y: number; width:
           {safe && <><div className="ge-safe safe90" /><div className="ge-safe safe80" /></>}
         </div>
       </div>
-      <div className="ge-canvas-status" aria-live="polite">{cursor ? `X ${Math.round(cursor.x)}  Y ${Math.round(cursor.y)}` : "Move over canvas"} · {Math.round(zoom * 100)}%</div>
+      <div className="ge-canvas-status" aria-live="polite" style={{ position: "absolute", left: 36, bottom: 8, zIndex: 1001, padding: "3px 7px", borderRadius: 3, background: "rgba(20,20,20,.85)", color: "#aaa", fontSize: 11, pointerEvents: "none" }}>{cursor ? `X ${Math.round(cursor.x)}  Y ${Math.round(cursor.y)}` : "Move over canvas"} · {Math.round(zoom * 100)}%</div>
     </div>
   </div>;
 };
