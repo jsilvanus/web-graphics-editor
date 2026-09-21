@@ -1,4 +1,5 @@
 import type { GraphicsDocument, Layer } from "./types";
+import { assertValidGraphicsDocument } from "./validation";
 
 export const GRAPHICS_DOCUMENT_VERSION = 3;
 
@@ -11,5 +12,7 @@ export function deserializeGraphicsDocument(input:string|SerializedDocument):Gra
  const value:SerializedDocument=typeof input==="string"?JSON.parse(input) as SerializedDocument:input;
  if(!value||typeof value!=="object")throw new Error("Invalid graphics document");
  if(!Number.isFinite(value.width)||!Number.isFinite(value.height)||!Array.isArray(value.layers))throw new Error("Invalid graphics document shape");
- return {width:value.width,height:value.height,background:value.background,layers:value.layers.map(layer=>({...layer,type:layer.type==="rect"?"rectangle":layer.type})),compositions:value.compositions,viewports:value.viewports,timeline:value.timeline,assets:value.assets,worlds3d:value.worlds3d,views3d:value.views3d,outputs:value.outputs};
+ const document={width:value.width,height:value.height,background:value.background,layers:value.layers.map(layer=>({...layer,type:layer.type==="rect"?"rectangle":layer.type})),compositions:value.compositions,viewports:value.viewports,timeline:value.timeline,assets:value.assets,worlds3d:value.worlds3d,views3d:value.views3d,outputs:value.outputs};
+ assertValidGraphicsDocument(document);
+ return document;
 }
