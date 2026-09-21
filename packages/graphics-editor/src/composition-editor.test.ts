@@ -40,4 +40,27 @@ describe("composition video evaluation", () => {
     const evaluation = evaluateComposition(document, "main", 5);
     expect(evaluation?.videos[0].mediaTime).toBe(11);
   });
+
+  it("keeps nested composition instances inactive before their offset and after their out point", () => {
+    const document: GraphicsDocument = {
+      width: 100, height: 100,
+      layers: [{ id: "instance", type: "composition", x: 0, y: 0, width: 100, height: 100, compositionId: "child", timeOffset: 2, compositionIn: 1, compositionOut: 4 }],
+      compositions: [{ id: "child", name: "Child", layerIds: [], duration: 10 }],
+    };
+    const before = evaluateComposition(document, "child", 0);
+    expect(before?.time).toBe(0);
+    const parent: GraphicsDocument = {
+      ...document,
+      compositions: [
+        { id: "parent", name: "Parent", layerIds: ["instance"], duration: 10 },
+        ...(document.compositions ?? []),
+      ],
+    };
+    const beforeParent = evaluateComposition(parent, "parent", 1);
+    expect(beforeParent?.renderTree[0]?.opacity).toBe(0);
+    const activeParent = evaluateComposition(parent, "parent", 3);
+    expect(activeParent?.renderTree[0]?.children).toEqual([]);
+    const afterParent = evaluateComposition(parent, "parent", 6);
+    expect(afterParent?.renderTree[0]?.opacity).toBe(0);
+  });
 });
