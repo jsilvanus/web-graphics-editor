@@ -173,6 +173,7 @@ function evaluateCompositionInternal(
     ? (resolved.composition.loop ? requestedTime % duration : Math.min(requestedTime, duration))
     : requestedTime;
   const animatedLayers = applyCompositionAnimation(resolved.composition, layers, safeTime);
+  const nestedSources = nestedEvaluationSources(document, animatedLayers, safeTime, stack);
   return {
     kind: "composition",
     composition: { ...resolved.composition },
@@ -180,8 +181,8 @@ function evaluateCompositionInternal(
     timeDomain: { output: safeTime, composition: safeTime },
     layers: animatedLayers,
     renderTree: renderTreeForLayers(document, animatedLayers, safeTime, stack),
-    videos: [...evaluateVideos(document, animatedLayers, safeTime), ...nestedEvaluationSources(document, animatedLayers, safeTime, stack).videos],
-    views3d: [...evaluateViews3d(document, animatedLayers, safeTime), ...nestedEvaluationSources(document, animatedLayers, safeTime, stack).views3d],
+    videos: [...evaluateVideos(document, animatedLayers, safeTime), ...nestedSources.videos],
+    views3d: [...evaluateViews3d(document, animatedLayers, safeTime), ...nestedSources.views3d],
   };
 }
 
