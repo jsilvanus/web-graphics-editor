@@ -19,7 +19,7 @@ const document: GraphicsDocument = {
     { id: "title", type: "text", x: 100, y: 100, width: 600, height: 100, text: "Hello", parentId: "group" },
   ],
   compositions: [
-    { id: "main", name: "Main", layerIds: ["bg", "group", "title"] },
+    { id: "main", name: "Main", layerIds: ["bg", "group", "title"], duration: 5, loop: true },
   ],
   timeline: {
     scenes: [
@@ -49,6 +49,11 @@ describe("composition evaluation boundary", () => {
     expect(document.timeline?.currentTime).toBe(0);
 
     expect(evaluateComposition(document, "main", Number.NaN)?.time).toBe(0);
+  });
+
+  it("evaluates composition-local duration and looping", () => {
+    expect(evaluateComposition(document, "main", 7)?.time).toBe(2);
+    expect(evaluateComposition(document, "main", 5)?.time).toBe(0);
   });
 
   it("returns undefined for an unknown composition", () => {
