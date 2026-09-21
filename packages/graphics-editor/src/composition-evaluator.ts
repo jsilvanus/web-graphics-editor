@@ -138,7 +138,7 @@ function evaluateCompositionInternal(
   stack: string[] = [],
 ): CompositionEvaluation | undefined {
   const resolved = resolveComposition(document, compositionId);
-  if (!resolved || stack.includes(compositionId)) return undefined;
+  if (!resolved) return undefined;
   const layers = resolved.layers.map(layer => ({
     ...layer,
     style: layer.style ? { ...layer.style } : layer.style,
