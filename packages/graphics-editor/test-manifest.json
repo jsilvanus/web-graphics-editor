@@ -172,7 +172,8 @@
           "files": [
             "src/architecture.integration.test.ts",
             "src/composition-evaluator.test.ts",
-            "src/compositor.test.ts"
+            "src/compositor.test.ts",
+            "src/composition-editor.test.ts"
           ]
         },
         {
