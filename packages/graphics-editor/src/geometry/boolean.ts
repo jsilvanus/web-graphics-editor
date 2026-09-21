@@ -25,7 +25,7 @@ export function booleanContours(a:PolygonPoint[],b:PolygonPoint[],op:BooleanOper
  return result.length?result:fallback(a,b,op);
 }
 export function booleanPolygons(a:PolygonPoint[],b:PolygonPoint[],op:BooleanOperation):PolygonPoint[][] {
- return booleanContours(a,b,op).map(contour=>contour.points);
+ return booleanContours(a,b,op).filter(contour=>!contour.hole).map(contour=>contour.points);
 }
 export function pathNodesToPolygon(nodes:PathNode[],closed=true,tolerance=0.75):PolygonPoint[]|null {
  if(nodes.length<3||!closed)return null;
