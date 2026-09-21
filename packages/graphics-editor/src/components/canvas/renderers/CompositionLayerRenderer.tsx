@@ -25,6 +25,7 @@ export const CompositionLayerRenderer: FC<CompositionLayerRendererProps> = ({
         <CanvasLayer
           key={child.layer.id}
           layer={child.layer}
+          renderNode={child}
           layers={flattenNodes(node.children)}
           selected={selectedIds.has(child.layer.id)}
           selectedIds={selectedIds}
