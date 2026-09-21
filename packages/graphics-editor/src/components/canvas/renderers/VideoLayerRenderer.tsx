@@ -3,10 +3,9 @@ import { useEffect, useRef } from "react";
 export interface VideoLayerRendererProps {
   src: string;
   mediaTime: number;
-  playing?: boolean;
 }
 
-export function VideoLayerRenderer({ src, mediaTime, playing = true }: VideoLayerRendererProps) {
+export function VideoLayerRenderer({ src, mediaTime }: VideoLayerRendererProps) {
   const ref = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
