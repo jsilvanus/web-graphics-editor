@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties, type FC } fro
 import type { GraphicsDocument, GraphicsOutput } from "./types";
 import { CanvasLayerStack } from "./components/canvas/CanvasLayerStack";
 import { createOutputRuntime, dispatchOutputRuntime, outputTransitionProgress, type OutputRuntime } from "./outputs-runtime";
-import { resolveOutput } from "./presentation";
+import { evaluateScene, evaluateComposition } from "./composition-evaluator";
 
 export interface OutputRendererProps {
   document: GraphicsDocument;
@@ -33,8 +33,11 @@ export const OutputRenderer:FC<OutputRendererProps>=({document,output,showContro
   const frame=useRef<number>();
   const last=useRef<number>();
   const runtimeRef=useRef(runtime); runtimeRef.current=runtime;
-  const resolved=useMemo(()=>resolveOutput(document,output.id,runtime.time),[document,output.id,runtime.time]);
-  const layers=resolved?.layers??[];
+  const evaluation=useMemo(()=>document.timeline?.scenes.length
+    ? evaluateScene(document,runtime.time,output.viewportId)
+    : (document.compositions?.[0] ? evaluateComposition(document,document.compositions[0].id,runtime.time) : undefined),
+    [document,output.viewportId,runtime.time]);
+  const layers=evaluation?.layers??[];
   const viewport=resolved&&"scene" in resolved?document.viewports?.find(v=>v.id===output.viewportId):document.viewports?.find(v=>v.id===output.viewportId);
   const background=output.background==="transparent"?"transparent":document.background??"#000";
   const transition=useMemo(()=>transitionStyle(output,runtime),[output,runtime]);
