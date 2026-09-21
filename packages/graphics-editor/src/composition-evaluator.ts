@@ -154,19 +154,32 @@ export function evaluateScene(
   const resolved = resolveScene(document, time, viewportId);
   if (!resolved) return undefined;
 
-  const layers = resolved.layers.map(layer => ({ ...layer }));
+  const layers = resolved.layers.map(layer => ({
+    ...layer,
+    style: layer.style ? { ...layer.style } : layer.style,
+    textStyle: layer.textStyle ? { ...layer.textStyle } : layer.textStyle,
+    viewportOverrides: layer.viewportOverrides ? { ...layer.viewportOverrides } : layer.viewportOverrides,
+  }));
   const globalTime = Number.isFinite(time) ? Math.max(0, time) : 0;
+  const compositionTime = resolved.composition.duration && resolved.composition.duration > 0
+    ? (resolved.composition.loop
+      ? resolved.localTime % resolved.composition.duration
+      : Math.min(resolved.localTime, resolved.composition.duration))
+    : resolved.localTime;
+  const animatedLayers = applyCompositionAnimation(resolved.composition, layers, compositionTime);
 
   return {
     kind: "scene",
     composition: { ...resolved.composition },
     scene: { ...resolved.scene },
     globalTime,
-    localTime: resolved.localTime,
-    time: resolved.localTime,
-    timeDomain: { output: globalTime, composition: resolved.localTime },
-    layers,
-    renderTree: renderTreeForLayers(document, layers),
+    localTime: compositionTime,
+    time: compositionTime,
+    timeDomain: { output: globalTime, composition: compositionTime },
+    layers: animatedLayers,
+    renderTree: renderTreeForLayers(document, animatedLayers),
+    videos: evaluateVideos(document, animatedLayers, compositionTime),
+    views3d: evaluateViews3d(document, animatedLayers, compositionTime),
   };
 }
 
