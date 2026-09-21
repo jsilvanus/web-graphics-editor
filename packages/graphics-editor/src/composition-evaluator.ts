@@ -51,7 +51,11 @@ export function evaluateComposition(
   if (!resolved) return undefined;
 
   const layers = resolved.layers.map(layer => ({ ...layer }));
-  const safeTime = Number.isFinite(time) ? Math.max(0, time) : 0;
+  const requestedTime = Number.isFinite(time) ? Math.max(0, time) : 0;
+  const duration = resolved.composition.duration;
+  const safeTime = duration && duration > 0
+    ? (resolved.composition.loop ? requestedTime % duration : Math.min(requestedTime, duration))
+    : requestedTime;
 
   return {
     kind: "composition",
