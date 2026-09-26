@@ -23,7 +23,17 @@ export function createDefaultWorldTimeline(): Graphics3DWorldTimeline {
   return { duration: 10, tracks: [], loop: false };
 }
 
-export function useGraphicsEditorTimeline(document: GraphicsDocument, executeCommand: ExecuteCommand) {
+/** Give a document a timeline if it has none, so scene ids stay stable across renders. */
+export function withDefaultTimeline(document: GraphicsDocument): GraphicsDocument {
+  return document.timeline ? document : { ...document, timeline: createDefaultTimeline() };
+}
+
+export function useGraphicsEditorTimeline(
+  document: GraphicsDocument,
+  executeCommand: ExecuteCommand,
+  /** Apply a change without recording history (playhead moves are not undoable edits). */
+  setTransient: (document: GraphicsDocument) => void,
+) {
   const [context, setContext] = useState<TimelineContext>({ kind: "main" });
   const [worldCurrentTime, setWorldCurrentTime] = useState(0);
   const mainTimeline = document.timeline ?? createDefaultTimeline();
@@ -46,9 +56,9 @@ export function useGraphicsEditorTimeline(document: GraphicsDocument, executeCom
         ...mainTimeline,
         currentTime: Math.max(0, Math.min(timelineDuration(mainTimeline), time)),
       };
-      executeCommand({ document: { ...document, timeline: next } }, { label: "Seek" });
+      setTransient({ ...document, timeline: next });
     },
-    [context, document, executeCommand, mainTimeline, worldTimeline],
+    [context, document, setTransient, mainTimeline, worldTimeline],
   );
   const changeTimeline = useCallback(
     (next: SceneTimeline) => {

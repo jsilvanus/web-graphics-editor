@@ -252,13 +252,22 @@ export const SceneTimelinePanel: FC<SceneTimelinePanelProps> = ({
         }}
       >
         {timeline.scenes.map(s => (
-          <button
+          <div
             key={s.id}
+            role="button"
+            tabIndex={0}
             className="ge-scene"
             style={{ left: `${(s.start / total) * 100}%`, width: `${(s.duration / total) * 100}%` }}
+            onPointerDown={e => e.stopPropagation()}
             onClick={e => {
               e.stopPropagation();
               selectScene(s.id);
+            }}
+            onKeyDown={e => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                selectScene(s.id);
+              }
             }}
           >
             {s.name}
@@ -283,8 +292,12 @@ export const SceneTimelinePanel: FC<SceneTimelinePanelProps> = ({
                 ＋
               </button>
             </span>
-          </button>
+          </div>
         ))}
+        <div
+          className="ge-playhead"
+          style={{ left: `${Math.min(100, (timeline.currentTime / total) * 100)}%` }}
+        />
       </div>
       <div className="ge-track-list">
         <div className="ge-timeline-subhead">Scenes & objects</div>
@@ -320,10 +333,6 @@ export const SceneTimelinePanel: FC<SceneTimelinePanelProps> = ({
           onDelete={() => remove(selectedKey.kind, selectedKey.trackId, selectedKey.keyId)}
         />
       )}
-      <div
-        className="ge-playhead"
-        style={{ left: `${Math.min(100, (timeline.currentTime / total) * 100)}%` }}
-      />
     </section>
   );
 };

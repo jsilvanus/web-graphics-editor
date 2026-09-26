@@ -2,8 +2,8 @@ import {
   useState,
   type FC,
   type PointerEvent as ReactPointerEvent,
+  type CSSProperties,
   type RefObject,
-  type WheelEvent as ReactWheelEvent,
 } from "react";
 import { WIDTH, HEIGHT } from "../constants";
 import type { Graphics3DView, Graphics3DWorld, GraphicsAsset, Layer, PathNode, TextRun } from "../types";
@@ -30,11 +30,13 @@ export const GraphicsEditorCanvas: FC<{
   grid: boolean;
   safe: boolean;
   background: string;
+  /** Document size in document pixels. */
+  width?: number;
+  height?: number;
   zoom?: number;
   panX?: number;
   panY?: number;
   viewportRef?: RefObject<HTMLDivElement | null>;
-  onWheel?: (event: ReactWheelEvent) => void;
   onViewportPointerDown?: (event: ReactPointerEvent) => void;
   onViewportPointerMove?: (event: ReactPointerEvent) => void;
   onViewportPointerUp?: () => void;
@@ -64,16 +66,18 @@ export const GraphicsEditorCanvas: FC<{
 }> = ({
   artboardRef,
   frame,
+  marquee,
   layers,
   selectedIds,
   grid,
   safe,
   background,
+  width = WIDTH,
+  height = HEIGHT,
   zoom = 1,
   panX = 0,
   panY = 0,
   viewportRef,
-  onWheel,
   onViewportPointerDown,
   onViewportPointerMove,
   onViewportPointerUp,
@@ -98,8 +102,8 @@ export const GraphicsEditorCanvas: FC<{
 }) => {
   const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
   const step = rulerStep(zoom);
-  const ticks = Array.from({ length: Math.ceil(WIDTH / step) + 2 }, (_, i) => i * step);
-  const yticks = Array.from({ length: Math.ceil(HEIGHT / step) + 2 }, (_, i) => i * step);
+  const ticks = Array.from({ length: Math.ceil(width / step) + 2 }, (_, i) => i * step);
+  const yticks = Array.from({ length: Math.ceil(height / step) + 2 }, (_, i) => i * step);
   const handleMove = (event: ReactPointerEvent) => {
     const rect = artboardRef.current?.getBoundingClientRect();
     if (rect) setCursor({ x: (event.clientX - rect.left) / zoom, y: (event.clientY - rect.top) / zoom });
@@ -110,8 +114,7 @@ export const GraphicsEditorCanvas: FC<{
       <div
         className="ge-viewport"
         ref={viewportRef}
-        onWheel={onWheel}
-        onPointerDown={onViewportPointerDown}
+        onPointerDownCapture={onViewportPointerDown}
         onPointerMove={onViewportPointerMove}
         onPointerUp={onViewportPointerUp}
         style={{ position: "relative", overflow: "hidden", touchAction: "none" }}
@@ -219,6 +222,9 @@ export const GraphicsEditorCanvas: FC<{
           style={{ position: "absolute", inset: "22px 0 0 28px" }}
           onPointerMove={handleMove}
           onPointerUp={onPointerUp}
+          onDoubleClick={() => {
+            if (drawing) onDrawingDoubleClick?.();
+          }}
           onPointerLeave={() => {
             setCursor(null);
             onPointerUp();
@@ -228,11 +234,16 @@ export const GraphicsEditorCanvas: FC<{
             ref={artboardRef}
             className="ge-artboard"
             onPointerDown={onCanvasPointerDown}
-            style={{
-              background,
-              transform: `translate(${panX}px,${panY}px) scale(${zoom})`,
-              transformOrigin: "0 0",
-            }}
+            style={
+              {
+                background,
+                width,
+                height,
+                transform: `translate(${panX}px,${panY}px) scale(${zoom})`,
+                transformOrigin: "0 0",
+                "--ge-zoom": zoom,
+              } as CSSProperties
+            }
           >
             {grid && <div className="ge-grid" />}
             <div className="ge-guide ge-guide-v" />
@@ -256,7 +267,7 @@ export const GraphicsEditorCanvas: FC<{
                 className="ge-drawing-preview"
                 width="100%"
                 height="100%"
-                viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+                viewBox={`0 0 ${width} ${height}`}
                 style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 200 }}
                 onDoubleClick={onDrawingDoubleClick}
               >

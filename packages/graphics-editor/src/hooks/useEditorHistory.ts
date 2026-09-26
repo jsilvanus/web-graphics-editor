@@ -84,6 +84,28 @@ export function useEditorHistory(initialDocument: GraphicsDocument) {
     },
     [apply, executeCommand],
   );
+  /**
+   * Record an edit whose intermediate states were already shown transiently (e.g. a drag):
+   * one history entry from `before` to the current document.
+   */
+  const commitFrom = useCallback((before: GraphicsDocument, options: EditorOperationOptions = {}) => {
+    const after = documentRef.current;
+    if (before === after) return;
+    const operations = diffOperations(before, after);
+    if (!operations.length) return;
+    const operation = operations.length === 1 ? operations[0] : { type: "batch" as const, operations };
+    pastRef.current = [...pastRef.current.slice(-99), before];
+    futureRef.current = [];
+    historyRef.current = appendHistory(
+      historyRef.current,
+      after,
+      operation,
+      options.actorId ?? "ui",
+      options.label ?? operation.type,
+    );
+    forceUpdate(v => v + 1);
+  }, []);
+  const getDocument = useCallback(() => documentRef.current, []);
   const undo = useCallback(() => {
     const previous = pastRef.current.pop();
     if (!previous) return;
@@ -111,6 +133,8 @@ export function useEditorHistory(initialDocument: GraphicsDocument) {
   return {
     document,
     setDocument,
+    commitFrom,
+    getDocument,
     execute,
     executeCommand,
     recordOperation,

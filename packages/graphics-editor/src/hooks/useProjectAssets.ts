@@ -13,7 +13,7 @@ export function useProjectAssets(document: GraphicsDocument, assets: GraphicsAss
       const font = new FontFace(family, `url(${asset.url})`);
       font
         .load()
-        .then(f => document.fonts.add(f))
+        .then(f => window.document.fonts.add(f))
         .catch(() => {});
     }
   }, [projectAssets]);

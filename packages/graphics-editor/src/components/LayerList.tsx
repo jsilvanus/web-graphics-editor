@@ -63,13 +63,13 @@ export const LayerList: FC<{
   };
 
   const renderLayer = (layer: Layer, depth: number): ReactNode => {
+    const isGroup = layer.type === "group";
+    const isComposition = layer.type === "composition";
     const children = isComposition
       ? (compositions.find(c => c.id === layer.compositionId)?.layerIds ?? [])
           .map(id => layers.find(item => item.id === id))
           .filter((item): item is Layer => !!item)
       : getChildLayers(layers, layer.id);
-    const isGroup = layer.type === "group";
-    const isComposition = layer.type === "composition";
     const isCollapsed = collapsed.has(layer.id);
     return (
       <div

@@ -1,6 +1,5 @@
 import { useCallback, useRef, useState } from "react";
 import { orthogonalPoint, pathCommandsToD } from "../geometry";
-import { WIDTH, HEIGHT } from "../constants";
 import type { GraphicsDocument, Layer, PathCommand, PathNode } from "../types";
 import type { DrawingPreview } from "../components/GraphicsEditorCanvas";
 
@@ -19,13 +18,23 @@ export function useEditorDrawing(
     (e: React.PointerEvent<HTMLDivElement>, artboardRef: React.RefObject<HTMLDivElement>) => {
       const r = artboardRef.current?.getBoundingClientRect();
       return r
-        ? { x: ((e.clientX - r.left) * WIDTH) / r.width, y: ((e.clientY - r.top) * HEIGHT) / r.height }
+        ? {
+            x: ((e.clientX - r.left) * document.width) / r.width,
+            y: ((e.clientY - r.top) * document.height) / r.height,
+          }
         : null;
     },
-    [],
+    [document.width, document.height],
   );
   const finishDrawing = useCallback(() => {
-    const c = drawingRef.current;
+    const current = drawingRef.current;
+    // A double-click to finish also lands two clicks on the same spot; drop repeated points.
+    const c = current && {
+      ...current,
+      points: current.points.filter(
+        (p, i, all) => i === 0 || Math.hypot(p.x - all[i - 1].x, p.y - all[i - 1].y) > 0.5,
+      ),
+    };
     if (!c || c.points.length < 2) {
       drawingRef.current = null;
       setDrawing(null);
@@ -121,9 +130,14 @@ export function useEditorDrawing(
         }
         return;
       }
-      if (drawingRef.current?.tool === "line" && drawingRef.current.points.length === 1) {
+      // Drag tools: the second point follows the pointer until release.
+      const current = drawingRef.current;
+      if ((current?.tool === "line" || current?.tool === "star") && current.points.length >= 1) {
         const p = canvasPoint(e, artboardRef);
-        if (p) setDrawing({ ...drawingRef.current, points: [drawingRef.current.points[0], p] });
+        if (p) {
+          drawingRef.current = { ...current, points: [current.points[0], p] };
+          setDrawing(drawingRef.current);
+        }
       }
     },
     [canvasPoint],

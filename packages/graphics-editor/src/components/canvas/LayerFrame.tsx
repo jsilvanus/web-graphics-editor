@@ -11,8 +11,14 @@ export const LayerFrame: FC<{
   multiSelected: boolean;
   children: ReactNode;
   onPointerDown: (event: ReactPointerEvent, kind: "move" | "resize" | "rotate", handle?: string) => void;
-}> = ({ layer, frameLayer = layer, selected, multiSelected, children, onPointerDown }) => (
-  <div style={layerStyle(frameLayer, selected)} onPointerDown={event => onPointerDown(event, "move")}>
+  /** The frame captures the pointer while dragging, so double-clicks land here rather than on the content. */
+  onDoubleClick?: () => void;
+}> = ({ layer, frameLayer = layer, selected, multiSelected, children, onPointerDown, onDoubleClick }) => (
+  <div
+    style={layerStyle(frameLayer, selected)}
+    onPointerDown={event => onPointerDown(event, "move")}
+    onDoubleClick={onDoubleClick}
+  >
     {children}
     {selected && !multiSelected && (
       <>
