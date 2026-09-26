@@ -18,7 +18,10 @@ export function createHandleManager(
   selection: MeshEditSelection,
   state: { mesh?: THREE.Mesh; data?: Graphics3DMesh; mode: MeshEditMode },
 ): HandleManager {
+  // Handles are built from mesh-local vertex positions, so the group mirrors the edited mesh's
+  // world transform. The pivot lives inside the group, which keeps gizmo deltas in mesh-local space.
   const group = new THREE.Group();
+  group.matrixAutoUpdate = false;
   scene.add(group);
 
   const clear = () => {
@@ -35,7 +38,7 @@ export function createHandleManager(
   const removePivot = () => {
     const pivot = group.userData.pivot as THREE.Object3D | undefined;
     if (pivot) {
-      scene.remove(pivot);
+      pivot.removeFromParent();
       group.userData.pivot = undefined;
     }
   };
@@ -45,13 +48,16 @@ export function createHandleManager(
     pivot.position.copy(position);
     if (orientation) pivot.quaternion.copy(orientation);
     group.userData.pivot = pivot;
-    scene.add(pivot);
+    group.add(pivot);
   };
   const rebuild = () => {
     clear();
     removePivot();
     const { mesh, data, mode } = state;
     if (!mesh || !data) return;
+    mesh.updateMatrixWorld();
+    group.matrix.copy(mesh.matrixWorld);
+    group.matrixWorldNeedsUpdate = true;
     if (mode === "vertices") {
       for (let i = 0; i < data.geometry.vertices.length / 3; i++) {
         const handle = new THREE.Mesh(

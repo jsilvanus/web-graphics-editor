@@ -219,7 +219,20 @@ function vertexDirection(data: Graphics3DMesh, from: number, to: number): THREE.
   return b.sub(a);
 }
 
-type LogicalQuad = { vertices: [number, number, number, number]; boundary: string[] };
+type LogicalQuad = {
+  vertices: [number, number, number, number];
+  boundary: string[];
+  triangles: [number, number];
+};
+
+/**
+ * The triangles that make up the logical face containing `face`: the triangle plus its coplanar
+ * partner when the two form a quad (e.g. one side of a box), otherwise the triangle alone.
+ */
+export function logicalFaceTriangles(data: Graphics3DMesh, face: number): number[] {
+  const quad = inferLogicalQuads(data).find(item => item.triangles.includes(face));
+  return quad ? [...quad.triangles] : [face];
+}
 
 /** Infer quads from adjacent, nearly coplanar triangles sharing a diagonal. */
 function inferLogicalQuads(data: Graphics3DMesh): LogicalQuad[] {
@@ -260,7 +273,7 @@ function inferLogicalQuads(data: Graphics3DMesh): LogicalQuad[] {
 
     used.add(first);
     used.add(second);
-    result.push({ vertices: vertices as LogicalQuad["vertices"], boundary });
+    result.push({ vertices: vertices as LogicalQuad["vertices"], boundary, triangles: [first, second] });
   }
   return result;
 }

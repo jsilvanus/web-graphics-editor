@@ -179,3 +179,19 @@ export function evaluateAnimationKeyframes<T extends AnimationValue>(
   }
   return k[k.length - 1].value;
 }
+
+/** Value of a keyframe list at `time`: clamped outside the keyframe range, interpolated inside it. */
+export function interpolateKeyframes<T extends AnimationValue>(
+  keyframes: AnimationKeyframe<T>[],
+  time: number,
+): T | undefined {
+  return evaluateAnimationKeyframes(keyframes, time);
+}
+
+/** Value of a track at `time`. */
+export function evaluateTrack<T extends AnimationValue>(
+  track: { keyframes: AnimationKeyframe<T>[] },
+  time: number,
+): T | undefined {
+  return evaluateAnimationKeyframes(track.keyframes, time);
+}

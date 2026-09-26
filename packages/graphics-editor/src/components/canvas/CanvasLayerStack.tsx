@@ -2,7 +2,7 @@ import type { FC, PointerEvent as ReactPointerEvent } from "react";
 import type { Graphics3DView, Graphics3DWorld, GraphicsAsset, Layer, PathNode, TextRun } from "../../types";
 import { getRootLayers } from "../../layer-tree";
 import { CanvasLayer } from "./CanvasLayer";
-import { CanvasSelectionOverlay } from "./SelectionOverlay";
+import { SelectionOverlay as CanvasSelectionOverlay } from "./SelectionOverlay";
 import type { CompositorFrame } from "../../compositor";
 
 export interface CanvasLayerStackProps {
@@ -65,4 +65,4 @@ export const CanvasLayerStack: FC<CanvasLayerStackProps> = ({
   </>
 );
 
-export { CanvasSelectionOverlay } from "./SelectionOverlay";
+export { SelectionOverlay as CanvasSelectionOverlay } from "./SelectionOverlay";

@@ -45,6 +45,7 @@
             "src/mesh/graphics-mesh.test.ts",
             "src/mesh/split-edge.test.ts",
             "src/mesh/add-vertex.test.ts",
+            "src/mesh/scale-vertices.test.ts",
             "src/mesh/add-face.test.ts",
             "src/mesh/delete-face.test.ts",
             "src/mesh/delete-vertices.test.ts",

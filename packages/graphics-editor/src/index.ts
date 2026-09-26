@@ -128,13 +128,7 @@ export { export3DWorld, import3DWorld } from "./3d-interchange";
 export type { Graphics3DInterchangeResult } from "./3d-interchange";
 export { ThreeDWorkspace } from "./ThreeDWorkspace";
 export type { ThreeDWorkspaceProps } from "./ThreeDWorkspace";
-export {
-  interpolate3DKeyframes,
-  create3DTrack,
-  evaluate3DProperty,
-  evaluate3DWorldAtTime,
-  evaluate3DViewAtTime,
-} from "./3d-animation";
+export { evaluate3DProperty, evaluate3DWorldAtTime, evaluate3DViewAtTime } from "./3d-animation";
 export {
   add3DTrack,
   remove3DTrack,
