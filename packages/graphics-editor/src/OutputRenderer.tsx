@@ -30,8 +30,8 @@ const transitionStyle=(output:GraphicsOutput,runtime:OutputRuntime):CSSPropertie
 
 export const OutputRenderer:FC<OutputRendererProps>=({document,output,showControls=false,className,style,onRuntimeChange})=>{
   const [runtime,setRuntime]=useState<OutputRuntime>(()=>createOutputRuntime(output));
-  const frame=useRef<number>();
-  const last=useRef<number>();
+  const animationFrame=useRef<number | undefined>(undefined);
+  const last=useRef<number | undefined>(undefined);
   const runtimeRef=useRef(runtime); runtimeRef.current=runtime;
   const frame=useMemo(()=>composeOutput(document,output,runtime.time),[document,output,runtime.time]);
   const layers=frame?.layers??[];
@@ -42,8 +42,8 @@ export const OutputRenderer:FC<OutputRendererProps>=({document,output,showContro
   useEffect(()=>{setRuntime(createOutputRuntime(output));last.current=undefined},[output.id,output.playback,output.defaultTime]);
   useEffect(()=>{onRuntimeChange?.(runtime)},[runtime,onRuntimeChange]);
   useEffect(()=>{
-    const loop=(now:number)=>{const previous=last.current??now;last.current=now;const delta=Math.min(.1,Math.max(0,(now-previous)/1000));const current=runtimeRef.current;if(delta>0&&(current.playing||current.state==="entering"||current.state==="exiting")){const next=dispatchOutputRuntime(current,output,{type:"TICK",delta});if(next!==current)setRuntime(next)}frame.current=requestAnimationFrame(loop)};
-    frame.current=requestAnimationFrame(loop);return()=>{if(frame.current!==undefined)cancelAnimationFrame(frame.current);frame.current=undefined;last.current=undefined};
+    const loop=(now:number)=>{const previous=last.current??now;last.current=now;const delta=Math.min(.1,Math.max(0,(now-previous)/1000));const current=runtimeRef.current;if(delta>0&&(current.playing||current.state==="entering"||current.state==="exiting")){const next=dispatchOutputRuntime(current,output,{type:"TICK",delta});if(next!==current)setRuntime(next)}animationFrame.current=requestAnimationFrame(loop)};
+    animationFrame.current=requestAnimationFrame(loop);return()=>{if(animationFrame.current!==undefined)cancelAnimationFrame(animationFrame.current);animationFrame.current=undefined;last.current=undefined};
   },[output]);
 
   const command=(event:Parameters<typeof dispatchOutputRuntime>[2])=>setRuntime(r=>dispatchOutputRuntime(r,output,event));

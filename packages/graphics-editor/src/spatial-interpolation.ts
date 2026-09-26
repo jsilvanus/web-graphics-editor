@@ -7,7 +7,7 @@ const point=(c:CubicBezier3D,t:number):Vec3=>{const u=1-t,uu=u*u,tt=t*t;return [
 const dist=(a:Vec3,b:Vec3)=>Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2]);
 
 /** Builds an arc-length lookup table. Increasing resolution improves constant-speed accuracy. */
-export function buildArcLengthTable(curve:CubicBezier3D,resolution=256){const table=[{t:0,length:0}],prev=point(curve,0);let length=0;for(let i=1;i<=resolution;i++){const t=i/resolution,p=point(curve,t);length+=dist(prev,p);table.push({t,length});prev=p}return table}
+export function buildArcLengthTable(curve:CubicBezier3D,resolution=256){const table=[{t:0,length:0}];let prev=point(curve,0),length=0;for(let i=1;i<=resolution;i++){const t=i/resolution,p=point(curve,t);length+=dist(prev,p);table.push({t,length});prev=p}return table}
 
 export function bezierLength(curve:CubicBezier3D,resolution=256){return buildArcLengthTable(curve,resolution).at(-1)!.length}
 

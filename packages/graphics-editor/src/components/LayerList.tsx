@@ -15,12 +15,17 @@ export const LayerList: FC<{
   onUngroup?: (id: string) => void;
   onToggleVisibility?: (id: string) => void;
   onToggleLock?: (id: string) => void;
-  onRename?: (id: string, name: string) => void;\n  onMove?: (id: string, targetId: string, position: "inside" | "before" | "after") => void;\n  onDuplicate?: (id: string) => void;\n  onDelete?: (id: string) => void;
+  onRename?: (id: string, name: string) => void;
+  onMove?: (id: string, targetId: string, position: "inside" | "before" | "after") => void;
+  onDuplicate?: (id: string) => void;
+  onDelete?: (id: string) => void;
 }> = ({ layers, compositions = [], selectedIds, onSelect, onForward, onBackward, onFront, onBack, onGroup, onUngroup, onToggleVisibility, onToggleLock, onRename, onMove, onDuplicate, onDelete }) => {
   const roots = useMemo(() => [...getRootLayers(layers)].reverse(), [layers]);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingName, setEditingName] = useState("");\n  const [draggedId, setDraggedId] = useState<string | null>(null);\n  const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(null);
+  const [editingName, setEditingName] = useState("");
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(null);
 
   const toggle = (id: string) => setCollapsed(previous => {
     const next = new Set(previous);
@@ -54,7 +59,9 @@ export const LayerList: FC<{
           {onToggleLock && <button type="button" title={layer.locked ? "Unlock" : "Lock"} aria-label={layer.locked ? "Unlock" : "Lock"} onClick={event => { event.stopPropagation(); onToggleLock(layer.id); }}>{layer.locked ? "🔒" : "🔓"}</button>}
           {onForward && <button type="button" title="Bring forward" aria-label="Bring forward" onClick={() => onForward(layer.id)}>↑</button>}
           {onBackward && <button type="button" title="Send backward" aria-label="Send backward" onClick={() => onBackward(layer.id)}>↓</button>}
-          {onDuplicate && <button type="button" title="Duplicate" aria-label="Duplicate" onClick={() => onDuplicate(layer.id)}>⧉</button>}\n          {onDelete && <button type="button" title="Delete" aria-label="Delete" onClick={() => onDelete(layer.id)}>×</button>}\n          {onFront && <button type="button" title="Bring to front" aria-label="Bring to front" onClick={() => onFront(layer.id)}>⇈</button>}
+          {onDuplicate && <button type="button" title="Duplicate" aria-label="Duplicate" onClick={() => onDuplicate(layer.id)}>⧉</button>}
+          {onDelete && <button type="button" title="Delete" aria-label="Delete" onClick={() => onDelete(layer.id)}>×</button>}
+          {onFront && <button type="button" title="Bring to front" aria-label="Bring to front" onClick={() => onFront(layer.id)}>⇈</button>}
           {onBack && <button type="button" title="Send to back" aria-label="Send to back" onClick={() => onBack(layer.id)}>⇊</button>}
           {isGroup && onUngroup && <button type="button" title="Ungroup" onClick={() => onUngroup(layer.id)}>↗</button>}
         </span>
