@@ -9,6 +9,7 @@ import type {
   InterpolationOptions,
 } from "./types";
 import { evaluateAnimationKeyframes } from "./animation";
+export { interpolateKeyframes } from "./animation";
 export type AnimatedProperty = "x" | "y" | "width" | "height" | "rotation" | "opacity" | "scaleX" | "scaleY";
 export type Keyframe = AnimationKeyframe<number>;
 export { Track };

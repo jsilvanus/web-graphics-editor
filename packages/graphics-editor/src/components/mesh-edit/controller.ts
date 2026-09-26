@@ -16,6 +16,7 @@ import {
   clearSelection,
   createSelection,
   growFaceSelection as growSelection,
+  logicalFaceTriangles,
   selectedVertexIds,
   selectEdgeLoop,
   selectEdgeRing,
@@ -45,6 +46,7 @@ export function createMeshEditController(
   renderer: THREE.WebGLRenderer,
   onChange: (geometry: Graphics3DMesh["geometry"]) => void,
   onExtract?: (mesh: Graphics3DMesh) => void,
+  onDraggingChanged?: (dragging: boolean) => void,
 ): ThreeDMeshEditController {
   const transform = new TransformControls(camera, renderer.domElement);
   scene.add(transform.getHelper());
@@ -151,13 +153,16 @@ export function createMeshEditController(
     } else if (state.mode === "faces") {
       const hit = raycaster.intersectObject(state.mesh, false)[0];
       if (hit?.faceIndex == null) return;
-      toggleSelection(selection.faces, hit.faceIndex, event.shiftKey);
+      // Pick whole logical faces: clicking one side of a box selects both of its triangles.
+      const triangles = logicalFaceTriangles(state.data, hit.faceIndex);
+      const alreadySelected = triangles.every(face => selection.faces.has(face));
+      if (!event.shiftKey) selection.faces.clear();
+      for (const face of triangles) {
+        if (event.shiftKey && alreadySelected) selection.faces.delete(face);
+        else selection.faces.add(face);
+      }
     } else return;
     rebuild();
-    dragData = state.data;
-    const pivot = handles.group.userData.pivot as THREE.Group | undefined;
-    dragOrigin = pivot ? pivot.position.clone() : null;
-    dragScaleOrigin = pivot ? pivot.scale.clone() : null;
   };
 
   const onTransform = () => {
@@ -188,8 +193,14 @@ export function createMeshEditController(
         pivot.scale.z / dragScaleOrigin.z,
       );
       const ids = selectedVertexIds(dragData, selection, state.mode);
-      const orientation = pivot.quaternion.clone();
-      state.data = scaleVertices(dragData, ids, pivot.position, orientation, scale);
+      const { x, y, z, w } = pivot.quaternion;
+      state.data = scaleVertices(
+        dragData,
+        ids,
+        dragOrigin ? dragOrigin.toArray() : pivot.position.toArray(),
+        scale.toArray(),
+        [x, y, z, w],
+      );
       onChange(state.data.geometry);
       return;
     }
@@ -213,6 +224,22 @@ export function createMeshEditController(
     dragData = null;
     dragOrigin = null;
     dragScaleOrigin = null;
+  };
+
+  const onTransformDraggingChanged = (event: { value: unknown }) => {
+    const dragging = event.value === true;
+    if (dragging) {
+      // Capture the pre-drag state so the whole drag becomes one history entry.
+      const pivot = handles.group.userData.pivot as THREE.Group | undefined;
+      dragData = state.data ?? null;
+      dragOrigin = pivot ? pivot.position.clone() : null;
+      dragScaleOrigin = pivot ? pivot.scale.clone() : null;
+    } else {
+      onTransformEnd();
+      // Handles are frozen during a drag; move them onto the edited geometry now.
+      rebuild();
+    }
+    onDraggingChanged?.(dragging);
   };
 
   renderer.domElement.addEventListener("pointerdown", onPointerDown);

@@ -12,5 +12,6 @@ export function createThreeMaterial(material?: Graphics3DMaterial): THREE.MeshSt
     metalness: value.metalness ?? 0,
     roughness: value.roughness ?? 0.8,
     wireframe: value.wireframe ?? false,
+    flatShading: !value.smoothShading,
   });
 }

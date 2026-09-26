@@ -275,6 +275,8 @@ export interface Graphics3DMaterial {
   metalness?: number;
   roughness?: number;
   wireframe?: boolean;
+  /** Interpolate normals across faces. Defaults to flat shading, which shows the modelled topology. */
+  smoothShading?: boolean;
   textureAssetId?: string;
 }
 export interface Graphics3DMeshGeometry {

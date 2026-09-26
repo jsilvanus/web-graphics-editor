@@ -103,6 +103,7 @@ export function ThreeDWorkspaceInspector({
         {world.meshes.map(mesh => (
           <button
             key={mesh.id}
+            aria-pressed={mesh.id === selectedId}
             onClick={() => {
               onEditCamera(false);
               onSelect(mesh.id);
@@ -122,6 +123,7 @@ export function ThreeDWorkspaceInspector({
         {(world.lights ?? []).map(item => (
           <button
             key={item.id}
+            aria-pressed={item.id === selectedLightId}
             onClick={() => onSelectLight(item.id)}
             style={{
               display: "block",
@@ -238,6 +240,18 @@ export function ThreeDWorkspaceInspector({
               }
             />{" "}
             Wireframe
+          </label>
+          <label style={{ display: "block" }}>
+            <input
+              type="checkbox"
+              checked={!!selected.material?.smoothShading}
+              onChange={e =>
+                onUpdateMesh(selected.id, {
+                  material: { ...selected.material, smoothShading: e.target.checked },
+                })
+              }
+            />{" "}
+            Smooth shading
           </label>
           <ThreeDMeshGeometryEditor mesh={selected} onChange={patch => onUpdateMesh(selected.id, patch)} />
         </details>

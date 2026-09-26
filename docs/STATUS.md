@@ -4,13 +4,36 @@ This is the first time the repository was installed, compiled, tested and run. T
 
 ## Summary
 
-| Check | Result |
-|---|---|
-| `npm ci` | ✅ installs (Node 22, npm 10) |
-| `tsc --noEmit` (package) | ❌ originally stopped at **syntax errors**; after the parse fixes, **≈196 type errors** |
-| `vitest run` | ❌ **58 failed / 265 passed** (26 of 65 files failing) |
-| Demo (`npm run dev`) | ❌ blank page: a dev-server 500 from a missing module |
-| CI (test-pyramid) | ❌ would fail on the first floor |
+| Check | At audit | Now |
+|---|---|---|
+| `npm ci` | ✅ | ✅ |
+| `tsc --noEmit` (package) | ❌ syntax errors, then ≈196 type errors | ❌ 158 type errors, none in the 3D workspace |
+| `vitest run` | ❌ 58 failed / 265 passed | ❌ 45 failed / 281 passed |
+| Demo: 3D workspace | ❌ blank page | ✅ works in a browser (see below) |
+| Demo: 2D editor | ❌ blank page | ⏳ next step |
+| CI (test-pyramid) | ❌ | ❌ first floor still fails; the format job passes |
+
+## Progress log
+
+### Step 1–2: tooling and the 3D workspace (done)
+- Added `@types/three` and prettier; reformatted the code.
+- Wrote the missing `mesh/scale-vertices` (with tests), and defined the missing mesh-edit drag handler and `onExtract` wiring.
+- Rewrote `ThreeDWorkspaceViewport`. The old version rebuilt the whole WebGL renderer on every React render, synced geometry only at mount, kept the mesh-edit mode in a ref (so the toolbar never updated), and rendered through the stored scene camera while resetting it on every change. Now:
+  - The viewport has its own editor camera (orbit / pan / zoom).
+  - Stored cameras are drawn as short camera gizmos. "Edit camera in viewport" moves the active one, and "Camera view" looks through it.
+  - The scene is built once and synced on each change.
+- Mesh-edit handles now follow the mesh's transform, and they are rebuilt after a gizmo drag. Face picking selects whole quads (both triangles of a box side). Orbit is paused while dragging an edit gizmo.
+- Meshes are flat-shaded by default, with a new optional `material.smoothShading`.
+- The demo has "2D editor" and "3D workspace" tabs (`?editor=3d`), each behind an error boundary.
+- Verified in Chromium:
+  - click-to-pick and deselect
+  - translate gizmo
+  - inspector edits
+  - vertex, edge and face modes
+  - face extrude, gizmo drag, and undo/redo
+  - add/delete mesh, add light
+  - camera view and camera editing
+  - no console errors, and one WebGL canvas for the whole session
 
 ## Fixed during the audit
 
@@ -24,11 +47,8 @@ This is the first time the repository was installed, compiled, tested and run. T
 ## Blocking problems that remain
 
 ### Missing code: things referenced but never written
-- `mesh/scale-vertices` module, imported by `components/mesh-edit/controller.ts`. **This blocks the demo from loading.**
-- `interpolateKeyframes`, `evaluateTrack` (from `timeline` / `animation`); `interpolate3DKeyframes`, `create3DTrack` (from `3d-animation`).
 - The `Viewport` type (used by `types.ts`, `presentation.ts` and `index.ts`); `Vec3` export; `GroupChildSnapshot`.
-- `CanvasSelectionOverlay` (the component is named `SelectionOverlay`).
-- Undefined identifiers inside components: `marquee` (GraphicsEditorCanvas), `onExtract` (ThreeDMeshEditOverlay), `onTransformDraggingChanged` (mesh-edit controller), `onOffset` (LayerProperties), `layerOps.moveLayer` (GraphicsEditor).
+- Undefined identifiers inside components: `marquee` (GraphicsEditorCanvas), `onOffset` (LayerProperties), `layerOps.moveLayer` (GraphicsEditor).
 
 ### Model drift: code and types disagree
 - `SceneTimeline.tracks3d` is used by the timelines but not declared.
@@ -41,11 +61,10 @@ This is the first time the repository was installed, compiled, tested and run. T
 - `LayerList.tsx` uses `isComposition` before it is declared.
 
 ### Tooling
-- `@types/three` is not installed, so all Three.js code is implicitly `any` (18 errors). This also hides real 3D API misuse.
 - The demo has never been type-checked in CI. CI only checks the package.
 
 ### Failing test groups
-- Animation: missing exports (see above), and colour interpolation returns `#rrggbbaa` where tests expect `#rrggbb`.
+- Animation: colour interpolation returns `#rrggbbaa` where tests expect `#rrggbb`.
 - Presentation / architecture / viewport-output: the viewport resolution shape changed. About 12 deep-equal failures.
 - Mesh: edge split produces non-triangles, extrude/delete/bevel counts are off, and loop/ring selection is wrong.
 - History and document operations: all `DocumentOperation` round-trips fail.
