@@ -10,7 +10,14 @@ export interface TimelineKeyMarkersProps {
   onDelete: (keyframeId: string) => void;
 }
 
-export const TimelineKeyMarkers: FC<TimelineKeyMarkersProps> = ({ keyframes, total, selectedKeyId, onSelect, onMove, onDelete }) => {
+export const TimelineKeyMarkers: FC<TimelineKeyMarkersProps> = ({
+  keyframes,
+  total,
+  selectedKeyId,
+  onSelect,
+  onMove,
+  onDelete,
+}) => {
   const pointerDown = (event: PointerEvent<HTMLButtonElement>, keyframeId: string) => {
     event.stopPropagation();
     onSelect(keyframeId);
@@ -27,5 +34,20 @@ export const TimelineKeyMarkers: FC<TimelineKeyMarkersProps> = ({ keyframes, tot
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
   };
-  return <>{keyframes.map(keyframe => <button key={keyframe.id} className={selectedKeyId === keyframe.id ? "ge-key ge-key-selected" : "ge-key"} style={{ left: `${keyframe.time / total * 100}%` }} onPointerDown={event => pointerDown(event, keyframe.id)} onDoubleClick={() => onDelete(keyframe.id)} title="Double-click to delete">◆</button>)}</>;
+  return (
+    <>
+      {keyframes.map(keyframe => (
+        <button
+          key={keyframe.id}
+          className={selectedKeyId === keyframe.id ? "ge-key ge-key-selected" : "ge-key"}
+          style={{ left: `${(keyframe.time / total) * 100}%` }}
+          onPointerDown={event => pointerDown(event, keyframe.id)}
+          onDoubleClick={() => onDelete(keyframe.id)}
+          title="Double-click to delete"
+        >
+          ◆
+        </button>
+      ))}
+    </>
+  );
 };

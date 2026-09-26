@@ -23,9 +23,14 @@ export function insetFace(mesh: HalfEdgeMesh, faceId: number, distance: number):
 
   const insetDistance = Math.max(0, distance);
   const positions = [...mesh.positions];
-  const points = polygon.map(vertexId => [
-    positions[vertexId * 3], positions[vertexId * 3 + 1], positions[vertexId * 3 + 2],
-  ] as [number, number, number]);
+  const points = polygon.map(
+    vertexId =>
+      [positions[vertexId * 3], positions[vertexId * 3 + 1], positions[vertexId * 3 + 2]] as [
+        number,
+        number,
+        number,
+      ],
+  );
   const innerPoints = insetPolygonConstantDistance(points, insetDistance);
 
   const innerVertexIds = innerPoints.map(point => {
@@ -34,16 +39,18 @@ export function insetFace(mesh: HalfEdgeMesh, faceId: number, distance: number):
     return id;
   });
 
-  const nextFaces = polygons.map((current, index) => {
-    if (index !== faceId) return current;
-    const ringFaces = current.map((outer, i) => {
-      const nextOuter = current[(i + 1) % current.length];
-      const inner = innerVertexIds[i];
-      const nextInner = innerVertexIds[(i + 1) % current.length];
-      return [outer, nextOuter, nextInner, inner];
-    });
-    return [...ringFaces, innerVertexIds] as number[][];
-  }).flat();
+  const nextFaces = polygons
+    .map((current, index) => {
+      if (index !== faceId) return current;
+      const ringFaces = current.map((outer, i) => {
+        const nextOuter = current[(i + 1) % current.length];
+        const inner = innerVertexIds[i];
+        const nextInner = innerVertexIds[(i + 1) % current.length];
+        return [outer, nextOuter, nextInner, inner];
+      });
+      return [...ringFaces, innerVertexIds] as number[][];
+    })
+    .flat();
 
   const result = fromPolygons({ positions, faces: nextFaces });
   validateHalfEdgeMesh(result);

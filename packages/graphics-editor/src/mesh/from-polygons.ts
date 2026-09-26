@@ -9,7 +9,7 @@ export function fromPolygons(input: PolygonMeshInput): HalfEdgeMesh {
   const directed = new Map<string, number>();
   const undirected = new Map<string, number>();
   const key = (a: number, b: number) => `${a}:${b}`;
-  const undirectedKey = (a: number, b: number) => a < b ? `${a}:${b}` : `${b}:${a}`;
+  const undirectedKey = (a: number, b: number) => (a < b ? `${a}:${b}` : `${b}:${a}`);
 
   input.faces.forEach((polygon, faceId) => {
     if (polygon.length < 3) return;
@@ -42,10 +42,15 @@ export function fromPolygons(input: PolygonMeshInput): HalfEdgeMesh {
 }
 
 export function polygonsFromHalfEdges(mesh: HalfEdgeMesh): number[][] {
-  return mesh.faces.filter(f => !f.boundary).map(face => {
-    const result: number[] = [];
-    let h = face.halfEdge;
-    do { result.push(mesh.halfEdges[h].vertex); h = mesh.halfEdges[h].next; } while (h !== face.halfEdge);
-    return result;
-  });
+  return mesh.faces
+    .filter(f => !f.boundary)
+    .map(face => {
+      const result: number[] = [];
+      let h = face.halfEdge;
+      do {
+        result.push(mesh.halfEdges[h].vertex);
+        h = mesh.halfEdges[h].next;
+      } while (h !== face.halfEdge);
+      return result;
+    });
 }

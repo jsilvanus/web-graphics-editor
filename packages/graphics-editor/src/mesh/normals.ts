@@ -9,24 +9,42 @@ export function recalculateNormals(mesh: Graphics3DMesh): Graphics3DMesh {
   const normals = new Array<number>(vertices.length).fill(0);
 
   for (let i = 0; i < indices.length; i += 3) {
-    const a = indices[i], b = indices[i + 1], c = indices[i + 2];
+    const a = indices[i],
+      b = indices[i + 1],
+      c = indices[i + 2];
     if (![a, b, c].every(index => Number.isInteger(index) && index >= 0 && index < vertexCount)) {
       throw new Error("Mesh index buffer contains an invalid vertex index");
     }
 
-    const ax = vertices[a * 3], ay = vertices[a * 3 + 1], az = vertices[a * 3 + 2];
-    const bx = vertices[b * 3], by = vertices[b * 3 + 1], bz = vertices[b * 3 + 2];
-    const cx = vertices[c * 3], cy = vertices[c * 3 + 1], cz = vertices[c * 3 + 2];
+    const ax = vertices[a * 3],
+      ay = vertices[a * 3 + 1],
+      az = vertices[a * 3 + 2];
+    const bx = vertices[b * 3],
+      by = vertices[b * 3 + 1],
+      bz = vertices[b * 3 + 2];
+    const cx = vertices[c * 3],
+      cy = vertices[c * 3 + 1],
+      cz = vertices[c * 3 + 2];
 
-    const abx = bx - ax, aby = by - ay, abz = bz - az;
-    const acx = cx - ax, acy = cy - ay, acz = cz - az;
+    const abx = bx - ax,
+      aby = by - ay,
+      abz = bz - az;
+    const acx = cx - ax,
+      acy = cy - ay,
+      acz = cz - az;
     const nx = aby * acz - abz * acy;
     const ny = abz * acx - abx * acz;
     const nz = abx * acy - aby * acx;
 
-    normals[a * 3] += nx; normals[a * 3 + 1] += ny; normals[a * 3 + 2] += nz;
-    normals[b * 3] += nx; normals[b * 3 + 1] += ny; normals[b * 3 + 2] += nz;
-    normals[c * 3] += nx; normals[c * 3 + 1] += ny; normals[c * 3 + 2] += nz;
+    normals[a * 3] += nx;
+    normals[a * 3 + 1] += ny;
+    normals[a * 3 + 2] += nz;
+    normals[b * 3] += nx;
+    normals[b * 3 + 1] += ny;
+    normals[b * 3 + 2] += nz;
+    normals[c * 3] += nx;
+    normals[c * 3 + 1] += ny;
+    normals[c * 3 + 2] += nz;
   }
 
   for (let i = 0; i < vertexCount; i++) {

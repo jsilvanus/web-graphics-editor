@@ -1,35 +1,241 @@
-import type { AnimationKeyframe, Easing, LayerClip, Scene, SceneTimeline, SceneTransitionType, Track, InterpolationOptions } from "./types";
+import type {
+  AnimationKeyframe,
+  Easing,
+  LayerClip,
+  Scene,
+  SceneTimeline,
+  SceneTransitionType,
+  Track,
+  InterpolationOptions,
+} from "./types";
 import { evaluateAnimationKeyframes } from "./animation";
-export type AnimatedProperty="x"|"y"|"width"|"height"|"rotation"|"opacity"|"scaleX"|"scaleY";
-export type Keyframe=AnimationKeyframe<number>;
+export type AnimatedProperty = "x" | "y" | "width" | "height" | "rotation" | "opacity" | "scaleX" | "scaleY";
+export type Keyframe = AnimationKeyframe<number>;
 export { Track };
-export const DEFAULT_SCENE_DURATION=5;
-const id=(prefix:string)=>`${prefix}-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
-export function createScene(name="Scene",start=0,duration=DEFAULT_SCENE_DURATION):Scene{return{id:id("scene"),name,start,duration:Math.max(.1,duration)}}
-export function createTrack(layerId:string,property:AnimatedProperty):Track{return{id:id("track"),targetId:layerId,layerId,property,keyframes:[]}}
-export function createKeyframe(time:number,value:number,easing:Easing="linear",interpolation?:InterpolationOptions):Keyframe{return{id:id("key"),time,value,interpolation:interpolation??{easing:{mode:easing}}}}
-export function createClip(layerId:string,start=0,duration=DEFAULT_SCENE_DURATION):LayerClip{return{id:id("clip"),layerId,start,duration:Math.max(.1,duration)}}
-export function timelineDuration(t:SceneTimeline){return t.scenes.reduce((m,s)=>Math.max(m,s.start+s.duration),0)}
-export function normalizeScenes(scenes:Scene[]){let cursor=0;return scenes.map(s=>{const n={...s,start:cursor,duration:Math.max(.1,s.duration)};cursor+=n.duration;return n})}
-export function addScene(t:SceneTimeline,name?:string):SceneTimeline{const start=timelineDuration(t),scene=createScene(name??`Scene ${t.scenes.length+1}`,start);return{...t,scenes:[...t.scenes,scene],currentSceneId:scene.id,currentTime:start}}
-export function insertEmptyScene(t:SceneTimeline,index:number,duration=DEFAULT_SCENE_DURATION):SceneTimeline{const scenes=normalizeScenes(t.scenes);const i=Math.max(0,Math.min(index,scenes.length));const scene=createScene(`Scene ${i+1}`,0,duration);const next=[...scenes.slice(0,i),scene,...scenes.slice(i)];const normalized=normalizeScenes(next);const inserted=normalized[i];return{...t,scenes:normalized,currentSceneId:inserted.id,currentTime:inserted.start}}
-export function duplicateScene(t:SceneTimeline,sceneId:string):SceneTimeline{const scenes=normalizeScenes(t.scenes);const index=scenes.findIndex(s=>s.id===sceneId);if(index<0)return t;const source=scenes[index],newScene={...source,id:id("scene"),name:`${source.name} Copy`,start:0};const nextScenes=normalizeScenes([...scenes.slice(0,index+1),newScene,...scenes.slice(index+1)]);const offset=newScene.start-source.start;const oldEnd=source.start+source.duration;const newEnd=newScene.start+newScene.duration;const tracks=t.tracks.map(track=>{const keys=track.keyframes.filter(k=>k.time>=source.start&&k.time<=oldEnd);return keys.length?{...track,id:id("track"),keyframes:keys.map(k=>({...k,id:id("key"),time:k.time+offset}))}:null}).filter(Boolean) as Track[];const clips=(t.clips??[]).flatMap(c=>{const a=Math.max(c.start,source.start),b=Math.min(c.start+c.duration,oldEnd);return b>a?[{...c,id:id("clip"),start:a+offset,duration:Math.min(b-a,newEnd-(a+offset))}]:[]});return{...t,scenes:nextScenes,tracks:[...t.tracks,...tracks],clips:[...(t.clips??[]),...clips],currentSceneId:newScene.id,currentTime:newScene.start}}
-export function removeScene(t:SceneTimeline,id:string):SceneTimeline{if(t.scenes.length<=1)return t;const scenes=normalizeScenes(t.scenes.filter(s=>s.id!==id));const current=scenes.find(s=>s.id!==undefined&&s.id===t.currentSceneId)??scenes.at(-1)!;return{...t,scenes,currentSceneId:current.id,currentTime:current.start}}
-export function setSceneDuration(t:SceneTimeline,id:string,duration:number):SceneTimeline{return{...t,scenes:normalizeScenes(t.scenes.map(s=>s.id===id?{...s,duration:Math.max(.1,duration)}:s))}}
-export function sceneAtTime(t:SceneTimeline,time:number){const duration=timelineDuration(t);let t0=Math.max(0,time);if(t.loop&&duration>0)t0=t0%duration;if(t0>=duration)return undefined;return t.scenes.find(s=>t0>=s.start&&t0<s.start+s.duration)}
-export function transitionType(t:SceneTransitionType|undefined){return t??"cut"}
-export function setSceneTransition(t:SceneTimeline,id:string,type:SceneTransitionType,duration:number):SceneTimeline{return{...t,scenes:t.scenes.map(s=>s.id===id?{...s,transition:{type,duration:Math.max(0,Math.min(duration,s.duration))}}:s)}}
-export function setClip(t:SceneTimeline,clip:LayerClip):SceneTimeline{return{...t,clips:[...(t.clips??[]).filter(c=>c.id!==clip.id),clip]}}
-export function removeClip(t:SceneTimeline,id:string):SceneTimeline{return{...t,clips:(t.clips??[]).filter(c=>c.id!==id)}}
-export function moveClip(t:SceneTimeline,id:string,start:number):SceneTimeline{return{...t,clips:(t.clips??[]).map(c=>c.id===id?{...c,start:Math.max(0,start)}:c)}}
-export function resizeClip(t:SceneTimeline,id:string,start:number,duration:number):SceneTimeline{return{...t,clips:(t.clips??[]).map(c=>c.id===id?{...c,start:Math.max(0,start),duration:Math.max(.1,duration)}:c)}}
-export function clipAtTime(t:SceneTimeline,layerId:string,time:number){return(t.clips??[]).find(c=>c.layerId===layerId&&time>=c.start&&time<c.start+c.duration)}
-export function duplicateTimelineRange(t:SceneTimeline,start:number,end:number,at=end):SceneTimeline{const lo=Math.min(start,end),hi=Math.max(start,end),duration=hi-lo;if(duration<=0)return t;const shift=at-lo;const stamp=Date.now();const tracks=t.tracks.map(track=>{const keys=track.keyframes.filter(k=>k.time>=lo&&k.time<=hi);if(!keys.length)return null;return{...track,id:`track-${stamp}-${Math.random().toString(36).slice(2,6)}`,keyframes:keys.map(k=>({...k,id:`key-${stamp}-${Math.random().toString(36).slice(2,6)}`,time:k.time+shift}))}}).filter(Boolean) as Track[];const clips=(t.clips??[]).flatMap(c=>{const a=Math.max(c.start,lo),b=Math.min(c.start+c.duration,hi);return b>a?[{...c,id:`clip-${stamp}-${Math.random().toString(36).slice(2,6)}`,start:a+shift,duration:b-a}]:[]});return{...t,tracks:[...t.tracks,...tracks],clips:[...(t.clips??[]),...clips]}}
-export function duplicateTimeline(t:SceneTimeline,at=timelineDuration(t)):SceneTimeline{return duplicateTimelineRange(t,0,timelineDuration(t),at)}
-export function setLoop(t:SceneTimeline,loop:boolean):SceneTimeline{return{...t,loop}}
-export function evaluateTrack(track:Track,time:number){return evaluateAnimationKeyframes(track.keyframes,time)}
-export function upsertKeyframe(t:Track,k:Keyframe):Track{return{...t,keyframes:[...t.keyframes.filter(x=>x.id!==k.id&&Math.abs(x.time-k.time)>.0001),k].sort((a,b)=>a.time-b.time)}}
-export function keyframeAtTime(t:Track,time:number,epsilon=.0001):Keyframe|undefined{return t.keyframes.find(k=>Math.abs(k.time-time)<=epsilon)}
-export function setKeyframeAtTime(t:Track,time:number,value:number,interpolation?:InterpolationOptions):Track{const existing=keyframeAtTime(t,time);return upsertKeyframe(t,{id:existing?.id??id("key"),time,value,interpolation:interpolation??existing?.interpolation??{easing:{mode:"linear"}}})}
-export function moveKeyframe(t:Track,id:string,time:number):Track{const k=t.keyframes.find(x=>x.id===id);return k?upsertKeyframe(t,{...k,time:Math.max(0,time)}):t}
-export function removeKeyframe(t:Track,id:string):Track{return{...t,keyframes:t.keyframes.filter(k=>k.id!==id)}}
+export const DEFAULT_SCENE_DURATION = 5;
+const id = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+export function createScene(name = "Scene", start = 0, duration = DEFAULT_SCENE_DURATION): Scene {
+  return { id: id("scene"), name, start, duration: Math.max(0.1, duration) };
+}
+export function createTrack(layerId: string, property: AnimatedProperty): Track {
+  return { id: id("track"), targetId: layerId, layerId, property, keyframes: [] };
+}
+export function createKeyframe(
+  time: number,
+  value: number,
+  easing: Easing = "linear",
+  interpolation?: InterpolationOptions,
+): Keyframe {
+  return { id: id("key"), time, value, interpolation: interpolation ?? { easing: { mode: easing } } };
+}
+export function createClip(layerId: string, start = 0, duration = DEFAULT_SCENE_DURATION): LayerClip {
+  return { id: id("clip"), layerId, start, duration: Math.max(0.1, duration) };
+}
+export function timelineDuration(t: SceneTimeline) {
+  return t.scenes.reduce((m, s) => Math.max(m, s.start + s.duration), 0);
+}
+export function normalizeScenes(scenes: Scene[]) {
+  let cursor = 0;
+  return scenes.map(s => {
+    const n = { ...s, start: cursor, duration: Math.max(0.1, s.duration) };
+    cursor += n.duration;
+    return n;
+  });
+}
+export function addScene(t: SceneTimeline, name?: string): SceneTimeline {
+  const start = timelineDuration(t),
+    scene = createScene(name ?? `Scene ${t.scenes.length + 1}`, start);
+  return { ...t, scenes: [...t.scenes, scene], currentSceneId: scene.id, currentTime: start };
+}
+export function insertEmptyScene(
+  t: SceneTimeline,
+  index: number,
+  duration = DEFAULT_SCENE_DURATION,
+): SceneTimeline {
+  const scenes = normalizeScenes(t.scenes);
+  const i = Math.max(0, Math.min(index, scenes.length));
+  const scene = createScene(`Scene ${i + 1}`, 0, duration);
+  const next = [...scenes.slice(0, i), scene, ...scenes.slice(i)];
+  const normalized = normalizeScenes(next);
+  const inserted = normalized[i];
+  return { ...t, scenes: normalized, currentSceneId: inserted.id, currentTime: inserted.start };
+}
+export function duplicateScene(t: SceneTimeline, sceneId: string): SceneTimeline {
+  const scenes = normalizeScenes(t.scenes);
+  const index = scenes.findIndex(s => s.id === sceneId);
+  if (index < 0) return t;
+  const source = scenes[index],
+    newScene = { ...source, id: id("scene"), name: `${source.name} Copy`, start: 0 };
+  const nextScenes = normalizeScenes([...scenes.slice(0, index + 1), newScene, ...scenes.slice(index + 1)]);
+  const offset = newScene.start - source.start;
+  const oldEnd = source.start + source.duration;
+  const newEnd = newScene.start + newScene.duration;
+  const tracks = t.tracks
+    .map(track => {
+      const keys = track.keyframes.filter(k => k.time >= source.start && k.time <= oldEnd);
+      return keys.length
+        ? {
+            ...track,
+            id: id("track"),
+            keyframes: keys.map(k => ({ ...k, id: id("key"), time: k.time + offset })),
+          }
+        : null;
+    })
+    .filter(Boolean) as Track[];
+  const clips = (t.clips ?? []).flatMap(c => {
+    const a = Math.max(c.start, source.start),
+      b = Math.min(c.start + c.duration, oldEnd);
+    return b > a
+      ? [{ ...c, id: id("clip"), start: a + offset, duration: Math.min(b - a, newEnd - (a + offset)) }]
+      : [];
+  });
+  return {
+    ...t,
+    scenes: nextScenes,
+    tracks: [...t.tracks, ...tracks],
+    clips: [...(t.clips ?? []), ...clips],
+    currentSceneId: newScene.id,
+    currentTime: newScene.start,
+  };
+}
+export function removeScene(t: SceneTimeline, id: string): SceneTimeline {
+  if (t.scenes.length <= 1) return t;
+  const scenes = normalizeScenes(t.scenes.filter(s => s.id !== id));
+  const current = scenes.find(s => s.id !== undefined && s.id === t.currentSceneId) ?? scenes.at(-1)!;
+  return { ...t, scenes, currentSceneId: current.id, currentTime: current.start };
+}
+export function setSceneDuration(t: SceneTimeline, id: string, duration: number): SceneTimeline {
+  return {
+    ...t,
+    scenes: normalizeScenes(
+      t.scenes.map(s => (s.id === id ? { ...s, duration: Math.max(0.1, duration) } : s)),
+    ),
+  };
+}
+export function sceneAtTime(t: SceneTimeline, time: number) {
+  const duration = timelineDuration(t);
+  let t0 = Math.max(0, time);
+  if (t.loop && duration > 0) t0 = t0 % duration;
+  if (t0 >= duration) return undefined;
+  return t.scenes.find(s => t0 >= s.start && t0 < s.start + s.duration);
+}
+export function transitionType(t: SceneTransitionType | undefined) {
+  return t ?? "cut";
+}
+export function setSceneTransition(
+  t: SceneTimeline,
+  id: string,
+  type: SceneTransitionType,
+  duration: number,
+): SceneTimeline {
+  return {
+    ...t,
+    scenes: t.scenes.map(s =>
+      s.id === id ? { ...s, transition: { type, duration: Math.max(0, Math.min(duration, s.duration)) } } : s,
+    ),
+  };
+}
+export function setClip(t: SceneTimeline, clip: LayerClip): SceneTimeline {
+  return { ...t, clips: [...(t.clips ?? []).filter(c => c.id !== clip.id), clip] };
+}
+export function removeClip(t: SceneTimeline, id: string): SceneTimeline {
+  return { ...t, clips: (t.clips ?? []).filter(c => c.id !== id) };
+}
+export function moveClip(t: SceneTimeline, id: string, start: number): SceneTimeline {
+  return { ...t, clips: (t.clips ?? []).map(c => (c.id === id ? { ...c, start: Math.max(0, start) } : c)) };
+}
+export function resizeClip(t: SceneTimeline, id: string, start: number, duration: number): SceneTimeline {
+  return {
+    ...t,
+    clips: (t.clips ?? []).map(c =>
+      c.id === id ? { ...c, start: Math.max(0, start), duration: Math.max(0.1, duration) } : c,
+    ),
+  };
+}
+export function clipAtTime(t: SceneTimeline, layerId: string, time: number) {
+  return (t.clips ?? []).find(c => c.layerId === layerId && time >= c.start && time < c.start + c.duration);
+}
+export function duplicateTimelineRange(
+  t: SceneTimeline,
+  start: number,
+  end: number,
+  at = end,
+): SceneTimeline {
+  const lo = Math.min(start, end),
+    hi = Math.max(start, end),
+    duration = hi - lo;
+  if (duration <= 0) return t;
+  const shift = at - lo;
+  const stamp = Date.now();
+  const tracks = t.tracks
+    .map(track => {
+      const keys = track.keyframes.filter(k => k.time >= lo && k.time <= hi);
+      if (!keys.length) return null;
+      return {
+        ...track,
+        id: `track-${stamp}-${Math.random().toString(36).slice(2, 6)}`,
+        keyframes: keys.map(k => ({
+          ...k,
+          id: `key-${stamp}-${Math.random().toString(36).slice(2, 6)}`,
+          time: k.time + shift,
+        })),
+      };
+    })
+    .filter(Boolean) as Track[];
+  const clips = (t.clips ?? []).flatMap(c => {
+    const a = Math.max(c.start, lo),
+      b = Math.min(c.start + c.duration, hi);
+    return b > a
+      ? [
+          {
+            ...c,
+            id: `clip-${stamp}-${Math.random().toString(36).slice(2, 6)}`,
+            start: a + shift,
+            duration: b - a,
+          },
+        ]
+      : [];
+  });
+  return { ...t, tracks: [...t.tracks, ...tracks], clips: [...(t.clips ?? []), ...clips] };
+}
+export function duplicateTimeline(t: SceneTimeline, at = timelineDuration(t)): SceneTimeline {
+  return duplicateTimelineRange(t, 0, timelineDuration(t), at);
+}
+export function setLoop(t: SceneTimeline, loop: boolean): SceneTimeline {
+  return { ...t, loop };
+}
+export function evaluateTrack(track: Track, time: number) {
+  return evaluateAnimationKeyframes(track.keyframes, time);
+}
+export function upsertKeyframe(t: Track, k: Keyframe): Track {
+  return {
+    ...t,
+    keyframes: [...t.keyframes.filter(x => x.id !== k.id && Math.abs(x.time - k.time) > 0.0001), k].sort(
+      (a, b) => a.time - b.time,
+    ),
+  };
+}
+export function keyframeAtTime(t: Track, time: number, epsilon = 0.0001): Keyframe | undefined {
+  return t.keyframes.find(k => Math.abs(k.time - time) <= epsilon);
+}
+export function setKeyframeAtTime(
+  t: Track,
+  time: number,
+  value: number,
+  interpolation?: InterpolationOptions,
+): Track {
+  const existing = keyframeAtTime(t, time);
+  return upsertKeyframe(t, {
+    id: existing?.id ?? id("key"),
+    time,
+    value,
+    interpolation: interpolation ?? existing?.interpolation ?? { easing: { mode: "linear" } },
+  });
+}
+export function moveKeyframe(t: Track, id: string, time: number): Track {
+  const k = t.keyframes.find(x => x.id === id);
+  return k ? upsertKeyframe(t, { ...k, time: Math.max(0, time) }) : t;
+}
+export function removeKeyframe(t: Track, id: string): Track {
+  return { ...t, keyframes: t.keyframes.filter(k => k.id !== id) };
+}

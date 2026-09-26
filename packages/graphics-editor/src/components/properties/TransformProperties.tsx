@@ -10,22 +10,88 @@ export const TransformProperties: FC<{
   <div className="ge-section">
     <b>Transform</b>
     <div className="ge-two">
-      <label>X<input type="number" value={layer.x} onChange={e => onLayer({ x: Number(e.target.value) })} /></label>
-      <label>Y<input type="number" value={layer.y} onChange={e => onLayer({ y: Number(e.target.value) })} /></label>
+      <label>
+        X<input type="number" value={layer.x} onChange={e => onLayer({ x: Number(e.target.value) })} />
+      </label>
+      <label>
+        Y<input type="number" value={layer.y} onChange={e => onLayer({ y: Number(e.target.value) })} />
+      </label>
     </div>
     <div className="ge-two">
-      <label>Width<input type="number" min="20" value={layer.width} onChange={e => onLayer({ width: Number(e.target.value) })} /></label>
-      <label>Height<input type="number" min="20" value={layer.height} onChange={e => onLayer({ height: Number(e.target.value) })} /></label>
+      <label>
+        Width
+        <input
+          type="number"
+          min="20"
+          value={layer.width}
+          onChange={e => onLayer({ width: Number(e.target.value) })}
+        />
+      </label>
+      <label>
+        Height
+        <input
+          type="number"
+          min="20"
+          value={layer.height}
+          onChange={e => onLayer({ height: Number(e.target.value) })}
+        />
+      </label>
     </div>
-    <label>Rotation<input type="number" value={layer.rotation ?? 0} onChange={e => onLayer({ rotation: Number(e.target.value) })} /></label>
+    <label>
+      Rotation
+      <input
+        type="number"
+        value={layer.rotation ?? 0}
+        onChange={e => onLayer({ rotation: Number(e.target.value) })}
+      />
+    </label>
     <div className="ge-two">
-      <label>Skew X<input type="number" value={layer.skewX ?? 0} onChange={e => onLayer({ skewX: Number(e.target.value) })} /></label>
-      <label>Skew Y<input type="number" value={layer.skewY ?? 0} onChange={e => onLayer({ skewY: Number(e.target.value) })} /></label>
+      <label>
+        Skew X
+        <input
+          type="number"
+          value={layer.skewX ?? 0}
+          onChange={e => onLayer({ skewX: Number(e.target.value) })}
+        />
+      </label>
+      <label>
+        Skew Y
+        <input
+          type="number"
+          value={layer.skewY ?? 0}
+          onChange={e => onLayer({ skewY: Number(e.target.value) })}
+        />
+      </label>
     </div>
     <div className="ge-two">
-      <label>Pivot X<input type="number" value={layer.transformOrigin?.x ?? layer.width / 2} onChange={e => onLayer({ transformOrigin: { x: Number(e.target.value), y: layer.transformOrigin?.y ?? layer.height / 2 } })} /></label>
-      <label>Pivot Y<input type="number" value={layer.transformOrigin?.y ?? layer.height / 2} onChange={e => onLayer({ transformOrigin: { x: layer.transformOrigin?.x ?? layer.width / 2, y: Number(e.target.value) } })} /></label>
+      <label>
+        Pivot X
+        <input
+          type="number"
+          value={layer.transformOrigin?.x ?? layer.width / 2}
+          onChange={e =>
+            onLayer({
+              transformOrigin: { x: Number(e.target.value), y: layer.transformOrigin?.y ?? layer.height / 2 },
+            })
+          }
+        />
+      </label>
+      <label>
+        Pivot Y
+        <input
+          type="number"
+          value={layer.transformOrigin?.y ?? layer.height / 2}
+          onChange={e =>
+            onLayer({
+              transformOrigin: { x: layer.transformOrigin?.x ?? layer.width / 2, y: Number(e.target.value) },
+            })
+          }
+        />
+      </label>
     </div>
-    <label><span>Aspect lock</span><input type="checkbox" checked={aspectLock} onChange={e => onAspectLock(e.target.checked)} /></label>
+    <label>
+      <span>Aspect lock</span>
+      <input type="checkbox" checked={aspectLock} onChange={e => onAspectLock(e.target.checked)} />
+    </label>
   </div>
 );

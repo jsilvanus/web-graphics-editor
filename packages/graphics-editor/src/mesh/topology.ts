@@ -6,7 +6,10 @@ export function faceVertices(mesh: HalfEdgeMesh, faceId: number): number[] {
   const result: number[] = [];
   let h = face.halfEdge;
   const start = h;
-  do { result.push(mesh.halfEdges[h].vertex); h = mesh.halfEdges[h].next; } while (h !== start);
+  do {
+    result.push(mesh.halfEdges[h].vertex);
+    h = mesh.halfEdges[h].next;
+  } while (h !== start);
   return result;
 }
 
@@ -16,7 +19,10 @@ export function faceHalfEdges(mesh: HalfEdgeMesh, faceId: number): number[] {
   const result: number[] = [];
   let h = face.halfEdge;
   const start = h;
-  do { result.push(h); h = mesh.halfEdges[h].next; } while (h !== start);
+  do {
+    result.push(h);
+    h = mesh.halfEdges[h].next;
+  } while (h !== start);
   return result;
 }
 

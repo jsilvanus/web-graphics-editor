@@ -3,8 +3,30 @@ import type { Graphics3DWorld } from "./types";
 import { evaluateWorldAtTime } from "./world-animation";
 
 const sharedWorld: Graphics3DWorld = {
-  id: "spinning-logo", meshes: [{ id: "logo", geometry: { vertices: [], indices: [] }, transform: { position: [0,0,0], rotation: [0,0,0], scale: [1,1,1] } }], cameras: [{ id: "main", position: [0,0,5], rotation: [0,0,0], projection: "perspective" }],
-  timeline: { duration: 10, tracks: [{ id: "spin", targetType: "mesh", targetId: "logo", property: "rotationY", keyframes: [{ id: "a", time: 0, value: 0 }, { id: "b", time: 10, value: 360 }] }] }
+  id: "spinning-logo",
+  meshes: [
+    {
+      id: "logo",
+      geometry: { vertices: [], indices: [] },
+      transform: { position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] },
+    },
+  ],
+  cameras: [{ id: "main", position: [0, 0, 5], rotation: [0, 0, 0], projection: "perspective" }],
+  timeline: {
+    duration: 10,
+    tracks: [
+      {
+        id: "spin",
+        targetType: "mesh",
+        targetId: "logo",
+        property: "rotationY",
+        keyframes: [
+          { id: "a", time: 0, value: 0 },
+          { id: "b", time: 10, value: 360 },
+        ],
+      },
+    ],
+  },
 };
 
 describe("shared 3D world view integration", () => {

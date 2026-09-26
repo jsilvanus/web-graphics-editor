@@ -75,8 +75,8 @@ The intended direction is for AI operations to use the same document/command and
 ## Development
 
 ```bash
-npm install
-npm run dev
+npm ci
+npm run dev        # demo at http://localhost:5173, package resolved from source
 ```
 
 Run the package tests with:
@@ -97,6 +97,8 @@ npm test
 8. Keep rendering implementations replaceable where practical.
 
 ## Status
+
+> **Heads-up (2026-09-26):** the code has only now been compiled and run for the first time. It does not yet typecheck, some tests fail and the demo does not boot. See [`docs/STATUS.md`](docs/STATUS.md) for the audit and the plan to get the 2D and 3D editors working.
 
 The 2D editor and core document model are substantially implemented. Timeline support, 3D data structures/rendering, and output runtime primitives are also present, while several higher-level workflows remain under active development.
 

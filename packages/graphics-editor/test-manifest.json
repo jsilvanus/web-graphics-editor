@@ -31,18 +31,11 @@
         },
         {
           "id": "3d-core",
-          "files": [
-            "src/3d.test.ts",
-            "src/3d-animation.test.ts",
-            "src/3d-mesh.test.ts"
-          ]
+          "files": ["src/3d.test.ts", "src/3d-animation.test.ts", "src/3d-mesh.test.ts"]
         },
         {
           "id": "3d-rendering",
-          "files": [
-            "src/3d-renderer.test.ts",
-            "src/3d-render-cache.test.ts"
-          ]
+          "files": ["src/3d-renderer.test.ts", "src/3d-render-cache.test.ts"]
         },
         {
           "id": "mesh-topology",
@@ -86,28 +79,19 @@
         },
         {
           "id": "mesh-edit",
-          "files": [
-            "src/components/mesh-edit/history.test.ts",
-            "src/components/mesh-edit/selection.test.ts"
-          ]
+          "files": ["src/components/mesh-edit/history.test.ts", "src/components/mesh-edit/selection.test.ts"]
         }
       ]
     },
     {
       "id": "model",
-      "needs": [
-        "unit"
-      ],
+      "needs": ["unit"],
       "description": "Document, history, serialization, timeline and reference-integrity contracts.",
       "failFast": false,
       "suites": [
         {
           "id": "serialization",
-          "files": [
-            "src/serialization.test.ts",
-            "src/serialization.edge.test.ts",
-            "src/wegra.test.ts"
-          ]
+          "files": ["src/serialization.test.ts", "src/serialization.edge.test.ts", "src/wegra.test.ts"]
         },
         {
           "id": "history",
@@ -120,42 +104,29 @@
         },
         {
           "id": "document-commands",
-          "files": [
-            "src/document/commands.comprehensive.test.ts",
-            "src/document/timelineCommands.test.ts"
-          ]
+          "files": ["src/document/commands.comprehensive.test.ts", "src/document/timelineCommands.test.ts"]
         },
         {
           "id": "scene-timeline",
-          "files": [
-            "src/scene-timeline.test.ts"
-          ]
+          "files": ["src/scene-timeline.test.ts"]
         },
         {
           "id": "viewport-output",
-          "files": [
-            "src/viewport-output.test.ts"
-          ]
+          "files": ["src/viewport-output.test.ts"]
         },
         {
           "id": "world-view",
-          "files": [
-            "src/world-view.test.ts"
-          ]
+          "files": ["src/world-view.test.ts"]
         },
         {
           "id": "reference-integrity",
-          "files": [
-            "src/validate-references.test.ts"
-          ]
+          "files": ["src/validate-references.test.ts"]
         }
       ]
     },
     {
       "id": "integration",
-      "needs": [
-        "model"
-      ],
+      "needs": ["model"],
       "description": "Cross-layer presentation, persistence and runtime contracts.",
       "failFast": false,
       "suites": [
@@ -178,31 +149,21 @@
         },
         {
           "id": "persistence",
-          "files": [
-            "src/editing-persistence.integration.test.ts"
-          ]
+          "files": ["src/editing-persistence.integration.test.ts"]
         },
         {
           "id": "world-view-integration",
-          "files": [
-            "src/world-view.integration.test.ts",
-            "src/world-view-integration.test.ts"
-          ]
+          "files": ["src/world-view.integration.test.ts", "src/world-view-integration.test.ts"]
         },
         {
           "id": "outputs",
-          "files": [
-            "src/outputs-runtime.test.ts",
-            "src/output-controller.comprehensive.test.ts"
-          ]
+          "files": ["src/outputs-runtime.test.ts", "src/output-controller.comprehensive.test.ts"]
         }
       ]
     },
     {
       "id": "package",
-      "needs": [
-        "integration"
-      ],
+      "needs": ["integration"],
       "description": "Complete package verification: full test suite, types and build.",
       "failFast": true,
       "commands": [

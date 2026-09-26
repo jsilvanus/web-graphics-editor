@@ -5,8 +5,11 @@ import { validateHalfEdgeMesh } from "./validate";
 describe("half-edge mesh validation", () => {
   it("accepts valid meshes with sparse source face ids", () => {
     const mesh = fromPolygons({
-      positions: [0,0,0, 1,0,0, 0,1,0],
-      faces: [[0,1], [0,1,2]],
+      positions: [0, 0, 0, 1, 0, 0, 0, 1, 0],
+      faces: [
+        [0, 1],
+        [0, 1, 2],
+      ],
     });
 
     expect(mesh.faces[0].id).toBe(1);
@@ -15,8 +18,8 @@ describe("half-edge mesh validation", () => {
 
   it("reports a missing next edge without throwing", () => {
     const mesh = fromPolygons({
-      positions: [0,0,0, 1,0,0, 0,1,0],
-      faces: [[0,1,2]],
+      positions: [0, 0, 0, 1, 0, 0, 0, 1, 0],
+      faces: [[0, 1, 2]],
     });
     mesh.halfEdges[0].next = 999;
 
@@ -27,8 +30,11 @@ describe("half-edge mesh validation", () => {
 
   it("reports broken twin symmetry", () => {
     const mesh = fromPolygons({
-      positions: [0,0,0, 1,0,0, 1,1,0, 0,1,0],
-      faces: [[0,1,2], [0,2,3]],
+      positions: [0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0],
+      faces: [
+        [0, 1, 2],
+        [0, 2, 3],
+      ],
     });
     const shared = mesh.halfEdges.find(h => h.twin !== null)!;
     const twin = mesh.halfEdges.find(h => h.id === shared.twin)!;
@@ -41,8 +47,8 @@ describe("half-edge mesh validation", () => {
 
   it("reports invalid vertex and face references", () => {
     const mesh = fromPolygons({
-      positions: [0,0,0, 1,0,0, 0,1,0],
-      faces: [[0,1,2]],
+      positions: [0, 0, 0, 1, 0, 0, 0, 1, 0],
+      faces: [[0, 1, 2]],
     });
     mesh.halfEdges[0].vertex = 999;
     mesh.halfEdges[1].face = 999;
@@ -55,7 +61,7 @@ describe("half-edge mesh validation", () => {
 
   it("reports malformed position buffers", () => {
     const mesh = fromPolygons({
-      positions: [0,0,0, 1],
+      positions: [0, 0, 0, 1],
       faces: [],
     });
 
@@ -66,8 +72,11 @@ describe("half-edge mesh validation", () => {
 
   it("reports duplicate directed edges", () => {
     const mesh = fromPolygons({
-      positions: [0,0,0, 1,0,0, 0,1,0, 1,1,0],
-      faces: [[0,1,2], [0,1,3]],
+      positions: [0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0],
+      faces: [
+        [0, 1, 2],
+        [0, 1, 3],
+      ],
     });
 
     const result = validateHalfEdgeMesh(mesh);
@@ -77,8 +86,12 @@ describe("half-edge mesh validation", () => {
 
   it("reports a non-manifold edge", () => {
     const mesh = fromPolygons({
-      positions: [0,0,0, 1,0,0, 0,1,0, 0,-1,0, 0,0,1],
-      faces: [[0,1,2], [1,0,3], [0,1,4]],
+      positions: [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1, 0, 0, 0, 1],
+      faces: [
+        [0, 1, 2],
+        [1, 0, 3],
+        [0, 1, 4],
+      ],
     });
 
     const result = validateHalfEdgeMesh(mesh);
@@ -88,8 +101,8 @@ describe("half-edge mesh validation", () => {
 
   it("reports an unreferenced half-edge", () => {
     const mesh = fromPolygons({
-      positions: [0,0,0, 1,0,0, 0,1,0],
-      faces: [[0,1,2]],
+      positions: [0, 0, 0, 1, 0, 0, 0, 1, 0],
+      faces: [[0, 1, 2]],
     });
     mesh.halfEdges.push({ id: 99, vertex: 0, twin: null, next: 1, face: 0 });
 
@@ -100,8 +113,8 @@ describe("half-edge mesh validation", () => {
 
   it("reports boundary cycles that do not close", () => {
     const mesh = fromPolygons({
-      positions: [0,0,0, 1,0,0, 0,1,0],
-      faces: [[0,1,2]],
+      positions: [0, 0, 0, 1, 0, 0, 0, 1, 0],
+      faces: [[0, 1, 2]],
     });
     mesh.halfEdges[2].next = 1;
 

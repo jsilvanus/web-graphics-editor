@@ -1,13 +1,38 @@
 import { describe, expect, it } from "vitest";
-import { resolveComposition, resolveOutput, resolveScene, resolveViewportComposition, sceneAtTime } from "./presentation";
+import {
+  resolveComposition,
+  resolveOutput,
+  resolveScene,
+  resolveViewportComposition,
+  sceneAtTime,
+} from "./presentation";
 import type { GraphicsDocument } from "./types";
 
 const document: GraphicsDocument = {
-  width: 1920, height: 1080,
+  width: 1920,
+  height: 1080,
   layers: [
     { id: "bg", type: "rectangle", x: 0, y: 0, width: 1920, height: 1080 },
-    { id: "name", type: "text", x: 100, y: 900, width: 600, height: 100, text: "Name", viewportOverrides: { venue: { visible: false }, broadcast: { x: 120, y: 850 } } },
-    { id: "lyrics", type: "text", x: 100, y: 700, width: 1000, height: 100, text: "Lyrics", viewportOverrides: { broadcast: { visible: false } } },
+    {
+      id: "name",
+      type: "text",
+      x: 100,
+      y: 900,
+      width: 600,
+      height: 100,
+      text: "Name",
+      viewportOverrides: { venue: { visible: false }, broadcast: { x: 120, y: 850 } },
+    },
+    {
+      id: "lyrics",
+      type: "text",
+      x: 100,
+      y: 700,
+      width: 1000,
+      height: 100,
+      text: "Lyrics",
+      viewportOverrides: { broadcast: { visible: false } },
+    },
   ],
   compositions: [
     { id: "event", name: "Event", layerIds: ["bg", "name", "lyrics"] },
@@ -21,9 +46,21 @@ const document: GraphicsDocument = {
     scenes: [
       { id: "intro", name: "Intro", compositionId: "minimal", start: 0, duration: 5 },
       { id: "event", name: "Event", compositionId: "event", start: 5, duration: 10 },
-    ], currentSceneId: "intro", currentTime: 0, tracks: [], loop: true,
+    ],
+    currentSceneId: "intro",
+    currentTime: 0,
+    tracks: [],
+    loop: true,
   },
-  outputs: [{ id: "broadcast-out", name: "Broadcast", viewportId: "broadcast", playback: "live", background: "transparent" }],
+  outputs: [
+    {
+      id: "broadcast-out",
+      name: "Broadcast",
+      viewportId: "broadcast",
+      playback: "live",
+      background: "transparent",
+    },
+  ],
 };
 
 describe("presentation resolution", () => {
@@ -58,6 +95,10 @@ describe("presentation resolution", () => {
   it("resolves an output through its viewport and active scene", () => {
     const result = resolveOutput(document, "broadcast-out", 7);
     expect(result && "scene" in result ? result.scene.id : undefined).toBe("event");
-    expect(result && "layers" in result ? result.layers.map(l => l.id) : []).toEqual(["bg", "name", "lyrics"]);
+    expect(result && "layers" in result ? result.layers.map(l => l.id) : []).toEqual([
+      "bg",
+      "name",
+      "lyrics",
+    ]);
   });
 });

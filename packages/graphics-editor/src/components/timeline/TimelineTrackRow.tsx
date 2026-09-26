@@ -9,7 +9,10 @@ export interface TimelineTrackRowProps {
 
 export const TimelineTrackRow: FC<TimelineTrackRowProps> = ({ label, keyframeCount, onAdd, children }) => (
   <div className="ge-timeline-track-row">
-    <button onClick={onAdd}>{label}{keyframeCount ? ` · ${keyframeCount}` : " +"}</button>
+    <button onClick={onAdd}>
+      {label}
+      {keyframeCount ? ` · ${keyframeCount}` : " +"}
+    </button>
     {children}
   </div>
 );

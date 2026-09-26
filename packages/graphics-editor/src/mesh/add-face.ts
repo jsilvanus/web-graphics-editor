@@ -23,7 +23,7 @@ export function addFace(mesh: HalfEdgeMesh, vertices: [number, number, number]):
 
   const polygons = polygonsFromHalfEdges(mesh);
   const key = (x: number, y: number) => `${x}:${y}`;
-  const undirectedKey = (x: number, y: number) => x < y ? `${x}:${y}` : `${y}:${x}`;
+  const undirectedKey = (x: number, y: number) => (x < y ? `${x}:${y}` : `${y}:${x}`);
   const directed = new Set<string>();
   const undirectedCounts = new Map<string, number>();
 
@@ -37,7 +37,11 @@ export function addFace(mesh: HalfEdgeMesh, vertices: [number, number, number]):
     }
   }
 
-  const addedEdges: Array<[number, number]> = [[a, b], [b, c], [c, a]];
+  const addedEdges: Array<[number, number]> = [
+    [a, b],
+    [b, c],
+    [c, a],
+  ];
   for (const [from, to] of addedEdges) {
     if (directed.has(key(from, to))) {
       throw new Error(`Face edge ${from}:${to} already exists`);
@@ -47,9 +51,8 @@ export function addFace(mesh: HalfEdgeMesh, vertices: [number, number, number]):
     }
   }
 
-  const duplicate = polygons.some(p =>
-    p.length === 3 && new Set(p).size === 3 &&
-    p.every(vertex => vertices.includes(vertex)),
+  const duplicate = polygons.some(
+    p => p.length === 3 && new Set(p).size === 3 && p.every(vertex => vertices.includes(vertex)),
   );
   if (duplicate) throw new Error("The requested face already exists");
 

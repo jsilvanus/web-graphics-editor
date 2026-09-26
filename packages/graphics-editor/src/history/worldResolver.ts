@@ -8,7 +8,13 @@ export interface WorldHistoryStore {
   get(worldId: string): WorldHistory | undefined;
 }
 
-export function resolveWorldOperation(document: GraphicsDocument, entry: HistoryEntry, worlds: Map<string, Graphics3DWorld>, worldHistories: WorldHistoryStore, reverse = false): GraphicsDocument {
+export function resolveWorldOperation(
+  document: GraphicsDocument,
+  entry: HistoryEntry,
+  worlds: Map<string, Graphics3DWorld>,
+  worldHistories: WorldHistoryStore,
+  reverse = false,
+): GraphicsDocument {
   const operation = entry.operation;
   if (operation.type !== "world-operation") return applyOperation(document, operation, reverse);
 
@@ -21,10 +27,19 @@ export function resolveWorldOperation(document: GraphicsDocument, entry: History
 
   const updatedWorld = applyWorldOperation(world, worldEntry.operation, reverse);
   worlds.set(operation.worldId, updatedWorld);
-  return { ...document, worlds3d: (document.worlds3d ?? []).map(item => item.id === operation.worldId ? updatedWorld : item) };
+  return {
+    ...document,
+    worlds3d: (document.worlds3d ?? []).map(item => (item.id === operation.worldId ? updatedWorld : item)),
+  };
 }
 
-export function resolveHistoryEntry(document: GraphicsDocument, entry: HistoryEntry, worlds: Map<string, Graphics3DWorld>, worldHistories: WorldHistoryStore, reverse = false): GraphicsDocument {
+export function resolveHistoryEntry(
+  document: GraphicsDocument,
+  entry: HistoryEntry,
+  worlds: Map<string, Graphics3DWorld>,
+  worldHistories: WorldHistoryStore,
+  reverse = false,
+): GraphicsDocument {
   return resolveWorldOperation(document, entry, worlds, worldHistories, reverse);
 }
 

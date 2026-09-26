@@ -9,7 +9,8 @@ export function useEditorSelection(initialId: string | null = null) {
   const select = useCallback((id: string, additive = false) => {
     setSelectedIds(current => {
       const next = additive ? new Set(current) : new Set<string>();
-      if (additive && next.has(id)) next.delete(id); else next.add(id);
+      if (additive && next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
     setPrimaryId(id);
@@ -22,12 +23,15 @@ export function useEditorSelection(initialId: string | null = null) {
     setReferenceSelection(null);
   }, []);
 
-  const selectOnly = useCallback((id: string | null) => {
-    if (id === null) return clear();
-    setSelectedIds(new Set([id]));
-    setPrimaryId(id);
-    setReferenceSelection(id);
-  }, [clear]);
+  const selectOnly = useCallback(
+    (id: string | null) => {
+      if (id === null) return clear();
+      setSelectedIds(new Set([id]));
+      setPrimaryId(id);
+      setReferenceSelection(id);
+    },
+    [clear],
+  );
 
   return { selectedIds, primaryId, select, selectOnly, clear };
 }

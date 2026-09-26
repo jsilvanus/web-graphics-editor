@@ -20,9 +20,14 @@ export function buildRenderTree(document: GraphicsDocument): RenderNode[] {
     visiting.add(layer.id);
     const ownOpacity = typeof layer.opacity === "number" ? Math.max(0, Math.min(1, layer.opacity)) : 1;
     const opacity = inheritedOpacity * ownOpacity;
-    const children = layer.type === "group"
-      ? (layer.children ?? []).map(id => byId.get(id)).filter((child): child is Layer => !!child).map(child => visit(child, opacity)).filter((child): child is RenderNode => !!child)
-      : [];
+    const children =
+      layer.type === "group"
+        ? (layer.children ?? [])
+            .map(id => byId.get(id))
+            .filter((child): child is Layer => !!child)
+            .map(child => visit(child, opacity))
+            .filter((child): child is RenderNode => !!child)
+        : [];
     visiting.delete(layer.id);
     return { layer, children, opacity };
   };

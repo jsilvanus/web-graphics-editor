@@ -3,11 +3,50 @@ import type { Graphics3DWorld } from "./types";
 import { evaluateWorldAtTime } from "./world-animation";
 
 const world: Graphics3DWorld = {
-  id: "logo", meshes: [{ id: "logo-mesh", geometry: { vertices: [], indices: [] }, transform: { position: [0,0,0], rotation: [0,0,0], scale: [1,1,1] } }], cameras: [{ id: "camera", position: [0,0,5], rotation: [0,0,0], projection: "perspective", fov: 60 }], timeline: { duration: 10, tracks: [
-    { id: "rx", targetType: "mesh", targetId: "logo-mesh", property: "rotationY", keyframes: [{ id: "a", time: 0, value: 0 }, { id: "b", time: 10, value: 360 }] },
-    { id: "x", targetType: "mesh", targetId: "logo-mesh", property: "positionX", keyframes: [{ id: "e", time: 0, value: 0 }, { id: "f", time: 10, value: 100 }] },
-    { id: "fov", targetType: "camera", targetId: "camera", property: "fov", keyframes: [{ id: "c", time: 0, value: 60 }, { id: "d", time: 10, value: 90 }] }
-  ] }
+  id: "logo",
+  meshes: [
+    {
+      id: "logo-mesh",
+      geometry: { vertices: [], indices: [] },
+      transform: { position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] },
+    },
+  ],
+  cameras: [{ id: "camera", position: [0, 0, 5], rotation: [0, 0, 0], projection: "perspective", fov: 60 }],
+  timeline: {
+    duration: 10,
+    tracks: [
+      {
+        id: "rx",
+        targetType: "mesh",
+        targetId: "logo-mesh",
+        property: "rotationY",
+        keyframes: [
+          { id: "a", time: 0, value: 0 },
+          { id: "b", time: 10, value: 360 },
+        ],
+      },
+      {
+        id: "x",
+        targetType: "mesh",
+        targetId: "logo-mesh",
+        property: "positionX",
+        keyframes: [
+          { id: "e", time: 0, value: 0 },
+          { id: "f", time: 10, value: 100 },
+        ],
+      },
+      {
+        id: "fov",
+        targetType: "camera",
+        targetId: "camera",
+        property: "fov",
+        keyframes: [
+          { id: "c", time: 0, value: 60 },
+          { id: "d", time: 10, value: 90 },
+        ],
+      },
+    ],
+  },
 };
 
 describe("evaluateWorldAtTime", () => {
@@ -32,7 +71,13 @@ describe("evaluateWorldAtTime", () => {
     expect(b.meshes[0].transform.position[0]).toBe(80);
   });
   it("evaluates a looped world through mapped time", () => {
-    const result = evaluateWorldAtTime(world, 12, { offset: 0, rate: 1, loop: true, inPoint: 0, outPoint: 10 });
+    const result = evaluateWorldAtTime(world, 12, {
+      offset: 0,
+      rate: 1,
+      loop: true,
+      inPoint: 0,
+      outPoint: 10,
+    });
     expect(result.worldTime).toBe(2);
     expect(result.meshes[0].transform.rotation[1]).toBe(72);
   });

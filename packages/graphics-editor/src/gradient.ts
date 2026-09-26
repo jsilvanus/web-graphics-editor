@@ -12,12 +12,17 @@ export const defaultGradient = (type: Gradient["type"] = "linear"): Gradient => 
 });
 
 function color(stop: GradientStop) {
-  return stop.opacity == null || stop.opacity >= 1 ? stop.color : `color-mix(in srgb, ${stop.color} ${Math.round(stop.opacity * 100)}%, transparent)`;
+  return stop.opacity == null || stop.opacity >= 1
+    ? stop.color
+    : `color-mix(in srgb, ${stop.color} ${Math.round(stop.opacity * 100)}%, transparent)`;
 }
 
 export function gradientToCss(g?: Gradient): string {
   if (!g || g.stops.length < 2) return "none";
-  const stops = [...g.stops].sort((a,b)=>a.offset-b.offset).map(s=>`${color(s)} ${Math.round(Math.max(0,Math.min(1,s.offset))*100)}%`).join(", ");
+  const stops = [...g.stops]
+    .sort((a, b) => a.offset - b.offset)
+    .map(s => `${color(s)} ${Math.round(Math.max(0, Math.min(1, s.offset)) * 100)}%`)
+    .join(", ");
   if (g.type === "radial") return `radial-gradient(circle at ${g.cx ?? 50}% ${g.cy ?? 50}%, ${stops})`;
   return `linear-gradient(${g.angle ?? 90}deg, ${stops})`;
 }

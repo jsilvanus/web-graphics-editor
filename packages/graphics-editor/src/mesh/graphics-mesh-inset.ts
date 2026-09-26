@@ -10,7 +10,11 @@ export interface GraphicsMeshInsetResult {
 }
 
 /** Inset a face of a Graphics3DMesh through the half-edge editing kernel. */
-export function insetGraphicsMeshFace(mesh: Graphics3DMesh, faceId: number, amount: number): GraphicsMeshInsetResult {
+export function insetGraphicsMeshFace(
+  mesh: Graphics3DMesh,
+  faceId: number,
+  amount: number,
+): GraphicsMeshInsetResult {
   const topology = graphicsMeshToHalfEdge(mesh);
   const result: InsetFaceResult = insetTopologyFace(topology, faceId, amount);
   return {

@@ -11,8 +11,11 @@ import { connectGraphicsMeshEdges } from "../../mesh/graphics-mesh-connect-edges
 export function insetKernel(data: Graphics3DMesh, faces: Set<number>, amount: number): Graphics3DMesh {
   let next = data;
   for (const face of [...faces].sort((a, b) => b - a)) {
-    try { next = insetGraphicsMeshFace(next, face, amount).mesh; }
-    catch (error) { console.warn(`Half-edge inset failed for face ${face}; leaving that face unchanged`, error); }
+    try {
+      next = insetGraphicsMeshFace(next, face, amount).mesh;
+    } catch (error) {
+      console.warn(`Half-edge inset failed for face ${face}; leaving that face unchanged`, error);
+    }
   }
   return next;
 }

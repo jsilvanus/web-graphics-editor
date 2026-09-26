@@ -4,12 +4,41 @@ import { evaluateWorldAtTime } from "./world-animation";
 
 const world: Graphics3DWorld = {
   id: "spinning-logo",
-  meshes: [{ id: "logo", geometry: { vertices: [], indices: [] }, transform: { position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] } }],
+  meshes: [
+    {
+      id: "logo",
+      geometry: { vertices: [], indices: [] },
+      transform: { position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] },
+    },
+  ],
   cameras: [{ id: "camera", position: [0, 0, 5], rotation: [0, 0, 0], projection: "perspective" }],
-  timeline: { duration: 10, tracks: [{ id: "spin", targetType: "mesh", targetId: "logo", property: "rotationY", keyframes: [{ id: "a", time: 0, value: 0 }, { id: "b", time: 10, value: 360 }] }] }
+  timeline: {
+    duration: 10,
+    tracks: [
+      {
+        id: "spin",
+        targetType: "mesh",
+        targetId: "logo",
+        property: "rotationY",
+        keyframes: [
+          { id: "a", time: 0, value: 0 },
+          { id: "b", time: 10, value: 360 },
+        ],
+      },
+    ],
+  },
 };
 
-const view = (worldTime: Graphics3DView["worldTime"]): Graphics3DView => ({ id: "view", worldId: world.id, cameraId: "camera", x: 0, y: 0, width: 100, height: 100, worldTime });
+const view = (worldTime: Graphics3DView["worldTime"]): Graphics3DView => ({
+  id: "view",
+  worldId: world.id,
+  cameraId: "camera",
+  x: 0,
+  y: 0,
+  width: 100,
+  height: 100,
+  worldTime,
+});
 
 describe("3D view/world integration", () => {
   it("allows two views of the same world to observe different world times", () => {

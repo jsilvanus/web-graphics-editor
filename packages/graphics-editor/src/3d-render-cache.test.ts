@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { clear3DRenderCache, get3DRenderCache, set3DRenderCache, set3DRenderCacheLimit } from "./3d-render-cache";
+import {
+  clear3DRenderCache,
+  get3DRenderCache,
+  set3DRenderCache,
+  set3DRenderCacheLimit,
+} from "./3d-render-cache";
 
 describe("3D render cache", () => {
   afterEach(() => {

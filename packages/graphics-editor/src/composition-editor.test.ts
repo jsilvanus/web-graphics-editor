@@ -22,18 +22,48 @@ describe("composition editor navigation", () => {
 describe("composition video evaluation", () => {
   it("maps a video layer to media time while evaluating a composition", () => {
     const document: GraphicsDocument = {
-      width: 1920, height: 1080,
-      layers: [{ id: "video", type: "video", x: 0, y: 0, width: 1920, height: 1080, videoAssetId: "asset", timeOffset: 1, playbackRate: 2, sourceIn: 5 }],
+      width: 1920,
+      height: 1080,
+      layers: [
+        {
+          id: "video",
+          type: "video",
+          x: 0,
+          y: 0,
+          width: 1920,
+          height: 1080,
+          videoAssetId: "asset",
+          timeOffset: 1,
+          playbackRate: 2,
+          sourceIn: 5,
+        },
+      ],
       assets: [{ id: "asset", type: "video", name: "clip", url: "clip.mp4" }],
       compositions: [{ id: "main", name: "Main", layerIds: ["video"], duration: 20 }],
     };
     const evaluation = evaluateComposition(document, "main", 4);
-    expect(evaluation?.videos).toEqual([expect.objectContaining({ layerId: "video", assetId: "asset", mediaTime: 11 })]);
+    expect(evaluation?.videos).toEqual([
+      expect.objectContaining({ layerId: "video", assetId: "asset", mediaTime: 11 }),
+    ]);
   });
   it("seeks a looping video within its source range", () => {
     const document: GraphicsDocument = {
-      width: 100, height: 100,
-      layers: [{ id: "video", type: "video", x: 0, y: 0, width: 100, height: 100, videoAssetId: "asset", sourceIn: 10, sourceOut: 12, loop: true }],
+      width: 100,
+      height: 100,
+      layers: [
+        {
+          id: "video",
+          type: "video",
+          x: 0,
+          y: 0,
+          width: 100,
+          height: 100,
+          videoAssetId: "asset",
+          sourceIn: 10,
+          sourceOut: 12,
+          loop: true,
+        },
+      ],
       assets: [{ id: "asset", type: "video", name: "clip", url: "clip.mp4" }],
       compositions: [{ id: "main", name: "Main", layerIds: ["video"], duration: 20 }],
     };
@@ -43,8 +73,24 @@ describe("composition video evaluation", () => {
 
   it("maps nested composition time with offset, rate, source range, and loop", () => {
     const document: GraphicsDocument = {
-      width: 100, height: 100,
-      layers: [{ id: "instance", type: "composition", x: 0, y: 0, width: 100, height: 100, compositionId: "child", timeOffset: 2, playbackRate: 2, compositionIn: 3, compositionOut: 7, loop: true }],
+      width: 100,
+      height: 100,
+      layers: [
+        {
+          id: "instance",
+          type: "composition",
+          x: 0,
+          y: 0,
+          width: 100,
+          height: 100,
+          compositionId: "child",
+          timeOffset: 2,
+          playbackRate: 2,
+          compositionIn: 3,
+          compositionOut: 7,
+          loop: true,
+        },
+      ],
       compositions: [
         { id: "parent", name: "Parent", layerIds: ["instance"], duration: 20 },
         { id: "child", name: "Child", layerIds: ["child-layer"], duration: 10 },
@@ -64,8 +110,22 @@ describe("composition video evaluation", () => {
 
   it("keeps nested composition instances inactive before their offset and after their out point", () => {
     const document: GraphicsDocument = {
-      width: 100, height: 100,
-      layers: [{ id: "instance", type: "composition", x: 0, y: 0, width: 100, height: 100, compositionId: "child", timeOffset: 2, compositionIn: 1, compositionOut: 4 }],
+      width: 100,
+      height: 100,
+      layers: [
+        {
+          id: "instance",
+          type: "composition",
+          x: 0,
+          y: 0,
+          width: 100,
+          height: 100,
+          compositionId: "child",
+          timeOffset: 2,
+          compositionIn: 1,
+          compositionOut: 4,
+        },
+      ],
       compositions: [{ id: "child", name: "Child", layerIds: [], duration: 10 }],
     };
     const before = evaluateComposition(document, "child", 0);

@@ -4,26 +4,47 @@ import { flattenPathNodes } from "../geometry";
 
 describe("SVG path geometry", () => {
   it("serializes straight and curved commands", () => {
-    expect(pathCommandsToD([{ type: "M", x: 1, y: 2 }, { type: "L", x: 3, y: 4 }, { type: "C", x1: 5, y1: 6, x2: 7, y2: 8, x: 9, y: 10 }, { type: "Z" }])).toBe("M 1 2 L 3 4 C 5 6 7 8 9 10 Z");
+    expect(
+      pathCommandsToD([
+        { type: "M", x: 1, y: 2 },
+        { type: "L", x: 3, y: 4 },
+        { type: "C", x1: 5, y1: 6, x2: 7, y2: 8, x: 9, y: 10 },
+        { type: "Z" },
+      ]),
+    ).toBe("M 1 2 L 3 4 C 5 6 7 8 9 10 Z");
   });
   it("creates a line", () => expect(linePath(0, 2, 10, 12)).toBe("M 0 2 L 10 12"));
-  it("constrains rounded corners by the narrowest dimension", () => expect(roundedRectPath(20, 200, 100)).toContain("A 10 10"));
+  it("constrains rounded corners by the narrowest dimension", () =>
+    expect(roundedRectPath(20, 200, 100)).toContain("A 10 10"));
   it("supports horizontal-first and vertical-first orthogonal segments", () => {
     expect(orthogonalPoint(10, 20, 50, 80, true)).toEqual({ x: 50, y: 20 });
     expect(orthogonalPoint(10, 20, 50, 80, false)).toEqual({ x: 10, y: 80 });
   });
 });
 
-
-describe("Bézier path flattening",()=>{
-  it("subdivides a curved segment",()=>{
-    const result=flattenPathNodes([{x:0,y:0,kind:"smooth",handleOut:{x:0,y:100}},{x:100,y:100,kind:"smooth",handleIn:{x:100,y:0}}],false,0.5);
+describe("Bézier path flattening", () => {
+  it("subdivides a curved segment", () => {
+    const result = flattenPathNodes(
+      [
+        { x: 0, y: 0, kind: "smooth", handleOut: { x: 0, y: 100 } },
+        { x: 100, y: 100, kind: "smooth", handleIn: { x: 100, y: 0 } },
+      ],
+      false,
+      0.5,
+    );
     expect(result.points.length).toBeGreaterThan(3);
-    expect(result.points[0]).toEqual({x:0,y:0});
-    expect(result.points.at(-1)).toEqual({x:100,y:100});
+    expect(result.points[0]).toEqual({ x: 0, y: 0 });
+    expect(result.points.at(-1)).toEqual({ x: 100, y: 100 });
   });
-  it("closes without duplicating the first point",()=>{
-    const result=flattenPathNodes([{x:0,y:0,kind:"smooth",handleOut:{x:0,y:20}},{x:20,y:0,kind:"smooth",handleIn:{x:20,y:20}}],true,0.5);
+  it("closes without duplicating the first point", () => {
+    const result = flattenPathNodes(
+      [
+        { x: 0, y: 0, kind: "smooth", handleOut: { x: 0, y: 20 } },
+        { x: 20, y: 0, kind: "smooth", handleIn: { x: 20, y: 20 } },
+      ],
+      true,
+      0.5,
+    );
     expect(result.closed).toBe(true);
     expect(result.points[0]).not.toEqual(result.points.at(-1));
   });

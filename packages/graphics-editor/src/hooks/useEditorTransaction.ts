@@ -9,11 +9,14 @@ export function useEditorTransaction(commit: (document: GraphicsDocument) => voi
     startRef.current = document;
   }, []);
 
-  const end = useCallback((current: GraphicsDocument) => {
-    const start = startRef.current;
-    startRef.current = null;
-    if (start && start !== current) commit(current);
-  }, [commit]);
+  const end = useCallback(
+    (current: GraphicsDocument) => {
+      const start = startRef.current;
+      startRef.current = null;
+      if (start && start !== current) commit(current);
+    },
+    [commit],
+  );
 
   const cancel = useCallback(() => {
     startRef.current = null;

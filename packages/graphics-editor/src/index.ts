@@ -1,38 +1,163 @@
-export type { GraphicsAsset, GraphicsDocument, GraphicsEditorProps, Layer, LayerType, PathCommand, PathNode, Point, Provenance, ProvenanceSource, Composition, CompositionTimeline, MediaTimeMapping, CompositionTime, EvaluationTime, EvaluatedVideo, Viewport, ViewportOverride, Scene, SceneTimeline, WorldTimeMapping, Graphics3DTransform, Graphics3DMaterial, Graphics3DMeshGeometry, Graphics3DMesh, Graphics3DLight, Graphics3DCamera, Graphics3DWorld, Graphics3DVisibility, Graphics3DRenderMode, Graphics3DView, Graphics3DAnimatedProperty, Graphics3DAnimationTarget, Graphics3DTrack, GraphicsOutput, OutputPlaybackMode, OutputBackgroundMode, OutputTransition, OutputTransitionType } from "./types";
-export { resolveComposition, resolveViewportComposition, resolveScene, resolveOutput, findComposition, findViewport, sceneAtTime as presentationSceneAtTime, viewportOverride } from "./presentation";
+export type {
+  GraphicsAsset,
+  GraphicsDocument,
+  GraphicsEditorProps,
+  Layer,
+  LayerType,
+  PathCommand,
+  PathNode,
+  Point,
+  Provenance,
+  ProvenanceSource,
+  Composition,
+  CompositionTimeline,
+  MediaTimeMapping,
+  CompositionTime,
+  EvaluationTime,
+  EvaluatedVideo,
+  Viewport,
+  ViewportOverride,
+  Scene,
+  SceneTimeline,
+  WorldTimeMapping,
+  Graphics3DTransform,
+  Graphics3DMaterial,
+  Graphics3DMeshGeometry,
+  Graphics3DMesh,
+  Graphics3DLight,
+  Graphics3DCamera,
+  Graphics3DWorld,
+  Graphics3DVisibility,
+  Graphics3DRenderMode,
+  Graphics3DView,
+  Graphics3DAnimatedProperty,
+  Graphics3DAnimationTarget,
+  Graphics3DTrack,
+  GraphicsOutput,
+  OutputPlaybackMode,
+  OutputBackgroundMode,
+  OutputTransition,
+  OutputTransitionType,
+} from "./types";
+export {
+  resolveComposition,
+  resolveViewportComposition,
+  resolveScene,
+  resolveOutput,
+  findComposition,
+  findViewport,
+  sceneAtTime as presentationSceneAtTime,
+  viewportOverride,
+} from "./presentation";
 export type { ResolvedLayer, ResolvedComposition, ResolvedScene } from "./presentation";
-export { evaluateComposition, evaluateCompositionAtTime, evaluateScene, compositionForEvaluation, sceneForEvaluation } from "./composition-evaluator";
+export {
+  evaluateComposition,
+  evaluateCompositionAtTime,
+  evaluateScene,
+  compositionForEvaluation,
+  sceneForEvaluation,
+} from "./composition-evaluator";
 export type { CompositionEvaluation, SceneEvaluation } from "./composition-evaluator";
 export { composeDocumentAtTime, composeOutput } from "./compositor";
 export type { CompositorFrame } from "./compositor";
 export { GraphicsEditor, defaultGraphicsDocument } from "./GraphicsEditor";
-export { GRAPHICS_DOCUMENT_VERSION, serializeGraphicsDocument, deserializeGraphicsDocument } from "./serialization";
+export {
+  GRAPHICS_DOCUMENT_VERSION,
+  serializeGraphicsDocument,
+  deserializeGraphicsDocument,
+} from "./serialization";
 export { validateDocumentReferences, assertValidDocumentReferences } from "./validate-references";
 export type { DocumentValidationResult } from "./validate-references";
-export { serializeWegra, deserializeWegra, canonicalJson, migrateWegraManifest, WEGRA_FORMAT, WEGRA_VERSION, SUPPORTED_WEGRA_VERSIONS, WEGRA_MIGRATIONS } from "./wegra";
+export {
+  serializeWegra,
+  deserializeWegra,
+  canonicalJson,
+  migrateWegraManifest,
+  WEGRA_FORMAT,
+  WEGRA_VERSION,
+  SUPPORTED_WEGRA_VERSIONS,
+  WEGRA_MIGRATIONS,
+} from "./wegra";
 export type { WegraManifest, WegraProject, SupportedWegraVersion } from "./wegra";
-export { linePath, orthogonalPoint, pathCommandsToD, roundedRectPath, nodesToD, mirrorHandle } from "./geometry";
+export {
+  linePath,
+  orthogonalPoint,
+  pathCommandsToD,
+  roundedRectPath,
+  nodesToD,
+  mirrorHandle,
+} from "./geometry";
 export { roundedPolygonNodes } from "./geometry/rounded";
 export { exportSvg, importSvg } from "./svg";
 export { buildRenderTree, flattenRenderTree } from "./render-model";
 export type { RenderNode } from "./render-model";
 export { snapPosition, guidesForPosition } from "./snapping";
 export type { SnapResult, SnapGuides } from "./snapping";
-export { create3DWorld, update3DWorld, remove3DWorld, add3DMesh, update3DMesh, remove3DMesh, add3DCamera, update3DCamera, remove3DView, set3DViewVisibility, setProvenance } from "./3d";
-export { ThreeGraphics3DRenderer, createThreeCamera, createThreeGeometry, createThreeScene } from "./3d-renderer";
+export {
+  create3DWorld,
+  update3DWorld,
+  remove3DWorld,
+  add3DMesh,
+  update3DMesh,
+  remove3DMesh,
+  add3DCamera,
+  update3DCamera,
+  remove3DView,
+  set3DViewVisibility,
+  setProvenance,
+} from "./3d";
+export {
+  ThreeGraphics3DRenderer,
+  createThreeCamera,
+  createThreeGeometry,
+  createThreeScene,
+} from "./3d-renderer";
 export type { Graphics3DRenderer, Graphics3DRenderOptions } from "./3d-renderer";
 export { createBoxMesh, createCylinderMesh, createSphereMesh, createConeMesh } from "./3d-primitives";
 export { moveMeshVertices, deleteMeshFaces, mergeMeshVertices, extrudeMeshFace } from "./3d-mesh";
-export { graphicsMeshToHalfEdge, halfEdgeToGraphicsMesh, updateGraphicsMeshTopology, graphicsMeshFaces, insetGraphicsMeshFace, addGraphicsMeshFace, deleteGraphicsMeshFace } from "./mesh";
+export {
+  graphicsMeshToHalfEdge,
+  halfEdgeToGraphicsMesh,
+  updateGraphicsMeshTopology,
+  graphicsMeshFaces,
+  insetGraphicsMeshFace,
+  addGraphicsMeshFace,
+  deleteGraphicsMeshFace,
+} from "./mesh";
 export { export3DWorld, import3DWorld } from "./3d-interchange";
 export type { Graphics3DInterchangeResult } from "./3d-interchange";
 export { ThreeDWorkspace } from "./ThreeDWorkspace";
 export type { ThreeDWorkspaceProps } from "./ThreeDWorkspace";
-export { interpolate3DKeyframes, create3DTrack, evaluate3DProperty, evaluate3DWorldAtTime, evaluate3DViewAtTime } from "./3d-animation";
-export { add3DTrack, remove3DTrack, upsert3DKeyframe, remove3DKeyframe, move3DKeyframe, tracks3DForTarget, set3DKeyframeAtTime } from "./3d-timeline";
+export {
+  interpolate3DKeyframes,
+  create3DTrack,
+  evaluate3DProperty,
+  evaluate3DWorldAtTime,
+  evaluate3DViewAtTime,
+} from "./3d-animation";
+export {
+  add3DTrack,
+  remove3DTrack,
+  upsert3DKeyframe,
+  remove3DKeyframe,
+  move3DKeyframe,
+  tracks3DForTarget,
+  set3DKeyframeAtTime,
+} from "./3d-timeline";
 export { OutputRenderer, outputRenderPath } from "./OutputRenderer";
 export type { OutputRendererProps } from "./OutputRenderer";
-export { createOutputRuntime, outputTransitionProgress, tickOutputRuntime, takeOutput, takeOffOutput, playOutput, pauseOutput, seekOutput, resetOutput, dispatchOutputRuntime } from "./outputs-runtime";
+export {
+  createOutputRuntime,
+  outputTransitionProgress,
+  tickOutputRuntime,
+  takeOutput,
+  takeOffOutput,
+  playOutput,
+  pauseOutput,
+  seekOutput,
+  resetOutput,
+  dispatchOutputRuntime,
+} from "./outputs-runtime";
 export type { OutputCommand, OutputEvent } from "./output-protocol";
 export { isOutputCommand, outputStateEvent } from "./output-protocol";
 

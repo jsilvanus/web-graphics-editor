@@ -6,14 +6,7 @@ function mesh(): Graphics3DMesh {
   return {
     id: "box",
     geometry: {
-      vertices: [
-        0, 0, 0,
-        1, 0, 0,
-        0, 1, 0,
-        1, 1, 0,
-        2, 0, 0,
-        2, 1, 0,
-      ],
+      vertices: [0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 2, 0, 0, 2, 1, 0],
       indices: [0, 1, 2, 1, 3, 2, 1, 4, 3, 4, 5, 3],
     },
     transform: { position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] },
@@ -32,11 +25,7 @@ describe("face duplication and extraction", () => {
     const result = extractFaces(mesh(), new Set([1]));
     expect(result?.geometry.vertices).toHaveLength(9);
     expect(result?.geometry.indices).toEqual([0, 1, 2]);
-    expect(result?.geometry.vertices).toEqual([
-      1, 0, 0,
-      1, 1, 0,
-      0, 1, 0,
-    ]);
+    expect(result?.geometry.vertices).toEqual([1, 0, 0, 1, 1, 0, 0, 1, 0]);
   });
 
   it("returns null for an empty selection", () => {
