@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { add3DCamera, add3DMesh, create3DView, create3DWorld, remove3DWorld, set3DViewVisibility } from "./3d";
+import {
+  add3DCamera,
+  add3DMesh,
+  create3DView,
+  create3DWorld,
+  remove3DWorld,
+  set3DViewVisibility,
+} from "./3d";
 import { deserializeGraphicsDocument, serializeGraphicsDocument } from "./serialization";
 import type { Graphics3DCamera, Graphics3DMesh, Graphics3DWorld, GraphicsDocument } from "./types";
 
@@ -32,8 +39,13 @@ describe("3D document operations", () => {
   it("creates a view and changes its visibility without changing the world", () => {
     const withWorld = create3DWorld(document, world);
     const withView = create3DView(withWorld, {
-      id: "kettle-view", worldId: "kitchen", cameraId: "camera-wide",
-      x: 100, y: 100, width: 800, height: 600,
+      id: "kettle-view",
+      worldId: "kitchen",
+      cameraId: "camera-wide",
+      x: 100,
+      y: 100,
+      width: 800,
+      height: 600,
     });
     const filtered = set3DViewVisibility(withView, "kettle-view", { mode: "include", objects: ["cube"] });
     expect(filtered.views3d?.[0].visibility).toEqual({ mode: "include", objects: ["cube"] });
@@ -42,7 +54,15 @@ describe("3D document operations", () => {
 
   it("removes a world and its dependent views", () => {
     const withWorld = create3DWorld(document, world);
-    const withView = create3DView(withWorld, { id: "view", worldId: "kitchen", cameraId: "camera-wide", x: 0, y: 0, width: 100, height: 100 });
+    const withView = create3DView(withWorld, {
+      id: "view",
+      worldId: "kitchen",
+      cameraId: "camera-wide",
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 100,
+    });
     const removed = remove3DWorld(withView, "kitchen");
     expect(removed.worlds3d).toEqual([]);
     expect(removed.views3d).toEqual([]);

@@ -1,6 +1,10 @@
 import type { Graphics3DCamera, Graphics3DView, Graphics3DWorld } from "./types";
 
-export interface Graphics3DRenderCacheEntry { key: string; image: string; createdAt: number }
+export interface Graphics3DRenderCacheEntry {
+  key: string;
+  image: string;
+  createdAt: number;
+}
 
 const DEFAULT_MAX_ENTRIES = 120;
 let maxEntries = DEFAULT_MAX_ENTRIES;
@@ -9,10 +13,15 @@ const cache = new Map<string, Graphics3DRenderCacheEntry>();
 function stable(value: unknown): string {
   return JSON.stringify(value, (key, val) => {
     if (val && typeof val === "object" && !Array.isArray(val)) {
-      return Object.keys(val as Record<string, unknown>).sort().reduce((out, k) => {
-        out[k] = (val as Record<string, unknown>)[k];
-        return out;
-      }, {} as Record<string, unknown>);
+      return Object.keys(val as Record<string, unknown>)
+        .sort()
+        .reduce(
+          (out, k) => {
+            out[k] = (val as Record<string, unknown>)[k];
+            return out;
+          },
+          {} as Record<string, unknown>,
+        );
     }
     return val;
   });
@@ -32,7 +41,15 @@ export function create3DRenderCacheKey(
   height: number,
   pixelRatio: number,
 ): string {
-  return stable({ world, camera, visibility: view.visibility, renderSettings: view.renderSettings, width, height, pixelRatio });
+  return stable({
+    world,
+    camera,
+    visibility: view.visibility,
+    renderSettings: view.renderSettings,
+    width,
+    height,
+    pixelRatio,
+  });
 }
 
 export function get3DRenderCache(key: string): Graphics3DRenderCacheEntry | undefined {
@@ -66,9 +83,14 @@ export function set3DRenderCacheLimit(limit: number): void {
   }
 }
 
-export function clear3DRenderCache(): void { cache.clear(); }
+export function clear3DRenderCache(): void {
+  cache.clear();
+}
 
 export function invalidate3DRenderCache(prefix?: string): void {
-  if (!prefix) { cache.clear(); return; }
+  if (!prefix) {
+    cache.clear();
+    return;
+  }
   for (const key of cache.keys()) if (key.startsWith(prefix)) cache.delete(key);
 }

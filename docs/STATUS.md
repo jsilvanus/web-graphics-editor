@@ -53,7 +53,7 @@ This is the first time the repository was installed, compiled, tested and run. T
 
 ## Code health notes
 
-- About 300 source lines exceed 300 characters, and some exceed 9,000 (`GraphicsEditor.tsx` line 212). This minified style makes review and diffs very hard. Reformat as files are touched.
+- The code was written minified (lines up to 9,000+ characters). It has been reformatted with prettier in one commit, and CI now checks formatting.
 - Two dead `*.old` files remain in `components/`.
 - The docs overlap (`3D-PLAN.md` vs `3d-feature-plan.md`, several WEGRA docs) and describe intent rather than reality. Treat this file as the source of truth for what works.
 

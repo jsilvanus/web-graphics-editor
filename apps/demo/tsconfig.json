@@ -2,11 +2,7 @@
   "compilerOptions": {
     "target": "ES2022",
     "useDefineForClassFields": true,
-    "lib": [
-      "DOM",
-      "DOM.Iterable",
-      "ES2022"
-    ],
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
     "allowJs": false,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -19,12 +15,8 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "paths": {
-      "@jsilvanus/graphics-editor": [
-        "../../packages/graphics-editor/src/index.ts"
-      ]
+      "@jsilvanus/graphics-editor": ["../../packages/graphics-editor/src/index.ts"]
     }
   },
-  "include": [
-    "src"
-  ]
+  "include": ["src"]
 }

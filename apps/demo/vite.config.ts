@@ -7,7 +7,9 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      "@jsilvanus/graphics-editor": fileURLToPath(new URL("../../packages/graphics-editor/src/index.ts", import.meta.url)),
+      "@jsilvanus/graphics-editor": fileURLToPath(
+        new URL("../../packages/graphics-editor/src/index.ts", import.meta.url),
+      ),
     },
   },
 });

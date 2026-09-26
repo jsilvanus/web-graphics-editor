@@ -1,7 +1,27 @@
 import { useState, type FC, type ReactNode } from "react";
-import type { AnimatedProperty, Graphics3DAnimatedProperty, Graphics3DAnimationTarget, Graphics3DView, Graphics3DWorld, Layer, SceneTransitionType } from "../types";
+import type {
+  AnimatedProperty,
+  Graphics3DAnimatedProperty,
+  Graphics3DAnimationTarget,
+  Graphics3DView,
+  Graphics3DWorld,
+  Layer,
+  SceneTransitionType,
+} from "../types";
 import type { SceneTimeline as Timeline } from "../types";
-import { createClip, duplicateScene, duplicateTimeline, insertEmptyScene, moveClip, removeClip, resizeClip, setClip, setLoop, setSceneTransition, timelineDuration } from "../timeline";
+import {
+  createClip,
+  duplicateScene,
+  duplicateTimeline,
+  insertEmptyScene,
+  moveClip,
+  removeClip,
+  resizeClip,
+  setClip,
+  setLoop,
+  setSceneTransition,
+  timelineDuration,
+} from "../timeline";
 import { SceneTimelineHeader } from "./timeline/SceneTimelineHeader";
 import { SceneTimelineRuler } from "./timeline/SceneTimelineRuler";
 import { SceneTimeline2DTree, DEFAULT_2D_PROPERTIES } from "./timeline/SceneTimeline2DTree";
@@ -12,21 +32,298 @@ import { TimelineTrackRow } from "./timeline/TimelineTrackRow";
 import { ThreeDTimelineTree } from "./ThreeDTimelineTree";
 import { useTimelineKeyframes } from "./timeline/useTimelineKeyframes";
 
-export interface SceneTimelinePanelProps { timeline: Timeline; layers: Layer[]; worlds3d?: Graphics3DWorld[]; views3d?: Graphics3DView[]; onChange:(timeline:Timeline)=>void; onSeek:(time:number)=>void; }
-const TRANSITIONS:SceneTransitionType[]=["cut","fade","dissolve","slide-left","slide-right","slide-up","slide-down"];
+export interface SceneTimelinePanelProps {
+  timeline: Timeline;
+  layers: Layer[];
+  worlds3d?: Graphics3DWorld[];
+  views3d?: Graphics3DView[];
+  onChange: (timeline: Timeline) => void;
+  onSeek: (time: number) => void;
+}
+const TRANSITIONS: SceneTransitionType[] = [
+  "cut",
+  "fade",
+  "dissolve",
+  "slide-left",
+  "slide-right",
+  "slide-up",
+  "slide-down",
+];
 
-export const SceneTimelinePanel:FC<SceneTimelinePanelProps>=({timeline,layers,worlds3d=[],views3d=[],onChange,onSeek})=>{
- const [expanded,setExpanded]=useState<Set<string>>(()=>new Set());
- const total=Math.max(1,timelineDuration(timeline));
- const {selectedKey,setSelectedKey,addTrack,add2DKey,add3DKey,move,remove,patch}=useTimelineKeyframes(timeline,onChange);
- const selected=selectedKey?(selectedKey.kind==="2d"?timeline.tracks.find(t=>t.id===selectedKey.trackId)?.keyframes.find(k=>k.id===selectedKey.keyId):timeline.tracks3d?.find(t=>t.id===selectedKey.trackId)?.keyframes.find(k=>k.id===selectedKey.keyId)):undefined;
- const toggle=(id:string)=>setExpanded(s=>{const n=new Set(s);n.has(id)?n.delete(id):n.add(id);return n});
- const selectScene=(id:string)=>{const scene=timeline.scenes.find(s=>s.id===id);if(scene)onSeek(scene.start)};
- const clipFor=(id:string)=>timeline.clips?.find(c=>c.layerId===id);
- const addClip=(id:string)=>onChange(setClip(timeline,createClip(id,0,total)));
- const updateClip=(id:string,start:number,duration:number)=>onChange(resizeClip(timeline,id,start,duration));
- const base3D=(targetType:Graphics3DAnimationTarget,targetId:string,p:Graphics3DAnimatedProperty)=>{if(targetType==="view"){const view=views3d.find(v=>v.id===targetId);return p==="opacity"?(view?.opacity??1):1;}const world=worlds3d.find(w=>w.meshes.some(m=>m.id===targetId)||w.cameras.some(c=>c.id===targetId));if(targetType==="mesh"){const m=world?.meshes.find(x=>x.id===targetId);if(!m)return 0;const i:{[k:string]:number}={positionX:0,positionY:1,positionZ:2,rotationX:0,rotationY:1,rotationZ:2,scaleX:0,scaleY:1,scaleZ:2};return p.startsWith("position")?m.transform.position[i[p]]:p.startsWith("rotation")?m.transform.rotation[i[p]]:m.transform.scale[i[p]];}const c=world?.cameras.find(x=>x.id===targetId);if(!c)return 0;if(p==="fov")return c.fov??50;const i:{[k:string]:number}={positionX:0,positionY:1,positionZ:2,rotationX:0,rotationY:1,rotationZ:2};return p.startsWith("position")?c.position[i[p]]:c.rotation[i[p]];};
- const render3DTrack=(targetType:Graphics3DAnimationTarget,targetId:string,p:Graphics3DAnimatedProperty):ReactNode=>{const t=timeline.tracks3d?.find(x=>x.targetType===targetType&&x.targetId===targetId&&x.property===p);return <TimelineTrackRow label={p} keyframeCount={t?.keyframes.length??0} onAdd={()=>add3DKey(targetType,targetId,p,base3D(targetType,targetId,p))}>{t&&<div className="ge-track-key-area"><TimelineKeyMarkers keyframes={t.keyframes} total={total} selectedKeyId={selectedKey?.keyId} onSelect={keyId=>setSelectedKey({kind:"3d",trackId:t.id,keyId})} onMove={(keyId,time)=>move("3d",t.id,keyId,time)} onDelete={keyId=>remove("3d",t.id,keyId)}/></div>}</TimelineTrackRow>};
- const render2D=(layer:Layer,scene:{id:string})=>{const clip=clipFor(layer.id);return <div className="ge-tree-object" key={`${scene.id}:${layer.id}`}><b>{layer.text||layer.id}</b><div className="ge-clip-cell">{clip?<div className="ge-clip" style={{left:`${clip.start/total*100}%`,width:`${clip.duration/total*100}%`}}><span>clip</span><button onClick={()=>onChange(moveClip(timeline,clip.id,Math.max(0,clip.start-.25)))}>◀</button><button onClick={()=>onChange(moveClip(timeline,clip.id,Math.min(Math.max(0,total-clip.duration),clip.start+.25)))}>▶</button><input aria-label="Clip start" type="number" step=".1" value={clip.start} onChange={e=>updateClip(clip.id,Number(e.target.value)||0,clip.duration)}/><input aria-label="Clip duration" type="number" min=".1" step=".1" value={clip.duration} onChange={e=>updateClip(clip.id,clip.start,Number(e.target.value)||.1)}/><button onClick={()=>onChange(removeClip(timeline,clip.id))}>×</button></div>:<button onClick={()=>addClip(layer.id)}>+ clip</button>}</div><div className="ge-property-buttons">{DEFAULT_2D_PROPERTIES.map(p=>{const t=timeline.tracks.find(x=>x.layerId===layer.id&&x.property===p);return <TimelineTrackRow key={p} label={p} keyframeCount={t?.keyframes.length??0} onAdd={()=>t?add2DKey(layer,p):addTrack(layer.id,p)}>{t&&<div className="ge-track-key-area"><TimelineKeyMarkers keyframes={t.keyframes} total={total} selectedKeyId={selectedKey?.keyId} onSelect={keyId=>setSelectedKey({kind:"2d",trackId:t.id,keyId})} onMove={(keyId,time)=>move("2d",t.id,keyId,time)} onDelete={keyId=>remove("2d",t.id,keyId)}/></div>}</TimelineTrackRow>})}</div></div>};
- return <section className="ge-timeline" aria-label="Scene timeline"><SceneTimelineHeader currentTime={timeline.currentTime} total={total} loop={!!timeline.loop} onSeek={onSeek} onLoopChange={v=>onChange(setLoop(timeline,v))} onDuplicate={()=>onChange(duplicateTimeline(timeline,total))}/><SceneTimelineRuler total={total}/><div className="ge-timeline-body" onPointerDown={e=>{const r=e.currentTarget.getBoundingClientRect();onSeek(Math.max(0,Math.min(total,(e.clientX-r.left)/r.width*total)));}}>{timeline.scenes.map(s=><button key={s.id} className="ge-scene" style={{left:`${s.start/total*100}%`,width:`${s.duration/total*100}%`}} onClick={e=>{e.stopPropagation();selectScene(s.id)}}>{s.name}<span className="ge-scene-actions"><button type="button" onClick={e=>{e.stopPropagation();onChange(duplicateScene(timeline,s.id))}}>⧉</button><button type="button" onClick={e=>{e.stopPropagation();const i=timeline.scenes.findIndex(x=>x.id===s.id);onChange(insertEmptyScene(timeline,i+1))}}>＋</button></span></button>)}</div><div className="ge-track-list"><div className="ge-timeline-subhead">Scenes & objects</div><SceneTimeline2DTree scenes={timeline.scenes} layers={layers} expanded={expanded} onToggle={toggle} onSelectScene={selectScene} renderLayer={render2D}/><ThreeDTimelineTree views={layers.filter(l=>l.type==="3d-view")} viewData={views3d} worlds={worlds3d} expanded={expanded} toggle={toggle} renderTrack={render3DTrack}/></div><SceneTransitionControls scenes={timeline.scenes} onChange={(id,type,duration)=>onChange(setSceneTransition(timeline,id,type,duration))}/>{selected&&selectedKey&&<TimelineKeyframeEditor value={selected} onTimeChange={time=>move(selectedKey.kind,selectedKey.trackId,selectedKey.keyId,time)} onValueChange={value=>patch(selectedKey.kind,selectedKey.trackId,selectedKey.keyId,{value})} onEasingChange={easing=>patch(selectedKey.kind,selectedKey.trackId,selectedKey.keyId,{easing})} onDelete={()=>remove(selectedKey.kind,selectedKey.trackId,selectedKey.keyId)}/>}<div className="ge-playhead" style={{left:`${Math.min(100,timeline.currentTime/total*100)}%`}}/></section>;
+export const SceneTimelinePanel: FC<SceneTimelinePanelProps> = ({
+  timeline,
+  layers,
+  worlds3d = [],
+  views3d = [],
+  onChange,
+  onSeek,
+}) => {
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+  const total = Math.max(1, timelineDuration(timeline));
+  const { selectedKey, setSelectedKey, addTrack, add2DKey, add3DKey, move, remove, patch } =
+    useTimelineKeyframes(timeline, onChange);
+  const selected = selectedKey
+    ? selectedKey.kind === "2d"
+      ? timeline.tracks
+          .find(t => t.id === selectedKey.trackId)
+          ?.keyframes.find(k => k.id === selectedKey.keyId)
+      : timeline.tracks3d
+          ?.find(t => t.id === selectedKey.trackId)
+          ?.keyframes.find(k => k.id === selectedKey.keyId)
+    : undefined;
+  const toggle = (id: string) =>
+    setExpanded(s => {
+      const n = new Set(s);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+  const selectScene = (id: string) => {
+    const scene = timeline.scenes.find(s => s.id === id);
+    if (scene) onSeek(scene.start);
+  };
+  const clipFor = (id: string) => timeline.clips?.find(c => c.layerId === id);
+  const addClip = (id: string) => onChange(setClip(timeline, createClip(id, 0, total)));
+  const updateClip = (id: string, start: number, duration: number) =>
+    onChange(resizeClip(timeline, id, start, duration));
+  const base3D = (targetType: Graphics3DAnimationTarget, targetId: string, p: Graphics3DAnimatedProperty) => {
+    if (targetType === "view") {
+      const view = views3d.find(v => v.id === targetId);
+      return p === "opacity" ? (view?.opacity ?? 1) : 1;
+    }
+    const world = worlds3d.find(
+      w => w.meshes.some(m => m.id === targetId) || w.cameras.some(c => c.id === targetId),
+    );
+    if (targetType === "mesh") {
+      const m = world?.meshes.find(x => x.id === targetId);
+      if (!m) return 0;
+      const i: { [k: string]: number } = {
+        positionX: 0,
+        positionY: 1,
+        positionZ: 2,
+        rotationX: 0,
+        rotationY: 1,
+        rotationZ: 2,
+        scaleX: 0,
+        scaleY: 1,
+        scaleZ: 2,
+      };
+      return p.startsWith("position")
+        ? m.transform.position[i[p]]
+        : p.startsWith("rotation")
+          ? m.transform.rotation[i[p]]
+          : m.transform.scale[i[p]];
+    }
+    const c = world?.cameras.find(x => x.id === targetId);
+    if (!c) return 0;
+    if (p === "fov") return c.fov ?? 50;
+    const i: { [k: string]: number } = {
+      positionX: 0,
+      positionY: 1,
+      positionZ: 2,
+      rotationX: 0,
+      rotationY: 1,
+      rotationZ: 2,
+    };
+    return p.startsWith("position") ? c.position[i[p]] : c.rotation[i[p]];
+  };
+  const render3DTrack = (
+    targetType: Graphics3DAnimationTarget,
+    targetId: string,
+    p: Graphics3DAnimatedProperty,
+  ): ReactNode => {
+    const t = timeline.tracks3d?.find(
+      x => x.targetType === targetType && x.targetId === targetId && x.property === p,
+    );
+    return (
+      <TimelineTrackRow
+        label={p}
+        keyframeCount={t?.keyframes.length ?? 0}
+        onAdd={() => add3DKey(targetType, targetId, p, base3D(targetType, targetId, p))}
+      >
+        {t && (
+          <div className="ge-track-key-area">
+            <TimelineKeyMarkers
+              keyframes={t.keyframes}
+              total={total}
+              selectedKeyId={selectedKey?.keyId}
+              onSelect={keyId => setSelectedKey({ kind: "3d", trackId: t.id, keyId })}
+              onMove={(keyId, time) => move("3d", t.id, keyId, time)}
+              onDelete={keyId => remove("3d", t.id, keyId)}
+            />
+          </div>
+        )}
+      </TimelineTrackRow>
+    );
+  };
+  const render2D = (layer: Layer, scene: { id: string }) => {
+    const clip = clipFor(layer.id);
+    return (
+      <div className="ge-tree-object" key={`${scene.id}:${layer.id}`}>
+        <b>{layer.text || layer.id}</b>
+        <div className="ge-clip-cell">
+          {clip ? (
+            <div
+              className="ge-clip"
+              style={{ left: `${(clip.start / total) * 100}%`, width: `${(clip.duration / total) * 100}%` }}
+            >
+              <span>clip</span>
+              <button onClick={() => onChange(moveClip(timeline, clip.id, Math.max(0, clip.start - 0.25)))}>
+                ◀
+              </button>
+              <button
+                onClick={() =>
+                  onChange(
+                    moveClip(
+                      timeline,
+                      clip.id,
+                      Math.min(Math.max(0, total - clip.duration), clip.start + 0.25),
+                    ),
+                  )
+                }
+              >
+                ▶
+              </button>
+              <input
+                aria-label="Clip start"
+                type="number"
+                step=".1"
+                value={clip.start}
+                onChange={e => updateClip(clip.id, Number(e.target.value) || 0, clip.duration)}
+              />
+              <input
+                aria-label="Clip duration"
+                type="number"
+                min=".1"
+                step=".1"
+                value={clip.duration}
+                onChange={e => updateClip(clip.id, clip.start, Number(e.target.value) || 0.1)}
+              />
+              <button onClick={() => onChange(removeClip(timeline, clip.id))}>×</button>
+            </div>
+          ) : (
+            <button onClick={() => addClip(layer.id)}>+ clip</button>
+          )}
+        </div>
+        <div className="ge-property-buttons">
+          {DEFAULT_2D_PROPERTIES.map(p => {
+            const t = timeline.tracks.find(x => x.layerId === layer.id && x.property === p);
+            return (
+              <TimelineTrackRow
+                key={p}
+                label={p}
+                keyframeCount={t?.keyframes.length ?? 0}
+                onAdd={() => (t ? add2DKey(layer, p) : addTrack(layer.id, p))}
+              >
+                {t && (
+                  <div className="ge-track-key-area">
+                    <TimelineKeyMarkers
+                      keyframes={t.keyframes}
+                      total={total}
+                      selectedKeyId={selectedKey?.keyId}
+                      onSelect={keyId => setSelectedKey({ kind: "2d", trackId: t.id, keyId })}
+                      onMove={(keyId, time) => move("2d", t.id, keyId, time)}
+                      onDelete={keyId => remove("2d", t.id, keyId)}
+                    />
+                  </div>
+                )}
+              </TimelineTrackRow>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+  return (
+    <section className="ge-timeline" aria-label="Scene timeline">
+      <SceneTimelineHeader
+        currentTime={timeline.currentTime}
+        total={total}
+        loop={!!timeline.loop}
+        onSeek={onSeek}
+        onLoopChange={v => onChange(setLoop(timeline, v))}
+        onDuplicate={() => onChange(duplicateTimeline(timeline, total))}
+      />
+      <SceneTimelineRuler total={total} />
+      <div
+        className="ge-timeline-body"
+        onPointerDown={e => {
+          const r = e.currentTarget.getBoundingClientRect();
+          onSeek(Math.max(0, Math.min(total, ((e.clientX - r.left) / r.width) * total)));
+        }}
+      >
+        {timeline.scenes.map(s => (
+          <button
+            key={s.id}
+            className="ge-scene"
+            style={{ left: `${(s.start / total) * 100}%`, width: `${(s.duration / total) * 100}%` }}
+            onClick={e => {
+              e.stopPropagation();
+              selectScene(s.id);
+            }}
+          >
+            {s.name}
+            <span className="ge-scene-actions">
+              <button
+                type="button"
+                onClick={e => {
+                  e.stopPropagation();
+                  onChange(duplicateScene(timeline, s.id));
+                }}
+              >
+                ⧉
+              </button>
+              <button
+                type="button"
+                onClick={e => {
+                  e.stopPropagation();
+                  const i = timeline.scenes.findIndex(x => x.id === s.id);
+                  onChange(insertEmptyScene(timeline, i + 1));
+                }}
+              >
+                ＋
+              </button>
+            </span>
+          </button>
+        ))}
+      </div>
+      <div className="ge-track-list">
+        <div className="ge-timeline-subhead">Scenes & objects</div>
+        <SceneTimeline2DTree
+          scenes={timeline.scenes}
+          layers={layers}
+          expanded={expanded}
+          onToggle={toggle}
+          onSelectScene={selectScene}
+          renderLayer={render2D}
+        />
+        <ThreeDTimelineTree
+          views={layers.filter(l => l.type === "3d-view")}
+          viewData={views3d}
+          worlds={worlds3d}
+          expanded={expanded}
+          toggle={toggle}
+          renderTrack={render3DTrack}
+        />
+      </div>
+      <SceneTransitionControls
+        scenes={timeline.scenes}
+        onChange={(id, type, duration) => onChange(setSceneTransition(timeline, id, type, duration))}
+      />
+      {selected && selectedKey && (
+        <TimelineKeyframeEditor
+          value={selected}
+          onTimeChange={time => move(selectedKey.kind, selectedKey.trackId, selectedKey.keyId, time)}
+          onValueChange={value => patch(selectedKey.kind, selectedKey.trackId, selectedKey.keyId, { value })}
+          onEasingChange={easing =>
+            patch(selectedKey.kind, selectedKey.trackId, selectedKey.keyId, { easing })
+          }
+          onDelete={() => remove(selectedKey.kind, selectedKey.trackId, selectedKey.keyId)}
+        />
+      )}
+      <div
+        className="ge-playhead"
+        style={{ left: `${Math.min(100, (timeline.currentTime / total) * 100)}%` }}
+      />
+    </section>
+  );
 };

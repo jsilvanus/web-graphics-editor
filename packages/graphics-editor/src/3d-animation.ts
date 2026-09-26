@@ -1,12 +1,165 @@
-import type { AnimatedProperty, AnimationKeyframe, Graphics3DAnimatedProperty, Graphics3DAnimationTarget, Graphics3DCamera, Graphics3DMesh, Graphics3DTrack, Graphics3DView, Graphics3DWorld, Keyframe, SceneTimeline, Track } from "./types";
-import { evaluateAnimationKeyframes, interpolateAnimationValue, interpolateSpatial, type SpatialInterpolation } from "./animation";
+import type {
+  AnimatedProperty,
+  AnimationKeyframe,
+  Graphics3DAnimatedProperty,
+  Graphics3DAnimationTarget,
+  Graphics3DCamera,
+  Graphics3DMesh,
+  Graphics3DTrack,
+  Graphics3DView,
+  Graphics3DWorld,
+  Keyframe,
+  SceneTimeline,
+  Track,
+} from "./types";
+import {
+  evaluateAnimationKeyframes,
+  interpolateAnimationValue,
+  interpolateSpatial,
+  type SpatialInterpolation,
+} from "./animation";
 import type { Vec3 } from "./spatial-interpolation";
 
-export function evaluate3DProperty(tracks:Graphics3DTrack[]|undefined,targetType:Graphics3DAnimationTarget,targetId:string,property:Graphics3DAnimatedProperty,time:number,base:number):number{const track=tracks?.find(t=>t.targetType===targetType&&t.targetId===targetId&&t.property===property);return evaluateAnimationKeyframes<number>(track?.keyframes as AnimationKeyframe<number>[]??[],time)??base;}
-export function evaluate2DProperty(tracks:Track[]|undefined,layerId:string,property:AnimatedProperty,time:number,base:number):number{const track=tracks?.find(t=>t.layerId===layerId&&t.property===property);return evaluateAnimationKeyframes<number>(track?.keyframes??[],time)??base;}
+export function evaluate3DProperty(
+  tracks: Graphics3DTrack[] | undefined,
+  targetType: Graphics3DAnimationTarget,
+  targetId: string,
+  property: Graphics3DAnimatedProperty,
+  time: number,
+  base: number,
+): number {
+  const track = tracks?.find(
+    t => t.targetType === targetType && t.targetId === targetId && t.property === property,
+  );
+  return (
+    evaluateAnimationKeyframes<number>((track?.keyframes as AnimationKeyframe<number>[]) ?? [], time) ?? base
+  );
+}
+export function evaluate2DProperty(
+  tracks: Track[] | undefined,
+  layerId: string,
+  property: AnimatedProperty,
+  time: number,
+  base: number,
+): number {
+  const track = tracks?.find(t => t.layerId === layerId && t.property === property);
+  return evaluateAnimationKeyframes<number>(track?.keyframes ?? [], time) ?? base;
+}
 
-function spatialPosition(mesh:Graphics3DMesh,tracks:Graphics3DTrack[]|undefined,time:number):Vec3{const names=["positionX","positionY","positionZ"] as const;const values=names.map((name,i)=>evaluate3DProperty(tracks,"mesh",mesh.id,name,time,mesh.transform.position[i])) as Vec3;return values;}
-function transform(mesh:Graphics3DMesh,tracks:Graphics3DTrack[]|undefined,time:number):Graphics3DMesh{const position=spatialPosition(mesh,tracks,time);const rotation=mesh.transform.rotation.map((v,i)=>evaluate3DProperty(tracks,"mesh",mesh.id,(["rotationX","rotationY","rotationZ"] as const)[i],time,v)) as [number,number,number];const scale=mesh.transform.scale.map((v,i)=>evaluate3DProperty(tracks,"mesh",mesh.id,(["scaleX","scaleY","scaleZ"] as const)[i],time,v)) as [number,number,number];const opacity=evaluate3DProperty(tracks,"mesh",mesh.id,"opacity",time,mesh.opacity??1);const visible=evaluateAnimationKeyframes<boolean>(tracks?.find(t=>t.targetType==="mesh"&&t.targetId===mesh.id&&t.property==="visibility")?.keyframes as AnimationKeyframe<boolean>[]??[],time)??(mesh.visible??true);const colorTrack=tracks?.find(t=>t.targetType==="mesh"&&t.targetId===mesh.id&&t.property==="materialColor");const materialOpacity=evaluate3DProperty(tracks,"mesh",mesh.id,"materialOpacity",time,mesh.material?.opacity??1);const color=evaluateAnimationKeyframes<string>(colorTrack?.keyframes as AnimationKeyframe<string>[]??[],time)??mesh.material?.color;return{...mesh,opacity,visible,transform:{position,rotation,scale},material:mesh.material||color!==undefined||materialOpacity!==1?{...mesh.material,opacity:materialOpacity,...(color!==undefined?{color}: {})}:mesh.material};}
-function camera(camera:Graphics3DCamera,tracks:Graphics3DTrack[]|undefined,time:number):Graphics3DCamera{const p=camera.position.map((v,i)=>evaluate3DProperty(tracks,"camera",camera.id,(["positionX","positionY","positionZ"] as const)[i],time,v)) as [number,number,number];const r=camera.rotation.map((v,i)=>evaluate3DProperty(tracks,"camera",camera.id,(["rotationX","rotationY","rotationZ"] as const)[i],time,v));return{...camera,position:p,rotation:r as [number,number,number],fov:evaluate3DProperty(tracks,"camera",camera.id,"fov",time,camera.fov??50)};}
-export function evaluate3DWorldAtTime(world:Graphics3DWorld,time:number):Graphics3DWorld{const tracks=world.timeline?.tracks;if(!tracks?.length)return world;return{...world,meshes:world.meshes.map(m=>transform(m,tracks,time)),cameras:world.cameras.map(c=>camera(c,tracks,time))};}
-export function evaluate3DViewAtTime(view:Graphics3DView,timeline:SceneTimeline|undefined,time:number):Graphics3DView{const tracks=timeline?.tracks;return{...view,x:evaluate2DProperty(tracks,view.id,"x",time,view.x),y:evaluate2DProperty(tracks,view.id,"y",time,view.y),width:evaluate2DProperty(tracks,view.id,"width",time,view.width),height:evaluate2DProperty(tracks,view.id,"height",time,view.height),rotation:evaluate2DProperty(tracks,view.id,"rotation",time,view.rotation??0),opacity:evaluate2DProperty(tracks,view.id,"opacity",time,view.opacity??1)};}
+function spatialPosition(mesh: Graphics3DMesh, tracks: Graphics3DTrack[] | undefined, time: number): Vec3 {
+  const names = ["positionX", "positionY", "positionZ"] as const;
+  const values = names.map((name, i) =>
+    evaluate3DProperty(tracks, "mesh", mesh.id, name, time, mesh.transform.position[i]),
+  ) as Vec3;
+  return values;
+}
+function transform(
+  mesh: Graphics3DMesh,
+  tracks: Graphics3DTrack[] | undefined,
+  time: number,
+): Graphics3DMesh {
+  const position = spatialPosition(mesh, tracks, time);
+  const rotation = mesh.transform.rotation.map((v, i) =>
+    evaluate3DProperty(
+      tracks,
+      "mesh",
+      mesh.id,
+      (["rotationX", "rotationY", "rotationZ"] as const)[i],
+      time,
+      v,
+    ),
+  ) as [number, number, number];
+  const scale = mesh.transform.scale.map((v, i) =>
+    evaluate3DProperty(tracks, "mesh", mesh.id, (["scaleX", "scaleY", "scaleZ"] as const)[i], time, v),
+  ) as [number, number, number];
+  const opacity = evaluate3DProperty(tracks, "mesh", mesh.id, "opacity", time, mesh.opacity ?? 1);
+  const visible =
+    evaluateAnimationKeyframes<boolean>(
+      (tracks?.find(t => t.targetType === "mesh" && t.targetId === mesh.id && t.property === "visibility")
+        ?.keyframes as AnimationKeyframe<boolean>[]) ?? [],
+      time,
+    ) ??
+    mesh.visible ??
+    true;
+  const colorTrack = tracks?.find(
+    t => t.targetType === "mesh" && t.targetId === mesh.id && t.property === "materialColor",
+  );
+  const materialOpacity = evaluate3DProperty(
+    tracks,
+    "mesh",
+    mesh.id,
+    "materialOpacity",
+    time,
+    mesh.material?.opacity ?? 1,
+  );
+  const color =
+    evaluateAnimationKeyframes<string>((colorTrack?.keyframes as AnimationKeyframe<string>[]) ?? [], time) ??
+    mesh.material?.color;
+  return {
+    ...mesh,
+    opacity,
+    visible,
+    transform: { position, rotation, scale },
+    material:
+      mesh.material || color !== undefined || materialOpacity !== 1
+        ? { ...mesh.material, opacity: materialOpacity, ...(color !== undefined ? { color } : {}) }
+        : mesh.material,
+  };
+}
+function camera(
+  camera: Graphics3DCamera,
+  tracks: Graphics3DTrack[] | undefined,
+  time: number,
+): Graphics3DCamera {
+  const p = camera.position.map((v, i) =>
+    evaluate3DProperty(
+      tracks,
+      "camera",
+      camera.id,
+      (["positionX", "positionY", "positionZ"] as const)[i],
+      time,
+      v,
+    ),
+  ) as [number, number, number];
+  const r = camera.rotation.map((v, i) =>
+    evaluate3DProperty(
+      tracks,
+      "camera",
+      camera.id,
+      (["rotationX", "rotationY", "rotationZ"] as const)[i],
+      time,
+      v,
+    ),
+  );
+  return {
+    ...camera,
+    position: p,
+    rotation: r as [number, number, number],
+    fov: evaluate3DProperty(tracks, "camera", camera.id, "fov", time, camera.fov ?? 50),
+  };
+}
+export function evaluate3DWorldAtTime(world: Graphics3DWorld, time: number): Graphics3DWorld {
+  const tracks = world.timeline?.tracks;
+  if (!tracks?.length) return world;
+  return {
+    ...world,
+    meshes: world.meshes.map(m => transform(m, tracks, time)),
+    cameras: world.cameras.map(c => camera(c, tracks, time)),
+  };
+}
+export function evaluate3DViewAtTime(
+  view: Graphics3DView,
+  timeline: SceneTimeline | undefined,
+  time: number,
+): Graphics3DView {
+  const tracks = timeline?.tracks;
+  return {
+    ...view,
+    x: evaluate2DProperty(tracks, view.id, "x", time, view.x),
+    y: evaluate2DProperty(tracks, view.id, "y", time, view.y),
+    width: evaluate2DProperty(tracks, view.id, "width", time, view.width),
+    height: evaluate2DProperty(tracks, view.id, "height", time, view.height),
+    rotation: evaluate2DProperty(tracks, view.id, "rotation", time, view.rotation ?? 0),
+    opacity: evaluate2DProperty(tracks, view.id, "opacity", time, view.opacity ?? 1),
+  };
+}

@@ -15,8 +15,15 @@ function splitTriangle(face: number[], a: number, b: number, m: number): number[
   if (ia < 0 || ib < 0) return [face];
   const opposite = face.find(id => id !== a && id !== b);
   if (opposite === undefined) return [face];
-  if ((ia + 1) % 3 === ib) return [[a, m, opposite], [m, b, opposite]];
-  return [[b, m, opposite], [m, a, opposite]];
+  if ((ia + 1) % 3 === ib)
+    return [
+      [a, m, opposite],
+      [m, b, opposite],
+    ];
+  return [
+    [b, m, opposite],
+    [m, a, opposite],
+  ];
 }
 
 /** Split an edge by inserting a point and rebuilding only its incident faces. */
@@ -27,7 +34,8 @@ export function splitEdge(mesh: HalfEdgeMesh, edgeId: number, t = 0.5): HalfEdge
   const a = halfEdge.vertex;
   const b = mesh.halfEdges[halfEdge.next].vertex;
   const clamped = Math.max(0, Math.min(1, t));
-  const pa = position(mesh, a), pb = position(mesh, b);
+  const pa = position(mesh, a),
+    pb = position(mesh, b);
   const p: Vec3 = [
     pa[0] + (pb[0] - pa[0]) * clamped,
     pa[1] + (pb[1] - pa[1]) * clamped,

@@ -31,17 +31,33 @@ export function insetPolygonConstantDistance(points: Vec3[], distance: number): 
 function polygonNormal(points: Vec3[]): Vec3 {
   const n: Vec3 = [0, 0, 0];
   for (let i = 0; i < points.length; i++) {
-    const a = points[i], b = points[(i + 1) % points.length];
+    const a = points[i],
+      b = points[(i + 1) % points.length];
     n[0] += (a[1] - b[1]) * (a[2] + b[2]);
     n[1] += (a[2] - b[2]) * (a[0] + b[0]);
     n[2] += (a[0] - b[0]) * (a[1] + b[1]);
   }
   return normalize(n);
 }
-function sub(a: Vec3, b: Vec3): Vec3 { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
-function add(a: Vec3, b: Vec3): Vec3 { return [a[0] + b[0], a[1] + b[1], a[2] + b[2]]; }
-function scale(a: Vec3, s: number): Vec3 { return [a[0] * s, a[1] * s, a[2] * s]; }
-function cross(a: Vec3, b: Vec3): Vec3 { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
-function dot(a: Vec3, b: Vec3): number { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
-function length(a: Vec3): number { return Math.hypot(a[0], a[1], a[2]); }
-function normalize(a: Vec3): Vec3 { const l = length(a); return l < 1e-12 ? [0, 0, 0] : scale(a, 1 / l); }
+function sub(a: Vec3, b: Vec3): Vec3 {
+  return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+}
+function add(a: Vec3, b: Vec3): Vec3 {
+  return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+}
+function scale(a: Vec3, s: number): Vec3 {
+  return [a[0] * s, a[1] * s, a[2] * s];
+}
+function cross(a: Vec3, b: Vec3): Vec3 {
+  return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+}
+function dot(a: Vec3, b: Vec3): number {
+  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+}
+function length(a: Vec3): number {
+  return Math.hypot(a[0], a[1], a[2]);
+}
+function normalize(a: Vec3): Vec3 {
+  const l = length(a);
+  return l < 1e-12 ? [0, 0, 0] : scale(a, 1 / l);
+}

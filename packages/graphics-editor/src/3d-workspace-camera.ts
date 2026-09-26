@@ -21,7 +21,12 @@ export function makeWorkspaceCamera(camera: Graphics3DCamera, aspect: number): T
     result.rotation.set(...camera.rotation);
     return result;
   }
-  const result = new THREE.PerspectiveCamera(camera.fov ?? 50, aspect, camera.near ?? 0.1, camera.far ?? 2000);
+  const result = new THREE.PerspectiveCamera(
+    camera.fov ?? 50,
+    aspect,
+    camera.near ?? 0.1,
+    camera.far ?? 2000,
+  );
   result.position.set(...camera.position);
   result.rotation.set(...camera.rotation);
   return result;

@@ -3,9 +3,28 @@ import type { GraphicsDocument, SceneTimeline, Track } from "../types";
 import { applyOperation, invertOperation } from "../history/operations";
 import { setTimelineCommand } from "./timelineCommands";
 
-const timeline = (track: Track): SceneTimeline => ({ scenes: [{ id: "s", name: "Scene", start: 0, duration: 10 }], currentSceneId: "s", currentTime: 3.25, tracks: [track], clips: [{ id: "c", layerId: "l", start: 1, duration: 4 }] });
-const track: Track = { id: "t", layerId: "l", property: "x", keyframes: [{ id: "k1", time: 0, value: 100 }, { id: "k2", time: 5, value: 500 }] };
-const doc = (t = timeline(track)): GraphicsDocument => ({ width: 1920, height: 1080, layers: [{ id: "l", type: "rectangle", x: 100, y: 0, width: 100, height: 100 }], timeline: t });
+const timeline = (track: Track): SceneTimeline => ({
+  scenes: [{ id: "s", name: "Scene", start: 0, duration: 10 }],
+  currentSceneId: "s",
+  currentTime: 3.25,
+  tracks: [track],
+  clips: [{ id: "c", layerId: "l", start: 1, duration: 4 }],
+});
+const track: Track = {
+  id: "t",
+  layerId: "l",
+  property: "x",
+  keyframes: [
+    { id: "k1", time: 0, value: 100 },
+    { id: "k2", time: 5, value: 500 },
+  ],
+};
+const doc = (t = timeline(track)): GraphicsDocument => ({
+  width: 1920,
+  height: 1080,
+  layers: [{ id: "l", type: "rectangle", x: 100, y: 0, width: 100, height: 100 }],
+  timeline: t,
+});
 
 describe("timeline operations", () => {
   it("creates a keyframe at the exact playhead time", () => {
@@ -19,7 +38,13 @@ describe("timeline operations", () => {
 
   it("updates an existing keyframe without creating another", () => {
     const d = doc({ ...timeline(track), currentTime: 5 });
-    const op = { type: "update-keyframe" as const, trackId: "t", keyframeId: "k2", fromValue: 500, toValue: 700 };
+    const op = {
+      type: "update-keyframe" as const,
+      trackId: "t",
+      keyframeId: "k2",
+      fromValue: 500,
+      toValue: 700,
+    };
     const after = applyOperation(d, op);
     expect(after.timeline?.tracks[0].keyframes).toHaveLength(2);
     expect(after.timeline?.tracks[0].keyframes.find(k => k.id === "k2")?.value).toBe(700);
@@ -40,7 +65,12 @@ describe("timeline operations", () => {
 
   it("changes clip timing without changing layer order", () => {
     const d = doc();
-    const op = { type: "set-clip-timing" as const, clipId: "c", from: { start: 1, duration: 4 }, to: { start: 2, duration: 3 } };
+    const op = {
+      type: "set-clip-timing" as const,
+      clipId: "c",
+      from: { start: 1, duration: 4 },
+      to: { start: 2, duration: 3 },
+    };
     const after = applyOperation(d, op);
     expect(after.timeline?.clips?.[0]).toMatchObject({ start: 2, duration: 3 });
     expect(after.layers).toEqual(d.layers);

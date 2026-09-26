@@ -7,7 +7,10 @@ describe("half-edge deleteFace", () => {
   it("removes one face and keeps the vertices", () => {
     const mesh = fromPolygons({
       positions: [0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0],
-      faces: [[0, 1, 2], [0, 2, 3]],
+      faces: [
+        [0, 1, 2],
+        [0, 2, 3],
+      ],
     });
 
     const result = deleteFace(mesh, 0);

@@ -18,13 +18,9 @@ const document: GraphicsDocument = {
     },
     { id: "title", type: "text", x: 100, y: 100, width: 600, height: 100, text: "Hello", parentId: "group" },
   ],
-  compositions: [
-    { id: "main", name: "Main", layerIds: ["bg", "group", "title"], duration: 5, loop: true },
-  ],
+  compositions: [{ id: "main", name: "Main", layerIds: ["bg", "group", "title"], duration: 5, loop: true }],
   timeline: {
-    scenes: [
-      { id: "intro", name: "Intro", compositionId: "main", start: 0, duration: 10 },
-    ],
+    scenes: [{ id: "intro", name: "Intro", compositionId: "main", start: 0, duration: 10 }],
     currentSceneId: "intro",
     currentTime: 0,
     tracks: [],
@@ -111,31 +107,36 @@ describe("composition evaluation boundary", () => {
   it("evaluates composition-local animation tracks", () => {
     const animated = {
       ...document,
-      compositions: [{
-        id: "main",
-        name: "Main",
-        layerIds: ["bg", "group", "title"],
-        duration: 5,
-        timeline: {
-          tracks: [{
-            id: "track-x",
-            targetId: "title",
-            property: "x",
-            keyframes: [
-              { id: "k0", time: 0, value: 10 },
-              { id: "k1", time: 4, value: 110 },
+      compositions: [
+        {
+          id: "main",
+          name: "Main",
+          layerIds: ["bg", "group", "title"],
+          duration: 5,
+          timeline: {
+            tracks: [
+              {
+                id: "track-x",
+                targetId: "title",
+                property: "x",
+                keyframes: [
+                  { id: "k0", time: 0, value: 10 },
+                  { id: "k1", time: 4, value: 110 },
+                ],
+              },
+              {
+                id: "track-opacity",
+                targetId: "title",
+                property: "opacity",
+                keyframes: [
+                  { id: "o0", time: 0, value: 0 },
+                  { id: "o1", time: 2, value: 1 },
+                ],
+              },
             ],
-          }, {
-            id: "track-opacity",
-            targetId: "title",
-            property: "opacity",
-            keyframes: [
-              { id: "o0", time: 0, value: 0 },
-              { id: "o1", time: 2, value: 1 },
-            ],
-          }],
+          },
         },
-      }],
+      ],
     };
     const result = evaluateComposition(animated, "main", 1);
     const title = result?.layers.find(layer => layer.id === "title");
@@ -147,22 +148,26 @@ describe("composition evaluation boundary", () => {
     const original = document.layers.find(layer => layer.id === "title")!;
     const animated = {
       ...document,
-      compositions: [{
-        id: "main",
-        name: "Main",
-        layerIds: ["title"],
-        timeline: {
-          tracks: [{
-            id: "track",
-            targetId: "title",
-            property: "style.color",
-            keyframes: [
-              { id: "a", time: 0, value: "#000000" },
-              { id: "b", time: 1, value: "#ffffff" },
+      compositions: [
+        {
+          id: "main",
+          name: "Main",
+          layerIds: ["title"],
+          timeline: {
+            tracks: [
+              {
+                id: "track",
+                targetId: "title",
+                property: "style.color",
+                keyframes: [
+                  { id: "a", time: 0, value: "#000000" },
+                  { id: "b", time: 1, value: "#ffffff" },
+                ],
+              },
             ],
-          }],
+          },
         },
-      }],
+      ],
     };
     const result = evaluateComposition(animated, "main", 0.5);
     expect(result?.layers[0].style?.color).toBe("#808080ff");

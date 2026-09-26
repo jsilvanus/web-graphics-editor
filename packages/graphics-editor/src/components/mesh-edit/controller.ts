@@ -2,8 +2,25 @@ import * as THREE from "three";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls.js";
 import type { Graphics3DMesh } from "../../types";
 import { createHandleManager } from "./handles";
-import { bevel, connectEdges, extrude, flipMeshFaces, insetKernel, insetLegacy, recalculateMeshNormals, splitEdges } from "./operations";
-import { clearSelection, createSelection, growFaceSelection as growSelection, selectedVertexIds, selectEdgeLoop, selectEdgeRing, shrinkFaceSelection as shrinkSelection } from "./selection";
+import {
+  bevel,
+  connectEdges,
+  extrude,
+  flipMeshFaces,
+  insetKernel,
+  insetLegacy,
+  recalculateMeshNormals,
+  splitEdges,
+} from "./operations";
+import {
+  clearSelection,
+  createSelection,
+  growFaceSelection as growSelection,
+  selectedVertexIds,
+  selectEdgeLoop,
+  selectEdgeRing,
+  shrinkFaceSelection as shrinkSelection,
+} from "./selection";
 import { addVertex } from "../../mesh/add-vertex";
 import { addGraphicsMeshFace, deleteGraphicsMeshFace } from "../../mesh/graphics-mesh-faces";
 import { moveVertices } from "../../mesh/move-vertices";
@@ -12,26 +29,46 @@ import { duplicateFaces, extractFaces } from "../../mesh/extract-faces";
 import { translateFaces } from "../../mesh/translate-faces";
 import { weldVertices } from "../../mesh/weld-vertices";
 import { deleteVertices } from "../../mesh/delete-vertices";
-import { cloneMeshEditState, sameGeometry, snapshotMeshEditState, type MeshEditHistoryState } from "./history";
+import {
+  cloneMeshEditState,
+  sameGeometry,
+  snapshotMeshEditState,
+  type MeshEditHistoryState,
+} from "./history";
 import type { FaceEditAction, MeshEditMode, ThreeDMeshEditController } from "./types";
 
 const MAX_HISTORY = 100;
 
-export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camera, renderer: THREE.WebGLRenderer, onChange: (geometry: Graphics3DMesh["geometry"]) => void, onExtract?: (mesh: Graphics3DMesh) => void): ThreeDMeshEditController {
-  const transform = new TransformControls(camera, renderer.domElement); scene.add(transform.getHelper());
+export function createMeshEditController(
+  scene: THREE.Scene,
+  camera: THREE.Camera,
+  renderer: THREE.WebGLRenderer,
+  onChange: (geometry: Graphics3DMesh["geometry"]) => void,
+  onExtract?: (mesh: Graphics3DMesh) => void,
+): ThreeDMeshEditController {
+  const transform = new TransformControls(camera, renderer.domElement);
+  scene.add(transform.getHelper());
   transform.setMode("translate");
-  const raycaster = new THREE.Raycaster(), pointer = new THREE.Vector2(), selection = createSelection();
-  const state: { mesh?: THREE.Mesh; data?: Graphics3DMesh; mode: MeshEditMode; faceAction: FaceEditAction } = { mode: "object", faceAction: "translate" };
+  const raycaster = new THREE.Raycaster(),
+    pointer = new THREE.Vector2(),
+    selection = createSelection();
+  const state: { mesh?: THREE.Mesh; data?: Graphics3DMesh; mode: MeshEditMode; faceAction: FaceEditAction } =
+    { mode: "object", faceAction: "translate" };
   const handles = createHandleManager(scene, selection, state);
   const past: MeshEditHistoryState[] = [];
   const future: MeshEditHistoryState[] = [];
   const historyListeners = new Set<() => void>();
-  const notifyHistory = () => { for (const listener of historyListeners) listener(); };
+  const notifyHistory = () => {
+    for (const listener of historyListeners) listener();
+  };
   let dragData: Graphics3DMesh | null = null;
   let dragOrigin: THREE.Vector3 | null = null;
   let dragScaleOrigin: THREE.Vector3 | null = null;
 
-  const rebuild = () => { handles.rebuild(); syncTransform(); };
+  const rebuild = () => {
+    handles.rebuild();
+    syncTransform();
+  };
   const syncTransform = () => {
     transform.detach();
     if (state.mode === "faces" && ["translate", "extrude", "scale", "inset"].includes(state.faceAction)) {
@@ -45,9 +82,8 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
     if (pivot && selection.faces.size) transform.attach(pivot);
   };
 
-  const currentSnapshot = () => state.data
-    ? snapshotMeshEditState(state.data, state.mode, state.faceAction, selection)
-    : null;
+  const currentSnapshot = () =>
+    state.data ? snapshotMeshEditState(state.data, state.mode, state.faceAction, selection) : null;
 
   const pushHistory = (before: MeshEditHistoryState | null) => {
     if (!before || !state.data || sameGeometry(before.data, state.data)) return;
@@ -95,15 +131,26 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
 
   const onPointerDown = (event: PointerEvent) => {
     if (!state.mesh || !state.data || transform.dragging) return;
-    const rect = renderer.domElement.getBoundingClientRect(); pointer.set((event.clientX - rect.left) / rect.width * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1); raycaster.setFromCamera(pointer, camera);
+    const rect = renderer.domElement.getBoundingClientRect();
+    pointer.set(
+      ((event.clientX - rect.left) / rect.width) * 2 - 1,
+      -((event.clientY - rect.top) / rect.height) * 2 + 1,
+    );
+    raycaster.setFromCamera(pointer, camera);
     if (state.mode === "vertices") {
-      const hit = raycaster.intersectObjects(handles.group.children.filter(o => o.userData.vertexIndex !== undefined), false)[0]; if (!hit) return;
+      const hit = raycaster.intersectObjects(
+        handles.group.children.filter(o => o.userData.vertexIndex !== undefined),
+        false,
+      )[0];
+      if (!hit) return;
       toggleSelection(selection.vertices, hit.object.userData.vertexIndex as number, event.shiftKey);
     } else if (state.mode === "edges") {
-      const hit = raycaster.intersectObjects(handles.group.children, false)[0]; if (!hit) return;
+      const hit = raycaster.intersectObjects(handles.group.children, false)[0];
+      if (!hit) return;
       toggleSelection(selection.edges, String(hit.object.userData.edgeKey), event.shiftKey);
     } else if (state.mode === "faces") {
-      const hit = raycaster.intersectObject(state.mesh, false)[0]; if (hit?.faceIndex == null) return;
+      const hit = raycaster.intersectObject(state.mesh, false)[0];
+      if (hit?.faceIndex == null) return;
       toggleSelection(selection.faces, hit.faceIndex, event.shiftKey);
     } else return;
     rebuild();
@@ -152,15 +199,17 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
     if (delta.lengthSq() < 1e-10) return;
     const ids = selectedVertexIds(dragData, selection, state.mode);
     if (!ids.size) return;
-    const next = state.mode === "faces"
-      ? translateFaces(dragData, selection.faces, [delta.x, delta.y, delta.z])
-      : moveVertices(dragData, ids, [delta.x, delta.y, delta.z]);
+    const next =
+      state.mode === "faces"
+        ? translateFaces(dragData, selection.faces, [delta.x, delta.y, delta.z])
+        : moveVertices(dragData, ids, [delta.x, delta.y, delta.z]);
     state.data = next;
     onChange(next.geometry);
   };
 
   const onTransformEnd = () => {
-    if (dragData && state.data) pushHistory(snapshotMeshEditState(dragData, state.mode, state.faceAction, selection));
+    if (dragData && state.data)
+      pushHistory(snapshotMeshEditState(dragData, state.mode, state.faceAction, selection));
     dragData = null;
     dragOrigin = null;
     dragScaleOrigin = null;
@@ -183,11 +232,25 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
       dragScaleOrigin = null;
       rebuild();
     },
-    updateData(data) { state.data = data; if (!transform.dragging) rebuild(); },
-    setMode(mode) { state.mode = mode; clearSelection(selection); dragData = null; dragOrigin = null; dragScaleOrigin = null; rebuild(); },
+    updateData(data) {
+      state.data = data;
+      if (!transform.dragging) rebuild();
+    },
+    setMode(mode) {
+      state.mode = mode;
+      clearSelection(selection);
+      dragData = null;
+      dragOrigin = null;
+      dragScaleOrigin = null;
+      rebuild();
+    },
     setFaceAction(action) {
       state.faceAction = action;
-      if ((action === "translate" || action === "extrude" || action === "scale" || action === "inset") && state.mode === "faces") rebuild();
+      if (
+        (action === "translate" || action === "extrude" || action === "scale" || action === "inset") &&
+        state.mode === "faces"
+      )
+        rebuild();
       else if (action === "bevel" && state.mode === "edges") rebuild();
       else transform.detach();
     },
@@ -199,7 +262,16 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
       historyListeners.add(listener);
       return () => historyListeners.delete(listener);
     },
-    addVertex(position) { if (!state.data || state.mode !== "vertices") return; const before = currentSnapshot(); const beforeCount = state.data.geometry.vertices.length / 3; const next = addVertex(state.data, position); if (next === state.data) return; selection.vertices.clear(); selection.vertices.add(beforeCount); updateGeometry(next, before); },
+    addVertex(position) {
+      if (!state.data || state.mode !== "vertices") return;
+      const before = currentSnapshot();
+      const beforeCount = state.data.geometry.vertices.length / 3;
+      const next = addVertex(state.data, position);
+      if (next === state.data) return;
+      selection.vertices.clear();
+      selection.vertices.add(beforeCount);
+      updateGeometry(next, before);
+    },
     addFaceFromSelection() {
       if (!state.data || state.mode !== "vertices" || selection.vertices.size !== 3) return;
       const before = currentSnapshot();
@@ -208,14 +280,41 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
       clearSelection(selection);
       updateGeometry(next, before);
     },
-    moveSelectedVertices(delta) { if (!state.data) return; const ids = selectedVertexIds(state.data, selection, state.mode); if (!ids.size) return; const before = currentSnapshot(); updateGeometry(moveVertices(state.data, ids, delta), before); },
-    weldSelectedVertices(tolerance = 1e-6) { if (!state.data || state.mode !== "vertices") return; const ids = [...selection.vertices]; if (!ids.length) return; const before = currentSnapshot(); const next = weldVertices(state.data, ids, tolerance); clearSelection(selection); updateGeometry(next, before); dragData = null; dragOrigin = null; },
-    deleteSelectedVertices() { if (!state.data || state.mode !== "vertices") return; const ids = [...selection.vertices]; if (!ids.length) return; const before = currentSnapshot(); const next = deleteVertices(state.data, ids); clearSelection(selection); updateGeometry(next, before); dragData = null; dragOrigin = null; },
+    moveSelectedVertices(delta) {
+      if (!state.data) return;
+      const ids = selectedVertexIds(state.data, selection, state.mode);
+      if (!ids.size) return;
+      const before = currentSnapshot();
+      updateGeometry(moveVertices(state.data, ids, delta), before);
+    },
+    weldSelectedVertices(tolerance = 1e-6) {
+      if (!state.data || state.mode !== "vertices") return;
+      const ids = [...selection.vertices];
+      if (!ids.length) return;
+      const before = currentSnapshot();
+      const next = weldVertices(state.data, ids, tolerance);
+      clearSelection(selection);
+      updateGeometry(next, before);
+      dragData = null;
+      dragOrigin = null;
+    },
+    deleteSelectedVertices() {
+      if (!state.data || state.mode !== "vertices") return;
+      const ids = [...selection.vertices];
+      if (!ids.length) return;
+      const before = currentSnapshot();
+      const next = deleteVertices(state.data, ids);
+      clearSelection(selection);
+      updateGeometry(next, before);
+      dragData = null;
+      dragOrigin = null;
+    },
     deleteSelectedFaces() {
       if (!state.data || state.mode !== "faces" || !selection.faces.size) return;
       const before = currentSnapshot();
       let next = state.data;
-      for (const faceId of [...selection.faces].sort((a, b) => b - a)) next = deleteGraphicsMeshFace(next, faceId);
+      for (const faceId of [...selection.faces].sort((a, b) => b - a))
+        next = deleteGraphicsMeshFace(next, faceId);
       clearSelection(selection);
       updateGeometry(next, before);
       dragData = null;
@@ -246,9 +345,21 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
       state.faceAction = "extrude";
       syncTransform();
     },
-    insetSelectedFace(amount) { if (!state.data || !selection.faces.size) return; const before = currentSnapshot(); updateGeometry(insetKernel(state.data, selection.faces, amount), before); },
-    insetSelectedFaceLegacy(amount) { if (!state.data || !selection.faces.size) return; const before = currentSnapshot(); updateGeometry(insetLegacy(state.data, selection.faces, amount), before); },
-    bevelSelectedEdges(amount) { if (!state.data || !selection.edges.size) return; const before = currentSnapshot(); updateGeometry(bevel(state.data, selection.edges, amount), before); },
+    insetSelectedFace(amount) {
+      if (!state.data || !selection.faces.size) return;
+      const before = currentSnapshot();
+      updateGeometry(insetKernel(state.data, selection.faces, amount), before);
+    },
+    insetSelectedFaceLegacy(amount) {
+      if (!state.data || !selection.faces.size) return;
+      const before = currentSnapshot();
+      updateGeometry(insetLegacy(state.data, selection.faces, amount), before);
+    },
+    bevelSelectedEdges(amount) {
+      if (!state.data || !selection.edges.size) return;
+      const before = currentSnapshot();
+      updateGeometry(bevel(state.data, selection.edges, amount), before);
+    },
     splitSelectedEdges() {
       if (!state.data || state.mode !== "edges" || !selection.edges.size) return;
       const before = currentSnapshot();
@@ -299,10 +410,24 @@ export function createMeshEditController(scene: THREE.Scene, camera: THREE.Camer
       dragData = null;
       dragOrigin = null;
     },
-    dispose() { historyListeners.clear(); renderer.domElement.removeEventListener("pointerdown", onPointerDown); transform.removeEventListener("objectChange", onTransform); transform.removeEventListener("dragging-changed", onTransformDraggingChanged); transform.detach(); transform.dispose(); handles.removePivot(); handles.clear(); scene.remove(handles.group); }
+    dispose() {
+      historyListeners.clear();
+      renderer.domElement.removeEventListener("pointerdown", onPointerDown);
+      transform.removeEventListener("objectChange", onTransform);
+      transform.removeEventListener("dragging-changed", onTransformDraggingChanged);
+      transform.detach();
+      transform.dispose();
+      handles.removePivot();
+      handles.clear();
+      scene.remove(handles.group);
+    },
   };
 }
 
-function toggleSelection<T>(set: Set<T>, value: T, additive: boolean) { if (!additive) set.clear(); if (additive && set.has(value)) set.delete(value); else set.add(value); }
+function toggleSelection<T>(set: Set<T>, value: T, additive: boolean) {
+  if (!additive) set.clear();
+  if (additive && set.has(value)) set.delete(value);
+  else set.add(value);
+}
 
 export type { FaceEditAction, MeshEditMode, ThreeDMeshEditController } from "./types";

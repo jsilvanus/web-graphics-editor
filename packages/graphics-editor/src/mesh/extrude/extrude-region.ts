@@ -20,7 +20,11 @@ function edgeKey(a: number, b: number): string {
  * Faces connected by an edge share their top vertices and use one averaged
  * normal. Faces that merely touch at a vertex remain separate regions.
  */
-export function extrudeRegion(mesh: Graphics3DMesh, selectedFaces: Set<number>, distance: number): Graphics3DMesh {
+export function extrudeRegion(
+  mesh: Graphics3DMesh,
+  selectedFaces: Set<number>,
+  distance: number,
+): Graphics3DMesh {
   if (!selectedFaces.size || !Number.isFinite(distance)) return mesh;
 
   const faceVertices = new Map<number, [number, number, number]>();
@@ -34,7 +38,9 @@ export function extrudeRegion(mesh: Graphics3DMesh, selectedFaces: Set<number>, 
     const normal = faceNormal(mesh, face);
     if (normal) normals.set(face, normal);
     for (let i = 0; i < 3; i++) {
-      const a = ids[i], b = ids[(i + 1) % 3], key = edgeKey(a, b);
+      const a = ids[i],
+        b = ids[(i + 1) % 3],
+        key = edgeKey(a, b);
       const entry = edges.get(key) ?? { a, b, faces: [] };
       entry.faces.push(face);
       edges.set(key, entry);
@@ -49,9 +55,10 @@ export function extrudeRegion(mesh: Graphics3DMesh, selectedFaces: Set<number>, 
   for (const face of faces) adjacency.set(face, new Set());
   for (const edge of edges.values()) {
     if (edge.faces.length < 2) continue;
-    for (const a of edge.faces) for (const b of edge.faces) {
-      if (a !== b) adjacency.get(a)?.add(b);
-    }
+    for (const a of edge.faces)
+      for (const b of edge.faces) {
+        if (a !== b) adjacency.get(a)?.add(b);
+      }
   }
 
   const components: number[][] = [];
@@ -96,7 +103,11 @@ export function extrudeRegion(mesh: Graphics3DMesh, selectedFaces: Set<number>, 
       const key = `${component}:${id}`;
       if (topId.has(key)) continue;
       const base = id * 3;
-      const p: Vec3 = [mesh.geometry.vertices[base], mesh.geometry.vertices[base + 1], mesh.geometry.vertices[base + 2]];
+      const p: Vec3 = [
+        mesh.geometry.vertices[base],
+        mesh.geometry.vertices[base + 1],
+        mesh.geometry.vertices[base + 2],
+      ];
       topId.set(key, vertices.length / 3);
       vertices.push(...add(p, scale(normal, distance)));
     }
@@ -118,8 +129,10 @@ export function extrudeRegion(mesh: Graphics3DMesh, selectedFaces: Set<number>, 
     if (edge.faces.length !== 1) continue;
     const face = edge.faces[0];
     const ids = faceVertices.get(face)!;
-    const ta = topVertex(face, edge.a), tb = topVertex(face, edge.b);
-    const posA = ids.indexOf(edge.a), posB = ids.indexOf(edge.b);
+    const ta = topVertex(face, edge.a),
+      tb = topVertex(face, edge.b);
+    const posA = ids.indexOf(edge.a),
+      posB = ids.indexOf(edge.b);
     if ((posA + 1) % 3 === posB) indices.push(edge.a, edge.b, tb, edge.a, tb, ta);
     else indices.push(edge.a, tb, edge.b, edge.a, ta, tb);
   }

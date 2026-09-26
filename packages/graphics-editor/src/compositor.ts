@@ -1,5 +1,10 @@
 import type { GraphicsDocument, GraphicsOutput, Graphics3DView, EvaluationTime, Layer } from "./types";
-import { evaluateComposition, evaluateScene, type CompositionEvaluation, type SceneEvaluation } from "./composition-evaluator";
+import {
+  evaluateComposition,
+  evaluateScene,
+  type CompositionEvaluation,
+  type SceneEvaluation,
+} from "./composition-evaluator";
 import type { RenderNode } from "./render-model";
 
 export interface CompositorFrame {

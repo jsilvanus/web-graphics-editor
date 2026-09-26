@@ -30,6 +30,7 @@ npm run dev               # demo at http://localhost:5173 (resolves the package 
 npm test                  # vitest, packages/graphics-editor
 npm run typecheck         # tsc --noEmit, all workspaces
 npm run build             # tsc build of the package
+npm run format            # prettier (CI runs format:check)
 ```
 
 Package-only: `npm exec -w @jsilvanus/graphics-editor vitest run src/some.test.ts`.
@@ -50,7 +51,7 @@ Chromium is available for Playwright in the cloud environment (`/opt/pw-browsers
 ## Code conventions
 
 - TypeScript, strict mode, ESM, React 19 function components and hooks.
-- **Write readable, formatted code.** Much of the existing code is minified onto single lines of 1–10k characters. Do not add more of it. When you substantially edit such a line, reformat it into normal multi-line code.
+- **Formatting is prettier's job** (`.prettierrc.json`). Run `npm run format` before committing. The code was previously minified onto very long lines; it was reformatted in bulk, but some expressions are still dense. Prefer clear, named intermediate steps over long chained one-liners.
 - **Never write literal `\n` escape sequences in place of newlines.** Several files were broken this way. Check the diff before committing.
 - Keep the document model independent from React. Editing goes through document commands and history operations (`src/document/`, `src/history/`), not ad-hoc state mutation.
 - The package must not depend on Next.js, a backend, or host-specific URLs. Hosts supply assets and persistence through props and callbacks.

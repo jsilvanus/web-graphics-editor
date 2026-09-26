@@ -4,11 +4,18 @@ export const GRID = 20;
 export const HANDLE_LIST = ["nw", "n", "ne", "e", "se", "s", "sw", "w"] as const;
 
 export const ANIMATIONS = [
-  ["", "None"], ["lcyt-fadeIn", "Fade In"], ["lcyt-fadeOut", "Fade Out"],
-  ["lcyt-slideInLeft", "Slide In ←"], ["lcyt-slideInRight", "Slide In →"],
-  ["lcyt-slideInUp", "Slide In ↑"], ["lcyt-slideInDown", "Slide In ↓"],
-  ["lcyt-zoomIn", "Zoom In"], ["lcyt-zoomOut", "Zoom Out"],
-  ["lcyt-pulse", "Pulse"], ["lcyt-blink", "Blink"], ["lcyt-typewriter", "Typewriter"],
+  ["", "None"],
+  ["lcyt-fadeIn", "Fade In"],
+  ["lcyt-fadeOut", "Fade Out"],
+  ["lcyt-slideInLeft", "Slide In ←"],
+  ["lcyt-slideInRight", "Slide In →"],
+  ["lcyt-slideInUp", "Slide In ↑"],
+  ["lcyt-slideInDown", "Slide In ↓"],
+  ["lcyt-zoomIn", "Zoom In"],
+  ["lcyt-zoomOut", "Zoom Out"],
+  ["lcyt-pulse", "Pulse"],
+  ["lcyt-blink", "Blink"],
+  ["lcyt-typewriter", "Typewriter"],
 ] as const;
 
 export const KEYFRAMES = `

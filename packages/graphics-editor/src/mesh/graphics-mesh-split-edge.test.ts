@@ -9,10 +9,7 @@ function mesh(indices: number[], vertices: number[]): Graphics3DMesh {
 
 describe("splitGraphicsMeshEdges", () => {
   it("splits a boundary edge and preserves triangle indexing", () => {
-    const source = mesh(
-      [0, 1, 2],
-      [0, 0, 0, 1, 0, 0, 0, 1, 0],
-    );
+    const source = mesh([0, 1, 2], [0, 0, 0, 1, 0, 0, 0, 1, 0]);
 
     const result = splitGraphicsMeshEdges(source, new Set([edgeKey(0, 1)]));
 
@@ -22,10 +19,7 @@ describe("splitGraphicsMeshEdges", () => {
   });
 
   it("splits an interior edge and creates four triangles", () => {
-    const source = mesh(
-      [0, 1, 2, 1, 3, 2],
-      [0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0],
-    );
+    const source = mesh([0, 1, 2, 1, 3, 2], [0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0]);
 
     const result = splitGraphicsMeshEdges(source, new Set([edgeKey(1, 2)]));
 
@@ -35,10 +29,7 @@ describe("splitGraphicsMeshEdges", () => {
   });
 
   it("splits multiple independent edges", () => {
-    const source = mesh(
-      [0, 1, 2, 1, 3, 2],
-      [0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0],
-    );
+    const source = mesh([0, 1, 2, 1, 3, 2], [0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0]);
 
     const result = splitGraphicsMeshEdges(source, new Set([edgeKey(0, 1), edgeKey(2, 3)]));
 

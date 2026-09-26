@@ -23,7 +23,9 @@ describe("Three.js 3D renderer", () => {
 
   it("creates a scene with transformed mesh and lights", () => {
     const mesh = createBoxMesh("box", 2, 4, 6, {
-      position: [1, 2, 3], rotation: [0.1, 0.2, 0.3], scale: [2, 1, 0.5],
+      position: [1, 2, 3],
+      rotation: [0.1, 0.2, 0.3],
+      scale: [2, 1, 0.5],
     });
     const world: Graphics3DWorld = {
       id: "world",
@@ -45,9 +47,15 @@ describe("Three.js 3D renderer", () => {
       meshes: [createBoxMesh("one"), createBoxMesh("two")],
       cameras: [camera],
     };
-    expect(createThreeScene(world, { visibility: { mode: "include", objects: ["one"] } }).getObjectByName("one")).toBeDefined();
-    expect(createThreeScene(world, { visibility: { mode: "include", objects: ["one"] } }).getObjectByName("two")).toBeUndefined();
-    expect(createThreeScene(world, { visibility: { mode: "exclude", objects: ["one"] } }).getObjectByName("one")).toBeUndefined();
+    expect(
+      createThreeScene(world, { visibility: { mode: "include", objects: ["one"] } }).getObjectByName("one"),
+    ).toBeDefined();
+    expect(
+      createThreeScene(world, { visibility: { mode: "include", objects: ["one"] } }).getObjectByName("two"),
+    ).toBeUndefined();
+    expect(
+      createThreeScene(world, { visibility: { mode: "exclude", objects: ["one"] } }).getObjectByName("one"),
+    ).toBeUndefined();
   });
 
   it("creates both perspective and orthographic cameras", () => {

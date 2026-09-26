@@ -9,7 +9,12 @@ export interface CompositionLayerRendererProps {
   worlds3d: Graphics3DWorld[];
   views3d: Graphics3DView[];
   currentTime?: number;
-  onLayerPointerDown: (event: ReactPointerEvent, id: string, kind: "move" | "resize" | "rotate", handle?: string) => void;
+  onLayerPointerDown: (
+    event: ReactPointerEvent,
+    id: string,
+    kind: "move" | "resize" | "rotate",
+    handle?: string,
+  ) => void;
   onSelectLayer?: (id: string, additive?: boolean) => void;
   onPathNodes?: (id: string, nodes: PathNode[]) => void;
   onTextCommit?: (id: string, text: string) => void;
@@ -17,7 +22,16 @@ export interface CompositionLayerRendererProps {
 }
 
 export const CompositionLayerRenderer: FC<CompositionLayerRendererProps> = ({
-  node, selectedIds, worlds3d, views3d, currentTime = 0, onLayerPointerDown, onSelectLayer, onPathNodes, onTextCommit, onTextRunsCommit,
+  node,
+  selectedIds,
+  worlds3d,
+  views3d,
+  currentTime = 0,
+  onLayerPointerDown,
+  onSelectLayer,
+  onPathNodes,
+  onTextCommit,
+  onTextRunsCommit,
 }) => {
   return (
     <div style={{ position: "absolute", inset: 0, overflow: "visible", opacity: node.opacity }}>

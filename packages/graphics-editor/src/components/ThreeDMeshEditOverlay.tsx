@@ -1,6 +1,11 @@
 import * as THREE from "three";
 import type { Graphics3DMesh } from "../types";
-import { createMeshEditController, type FaceEditAction, type MeshEditMode, type ThreeDMeshEditController } from "./mesh-edit/controller";
+import {
+  createMeshEditController,
+  type FaceEditAction,
+  type MeshEditMode,
+  type ThreeDMeshEditController,
+} from "./mesh-edit/controller";
 
 export type { FaceEditAction, MeshEditMode, ThreeDMeshEditController };
 

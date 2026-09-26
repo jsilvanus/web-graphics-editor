@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { createBoxMesh } from "../3d-primitives";
-import { graphicsMeshFaces, graphicsMeshToHalfEdge, halfEdgeToGraphicsMesh, updateGraphicsMeshTopology } from "./graphics-mesh";
+import {
+  graphicsMeshFaces,
+  graphicsMeshToHalfEdge,
+  halfEdgeToGraphicsMesh,
+  updateGraphicsMeshTopology,
+} from "./graphics-mesh";
 import { validateHalfEdgeMesh } from "./validate";
 
 const mesh = createBoxMesh("box");

@@ -74,8 +74,10 @@ export function sameGeometry(a: Graphics3DMesh, b: Graphics3DMesh): boolean {
   const bv = b.geometry.vertices;
   const ai = a.geometry.indices;
   const bi = b.geometry.indices;
-  return sameArray(av, bv)
-    && sameArray(ai, bi)
-    && sameArray(a.geometry.normals, b.geometry.normals)
-    && sameArray(a.geometry.uv, b.geometry.uv);
+  return (
+    sameArray(av, bv) &&
+    sameArray(ai, bi) &&
+    sameArray(a.geometry.normals, b.geometry.normals) &&
+    sameArray(a.geometry.uv, b.geometry.uv)
+  );
 }

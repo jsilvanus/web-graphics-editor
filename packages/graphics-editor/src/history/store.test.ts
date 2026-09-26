@@ -4,12 +4,29 @@ import { addLayerCommand } from "../document/commands";
 import { appendHistory, createHistory, reconstructVersion } from "./store";
 
 const layer = (id: string, x = 0): Layer => ({ id, type: "rectangle", x, y: 0, width: 100, height: 100 });
-const document = (...layers: Layer[]): GraphicsDocument => ({ width: 1920, height: 1080, background: "#111", layers });
+const document = (...layers: Layer[]): GraphicsDocument => ({
+  width: 1920,
+  height: 1080,
+  background: "#111",
+  layers,
+});
 
-function add(history: ReturnType<typeof createHistory>, current: GraphicsDocument, id: string, checkpointInterval = 50) {
+function add(
+  history: ReturnType<typeof createHistory>,
+  current: GraphicsDocument,
+  id: string,
+  checkpointInterval = 50,
+) {
   const result = addLayerCommand(current, layer(id, current.layers.length * 10));
   return {
-    history: appendHistory(history, result.document, result.operation!, "test", `add ${id}`, checkpointInterval),
+    history: appendHistory(
+      history,
+      result.document,
+      result.operation!,
+      "test",
+      `add ${id}`,
+      checkpointInterval,
+    ),
     document: result.document,
   };
 }

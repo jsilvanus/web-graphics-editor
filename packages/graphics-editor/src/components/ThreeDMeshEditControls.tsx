@@ -17,42 +17,162 @@ export function ThreeDMeshEditControls({ mode, controller, disabled = false }: T
   const canUndo = controller?.canUndo() ?? false;
   const canRedo = controller?.canRedo() ?? false;
 
-  return <div style={{ position: "absolute", top: 42, left: 10, zIndex: 2, display: "flex", alignItems: "center", gap: 6, padding: 6, background: "rgba(16,18,22,.9)", border: "1px solid #30343b", borderRadius: 6 }}>
-    <button disabled={disabled || !controller || !canUndo} onClick={() => controller?.undo()} title="Undo (Ctrl/Cmd+Z)">Undo</button>
-    <button disabled={disabled || !controller || !canRedo} onClick={() => controller?.redo()} title="Redo (Ctrl/Cmd+Shift+Z)">Redo</button>
-    {mode === "vertices" && <>
-      <span style={{ fontSize: 12 }}>Vertex</span>
-      <button disabled={disabled || !controller} onClick={() => controller?.addVertex([0, 0, 0])}>Add</button>
-      <button disabled={disabled || !controller} onClick={() => controller?.addFaceFromSelection()} title="Create a triangle from exactly three selected vertices">Add Face</button>
-      <button disabled={disabled || !controller} onClick={() => controller?.moveSelectedVertices([0, distance, 0])}>Move +Y</button>
-      <label style={{ fontSize: 12 }}>Step <input aria-label="Vertex move step" type="number" step="0.1" value={distance} onChange={event => setDistance(Number(event.target.value) || 0)} style={{ width: 64 }} /></label>
-      <button disabled={disabled || !controller} onClick={() => controller?.weldSelectedVertices(weldTolerance)}>Weld</button>
-      <label style={{ fontSize: 12 }}>Tol. <input aria-label="Weld tolerance" type="number" min="0" step="0.01" value={weldTolerance} onChange={event => setWeldTolerance(Number(event.target.value) || 0)} style={{ width: 56 }} /></label>
-      <button disabled={disabled || !controller} onClick={() => controller?.deleteSelectedVertices()}>Delete</button>
-    </>}
-    {mode === "edges" && <>
-      <span style={{ fontSize: 12 }}>Edge</span>
-      <span style={{ fontSize: 12 }}>Drag gizmo for amount</span>
-      <button disabled={disabled || !controller} onClick={() => controller?.setFaceAction("bevel")}>Bevel</button>
-      <button disabled={disabled || !controller} onClick={() => controller?.selectEdgeLoop()}>Loop</button>
-      <button disabled={disabled || !controller} onClick={() => controller?.selectEdgeRing()}>Ring</button>
-      <button disabled={disabled || !controller} onClick={() => controller?.splitSelectedEdges()}>Split</button>
-      <button disabled={disabled || !controller} onClick={() => controller?.connectSelectedEdges()}>Connect (2)</button>
-    </>}
-    {mode === "faces" && <>
-      <span style={{ fontSize: 12 }}>Face</span>
-      <label style={{ fontSize: 12 }}>Amount <input aria-label="Face operation amount" type="number" step="0.1" value={distance} onChange={event => setDistance(Number(event.target.value) || 0)} style={{ width: 64 }} /></label>
-      <button disabled={disabled || !controller} onClick={() => controller?.setFaceAction("translate")}>Move</button>
-      <button disabled={disabled || !controller} onClick={() => controller?.setFaceAction("scale")}>Scale</button>
-      <button disabled={disabled || !controller} onClick={() => controller?.extrudeSelectedFaces(distance)}>Extrude</button>
-      <button disabled={disabled || !controller} onClick={() => controller?.setFaceAction("inset")}>Inset</button>
-      <button disabled={disabled || !controller} onClick={() => controller?.growSelectedFaces()}>Grow</button>
-      <button disabled={disabled || !controller} onClick={() => controller?.shrinkSelectedFaces()}>Shrink</button>
-      <button disabled={disabled || !controller} onClick={() => controller?.duplicateSelectedFaces()}>Duplicate</button>
-      <button disabled={disabled || !controller} onClick={() => controller?.extractSelectedFaces()}>Extract</button>
-      <button disabled={disabled || !controller} onClick={() => controller?.deleteSelectedFaces()}>Delete</button>
-      <button disabled={disabled || !controller} onClick={() => controller?.flipSelectedFaces()}>Flip</button>
-      <button disabled={disabled || !controller} onClick={() => controller?.recalculateNormals()}>Recalc Normals</button>
-    </>}
-  </div>;
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: 42,
+        left: 10,
+        zIndex: 2,
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        padding: 6,
+        background: "rgba(16,18,22,.9)",
+        border: "1px solid #30343b",
+        borderRadius: 6,
+      }}
+    >
+      <button
+        disabled={disabled || !controller || !canUndo}
+        onClick={() => controller?.undo()}
+        title="Undo (Ctrl/Cmd+Z)"
+      >
+        Undo
+      </button>
+      <button
+        disabled={disabled || !controller || !canRedo}
+        onClick={() => controller?.redo()}
+        title="Redo (Ctrl/Cmd+Shift+Z)"
+      >
+        Redo
+      </button>
+      {mode === "vertices" && (
+        <>
+          <span style={{ fontSize: 12 }}>Vertex</span>
+          <button disabled={disabled || !controller} onClick={() => controller?.addVertex([0, 0, 0])}>
+            Add
+          </button>
+          <button
+            disabled={disabled || !controller}
+            onClick={() => controller?.addFaceFromSelection()}
+            title="Create a triangle from exactly three selected vertices"
+          >
+            Add Face
+          </button>
+          <button
+            disabled={disabled || !controller}
+            onClick={() => controller?.moveSelectedVertices([0, distance, 0])}
+          >
+            Move +Y
+          </button>
+          <label style={{ fontSize: 12 }}>
+            Step{" "}
+            <input
+              aria-label="Vertex move step"
+              type="number"
+              step="0.1"
+              value={distance}
+              onChange={event => setDistance(Number(event.target.value) || 0)}
+              style={{ width: 64 }}
+            />
+          </label>
+          <button
+            disabled={disabled || !controller}
+            onClick={() => controller?.weldSelectedVertices(weldTolerance)}
+          >
+            Weld
+          </button>
+          <label style={{ fontSize: 12 }}>
+            Tol.{" "}
+            <input
+              aria-label="Weld tolerance"
+              type="number"
+              min="0"
+              step="0.01"
+              value={weldTolerance}
+              onChange={event => setWeldTolerance(Number(event.target.value) || 0)}
+              style={{ width: 56 }}
+            />
+          </label>
+          <button disabled={disabled || !controller} onClick={() => controller?.deleteSelectedVertices()}>
+            Delete
+          </button>
+        </>
+      )}
+      {mode === "edges" && (
+        <>
+          <span style={{ fontSize: 12 }}>Edge</span>
+          <span style={{ fontSize: 12 }}>Drag gizmo for amount</span>
+          <button disabled={disabled || !controller} onClick={() => controller?.setFaceAction("bevel")}>
+            Bevel
+          </button>
+          <button disabled={disabled || !controller} onClick={() => controller?.selectEdgeLoop()}>
+            Loop
+          </button>
+          <button disabled={disabled || !controller} onClick={() => controller?.selectEdgeRing()}>
+            Ring
+          </button>
+          <button disabled={disabled || !controller} onClick={() => controller?.splitSelectedEdges()}>
+            Split
+          </button>
+          <button disabled={disabled || !controller} onClick={() => controller?.connectSelectedEdges()}>
+            Connect (2)
+          </button>
+        </>
+      )}
+      {mode === "faces" && (
+        <>
+          <span style={{ fontSize: 12 }}>Face</span>
+          <label style={{ fontSize: 12 }}>
+            Amount{" "}
+            <input
+              aria-label="Face operation amount"
+              type="number"
+              step="0.1"
+              value={distance}
+              onChange={event => setDistance(Number(event.target.value) || 0)}
+              style={{ width: 64 }}
+            />
+          </label>
+          <button disabled={disabled || !controller} onClick={() => controller?.setFaceAction("translate")}>
+            Move
+          </button>
+          <button disabled={disabled || !controller} onClick={() => controller?.setFaceAction("scale")}>
+            Scale
+          </button>
+          <button
+            disabled={disabled || !controller}
+            onClick={() => controller?.extrudeSelectedFaces(distance)}
+          >
+            Extrude
+          </button>
+          <button disabled={disabled || !controller} onClick={() => controller?.setFaceAction("inset")}>
+            Inset
+          </button>
+          <button disabled={disabled || !controller} onClick={() => controller?.growSelectedFaces()}>
+            Grow
+          </button>
+          <button disabled={disabled || !controller} onClick={() => controller?.shrinkSelectedFaces()}>
+            Shrink
+          </button>
+          <button disabled={disabled || !controller} onClick={() => controller?.duplicateSelectedFaces()}>
+            Duplicate
+          </button>
+          <button disabled={disabled || !controller} onClick={() => controller?.extractSelectedFaces()}>
+            Extract
+          </button>
+          <button disabled={disabled || !controller} onClick={() => controller?.deleteSelectedFaces()}>
+            Delete
+          </button>
+          <button disabled={disabled || !controller} onClick={() => controller?.flipSelectedFaces()}>
+            Flip
+          </button>
+          <button disabled={disabled || !controller} onClick={() => controller?.recalculateNormals()}>
+            Recalc Normals
+          </button>
+        </>
+      )}
+    </div>
+  );
 }

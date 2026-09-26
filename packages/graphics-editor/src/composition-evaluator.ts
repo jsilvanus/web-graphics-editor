@@ -1,7 +1,21 @@
-import type { AnimationValue, Composition, EvaluatedVideo, EvaluationTime, GraphicsDocument, Graphics3DView, Layer, Scene } from "./types";
+import type {
+  AnimationValue,
+  Composition,
+  EvaluatedVideo,
+  EvaluationTime,
+  GraphicsDocument,
+  Graphics3DView,
+  Layer,
+  Scene,
+} from "./types";
 import { evaluateAnimationKeyframes } from "./animation";
 import { buildRenderTree, type RenderNode } from "./render-model";
-import { resolveComposition, resolveScene, type ResolvedComposition, type ResolvedScene } from "./presentation";
+import {
+  resolveComposition,
+  resolveScene,
+  type ResolvedComposition,
+  type ResolvedScene,
+} from "./presentation";
 import { evaluate3DViewAtTime } from "./3d-animation";
 import { map3DViewTime, mapMediaTime } from "./time";
 
@@ -54,11 +68,7 @@ function setProperty(target: Record<string, unknown>, property: string, value: A
   cursor[parts[parts.length - 1]] = value;
 }
 
-function applyCompositionAnimation(
-  composition: Composition,
-  layers: Layer[],
-  time: number,
-): Layer[] {
+function applyCompositionAnimation(composition: Composition, layers: Layer[], time: number): Layer[] {
   const tracks = composition.timeline?.tracks ?? [];
   if (!tracks.length) return layers;
 
@@ -73,29 +83,42 @@ function applyCompositionAnimation(
   return layers;
 }
 
-function evaluateVideos(document: GraphicsDocument, layers: Layer[], time:number): EvaluatedVideo[] {
-  const assets=new Map((document.assets??[]).map(asset=>[asset.id,asset]));
-  return layers.flatMap(layer=>{
-    if(layer.type!=="video"||!layer.videoAssetId)return [];
-    const asset=assets.get(layer.videoAssetId);
-    if(!asset||asset.type!=="video")return [];
-    const mediaTime=mapMediaTime(time,{
-      offset:layer.timeOffset??0,
-      rate:layer.playbackRate??1,
-      loop:layer.loop??false,
-      inPoint:layer.sourceIn,
-      outPoint:layer.sourceOut,
+function evaluateVideos(document: GraphicsDocument, layers: Layer[], time: number): EvaluatedVideo[] {
+  const assets = new Map((document.assets ?? []).map(asset => [asset.id, asset]));
+  return layers.flatMap(layer => {
+    if (layer.type !== "video" || !layer.videoAssetId) return [];
+    const asset = assets.get(layer.videoAssetId);
+    if (!asset || asset.type !== "video") return [];
+    const mediaTime = mapMediaTime(time, {
+      offset: layer.timeOffset ?? 0,
+      rate: layer.playbackRate ?? 1,
+      loop: layer.loop ?? false,
+      inPoint: layer.sourceIn,
+      outPoint: layer.sourceOut,
     });
-    return [{layerId:layer.id,assetId:asset.id,mediaTime,playing:true,sourceIn:layer.sourceIn,sourceOut:layer.sourceOut}];
+    return [
+      {
+        layerId: layer.id,
+        assetId: asset.id,
+        mediaTime,
+        playing: true,
+        sourceIn: layer.sourceIn,
+        sourceOut: layer.sourceOut,
+      },
+    ];
   });
 }
 
-function evaluateViews3d(document: GraphicsDocument, layers: Layer[], time:number): Graphics3DView[] {
-  const ids=new Set(layers.filter(layer=>layer.type==="3d-view"&&layer.view3dId).map(layer=>layer.view3dId as string));
-  return (document.views3d??[]).filter(view=>ids.has(view.id)).map(view=>{
-    const worldTime=map3DViewTime(time,view);
-    return evaluate3DViewAtTime(view, document.timeline, worldTime);
-  });
+function evaluateViews3d(document: GraphicsDocument, layers: Layer[], time: number): Graphics3DView[] {
+  const ids = new Set(
+    layers.filter(layer => layer.type === "3d-view" && layer.view3dId).map(layer => layer.view3dId as string),
+  );
+  return (document.views3d ?? [])
+    .filter(view => ids.has(view.id))
+    .map(view => {
+      const worldTime = map3DViewTime(time, view);
+      return evaluate3DViewAtTime(view, document.timeline, worldTime);
+    });
 }
 
 function renderTreeForLayers(
@@ -106,17 +129,22 @@ function renderTreeForLayers(
 ): RenderNode[] {
   const tree = buildRenderTree({ ...document, layers });
   return tree.map(node => {
-    if (node.layer.type !== "composition" || !node.layer.compositionId || stack.includes(node.layer.compositionId)) {
+    if (
+      node.layer.type !== "composition" ||
+      !node.layer.compositionId ||
+      stack.includes(node.layer.compositionId)
+    ) {
       return node;
     }
     const composition = (document.compositions ?? []).find(item => item.id === node.layer.compositionId);
     if (!composition) return node;
     const nestedTime = mapNestedCompositionTime(composition, time, node.layer);
     if (nestedTime === undefined) return { ...node, opacity: 0, children: [] };
-    const nested = evaluateCompositionInternal(document, composition.id, nestedTime, [...stack, composition.id]);
-    return nested
-      ? { ...node, children: nested.renderTree }
-      : node;
+    const nested = evaluateCompositionInternal(document, composition.id, nestedTime, [
+      ...stack,
+      composition.id,
+    ]);
+    return nested ? { ...node, children: nested.renderTree } : node;
   });
 }
 
@@ -132,7 +160,8 @@ function mapNestedCompositionTime(
   if (parentTime < offset) return undefined;
   const elapsed = (parentTime - offset) * rate;
   const looping = layer.loop ?? composition.loop;
-  if (sourceOut !== undefined && sourceOut > sourceIn && elapsed > sourceOut - sourceIn && !looping) return undefined;
+  if (sourceOut !== undefined && sourceOut > sourceIn && elapsed > sourceOut - sourceIn && !looping)
+    return undefined;
   const span = sourceOut !== undefined && sourceOut > sourceIn ? sourceOut - sourceIn : composition.duration;
   if (span && span > 0 && looping) return sourceIn + (elapsed % span);
   const local = sourceIn + elapsed;
@@ -155,7 +184,10 @@ function nestedEvaluationSources(
     if (!composition) continue;
     const nestedTime = mapNestedCompositionTime(composition, time, layer);
     if (nestedTime === undefined) continue;
-    const nested = evaluateCompositionInternal(document, composition.id, nestedTime, [...stack, composition.id]);
+    const nested = evaluateCompositionInternal(document, composition.id, nestedTime, [
+      ...stack,
+      composition.id,
+    ]);
     if (!nested) continue;
     videos.push(...nested.videos);
     views3d.push(...nested.views3d);
@@ -179,9 +211,12 @@ function evaluateCompositionInternal(
   }));
   const requestedTime = Number.isFinite(time) ? Math.max(0, time) : 0;
   const duration = resolved.composition.duration;
-  const safeTime = duration && duration > 0
-    ? (resolved.composition.loop ? requestedTime % duration : Math.min(requestedTime, duration))
-    : requestedTime;
+  const safeTime =
+    duration && duration > 0
+      ? resolved.composition.loop
+        ? requestedTime % duration
+        : Math.min(requestedTime, duration)
+      : requestedTime;
   const animatedLayers = applyCompositionAnimation(resolved.composition, layers, safeTime);
   const nestedSources = nestedEvaluationSources(document, animatedLayers, safeTime, stack);
   return {
@@ -202,7 +237,13 @@ function evaluateCompositionInternal(
  * This is intentionally a pure function. The document remains the source of
  * truth; callers receive a render-ready snapshot for a single point in time.
  */
-export function evaluateCompositionAtTime(document: GraphicsDocument, compositionId: string, time = 0): CompositionEvaluation | undefined { return evaluateComposition(document, compositionId, time); }
+export function evaluateCompositionAtTime(
+  document: GraphicsDocument,
+  compositionId: string,
+  time = 0,
+): CompositionEvaluation | undefined {
+  return evaluateComposition(document, compositionId, time);
+}
 
 export function evaluateComposition(
   document: GraphicsDocument,
@@ -220,9 +261,12 @@ export function evaluateComposition(
   }));
   const requestedTime = Number.isFinite(time) ? Math.max(0, time) : 0;
   const duration = resolved.composition.duration;
-  const safeTime = duration && duration > 0
-    ? (resolved.composition.loop ? requestedTime % duration : Math.min(requestedTime, duration))
-    : requestedTime;
+  const safeTime =
+    duration && duration > 0
+      ? resolved.composition.loop
+        ? requestedTime % duration
+        : Math.min(requestedTime, duration)
+      : requestedTime;
 
   const animatedLayers = applyCompositionAnimation(resolved.composition, layers, safeTime);
 
@@ -260,11 +304,12 @@ export function evaluateScene(
     viewportOverrides: layer.viewportOverrides ? { ...layer.viewportOverrides } : layer.viewportOverrides,
   }));
   const globalTime = Number.isFinite(time) ? Math.max(0, time) : 0;
-  const compositionTime = resolved.composition.duration && resolved.composition.duration > 0
-    ? (resolved.composition.loop
-      ? resolved.localTime % resolved.composition.duration
-      : Math.min(resolved.localTime, resolved.composition.duration))
-    : resolved.localTime;
+  const compositionTime =
+    resolved.composition.duration && resolved.composition.duration > 0
+      ? resolved.composition.loop
+        ? resolved.localTime % resolved.composition.duration
+        : Math.min(resolved.localTime, resolved.composition.duration)
+      : resolved.localTime;
   const animatedLayers = applyCompositionAnimation(resolved.composition, layers, compositionTime);
 
   return {

@@ -14,13 +14,20 @@ export function clearSelection(selection: MeshEditSelection) {
   selection.faces.clear();
 }
 
-export function selectedVertexIds(data: Graphics3DMesh, selection: MeshEditSelection, mode: MeshEditMode): Set<number> {
+export function selectedVertexIds(
+  data: Graphics3DMesh,
+  selection: MeshEditSelection,
+  mode: MeshEditMode,
+): Set<number> {
   if (mode === "vertices") return new Set(selection.vertices);
   if (mode === "edges") {
     const ids = new Set<number>();
     for (const key of selection.edges) {
       const edge = meshEdges(data).find(e => edgeKey(e.a, e.b) === key);
-      if (edge) { ids.add(edge.a); ids.add(edge.b); }
+      if (edge) {
+        ids.add(edge.a);
+        ids.add(edge.b);
+      }
     }
     return ids;
   }
@@ -65,16 +72,27 @@ export function shrinkFaceSelection(data: Graphics3DMesh, faces: Set<number>): S
   for (const face of faces) {
     const ids = faceVertexIndices(data, face);
     if (!ids) continue;
-    if (ids.some((id, i) => (owners.get(edgeKey(id, ids[(i + 1) % ids.length])) ?? []).some(other => !faces.has(other)))) result.delete(face);
+    if (
+      ids.some((id, i) =>
+        (owners.get(edgeKey(id, ids[(i + 1) % ids.length])) ?? []).some(other => !faces.has(other)),
+      )
+    )
+      result.delete(face);
   }
   return result;
 }
 
-export function faceHandleGeometry(data: Graphics3DMesh, mesh: THREE.Mesh, face: number): THREE.BufferGeometry | undefined {
+export function faceHandleGeometry(
+  data: Graphics3DMesh,
+  mesh: THREE.Mesh,
+  face: number,
+): THREE.BufferGeometry | undefined {
   const ids = faceVertexIndices(data, face);
   if (!ids) return undefined;
   const positions = mesh.geometry.getAttribute("position");
-  const values = new Float32Array(ids.flatMap(i => [positions.getX(i), positions.getY(i), positions.getZ(i)]));
+  const values = new Float32Array(
+    ids.flatMap(i => [positions.getX(i), positions.getY(i), positions.getZ(i)]),
+  );
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.BufferAttribute(values, 3));
   return geometry;
@@ -157,8 +175,8 @@ function walkEdgeChain(
 
   while (!visitedVertices.has(currentVertex)) {
     visitedVertices.add(currentVertex);
-    const candidates = (byVertex.get(currentVertex) ?? []).filter(edge =>
-      edgeKey(edge.a, edge.b) !== edgeKey(incomingEdge.a, incomingEdge.b)
+    const candidates = (byVertex.get(currentVertex) ?? []).filter(
+      edge => edgeKey(edge.a, edge.b) !== edgeKey(incomingEdge.a, incomingEdge.b),
     );
     const next = bestContinuation(data, currentVertex, incomingVertex, candidates);
     if (!next) return;
@@ -186,7 +204,7 @@ function bestContinuation(
     const other = candidate.a === vertex ? candidate.b : candidate.a;
     const direction = vertexDirection(data, vertex, other);
     const denominator = Math.max(previous.length() * direction.length(), 1e-8);
-    const score = -(previous.dot(direction)) / denominator;
+    const score = -previous.dot(direction) / denominator;
     if (score > bestScore) {
       bestScore = score;
       best = candidate;
@@ -205,7 +223,9 @@ type LogicalQuad = { vertices: [number, number, number, number]; boundary: strin
 
 /** Infer quads from adjacent, nearly coplanar triangles sharing a diagonal. */
 function inferLogicalQuads(data: Graphics3DMesh): LogicalQuad[] {
-  const faces = Array.from({ length: data.geometry.indices.length / 3 }, (_, face) => faceVertexIndices(data, face));
+  const faces = Array.from({ length: data.geometry.indices.length / 3 }, (_, face) =>
+    faceVertexIndices(data, face),
+  );
   const owners = new Map<string, number[]>();
   faces.forEach((ids, face) => {
     if (!ids) return;
@@ -230,10 +250,12 @@ function inferLogicalQuads(data: Graphics3DMesh): LogicalQuad[] {
     const shared = a.filter(vertex => b.includes(vertex));
     if (shared.length !== 2) continue;
     const sharedKey = edgeKey(shared[0], shared[1]);
-    const boundary = [...new Set([
-      ...a.map((vertex, index) => edgeKey(vertex, a[(index + 1) % a.length])),
-      ...b.map((vertex, index) => edgeKey(vertex, b[(index + 1) % b.length])),
-    ])].filter(key => key !== sharedKey);
+    const boundary = [
+      ...new Set([
+        ...a.map((vertex, index) => edgeKey(vertex, a[(index + 1) % a.length])),
+        ...b.map((vertex, index) => edgeKey(vertex, b[(index + 1) % b.length])),
+      ]),
+    ].filter(key => key !== sharedKey);
     if (boundary.length !== 4) continue;
 
     used.add(first);
@@ -247,7 +269,11 @@ function trianglesAreCoplanar(data: Graphics3DMesh, a: number[], b: number[]): b
   if (a.length !== 3 || b.length !== 3) return false;
   const normal = triangleNormal(data, a[0], a[1], a[2]);
   const other = triangleNormal(data, b[0], b[1], b[2]);
-  return normal.lengthSq() > 1e-12 && other.lengthSq() > 1e-12 && Math.abs(normal.normalize().dot(other.normalize())) >= 0.999;
+  return (
+    normal.lengthSq() > 1e-12 &&
+    other.lengthSq() > 1e-12 &&
+    Math.abs(normal.normalize().dot(other.normalize())) >= 0.999
+  );
 }
 
 function triangleNormal(data: Graphics3DMesh, a: number, b: number, c: number): THREE.Vector3 {

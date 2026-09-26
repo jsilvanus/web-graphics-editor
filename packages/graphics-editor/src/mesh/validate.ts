@@ -1,10 +1,15 @@
 import type { HalfEdgeMesh } from "./half-edge";
 
-export interface MeshValidationResult { valid: boolean; errors: string[] }
+export interface MeshValidationResult {
+  valid: boolean;
+  errors: string[];
+}
 
 export function validateHalfEdgeMesh(mesh: HalfEdgeMesh): MeshValidationResult {
   const errors: string[] = [];
-  const add = (message: string) => { if (!errors.includes(message)) errors.push(message); };
+  const add = (message: string) => {
+    if (!errors.includes(message)) errors.push(message);
+  };
 
   if (mesh.positions.length % 3 !== 0) add("positions length is not divisible by 3");
 
@@ -42,7 +47,8 @@ export function validateHalfEdgeMesh(mesh: HalfEdgeMesh): MeshValidationResult {
     if (vertex.halfEdge !== null) {
       const halfEdge = halfEdgesById.get(vertex.halfEdge);
       if (!halfEdge) add(`vertex ${vertex.id}: missing half-edge ${vertex.halfEdge}`);
-      else if (halfEdge.vertex !== vertex.id) add(`vertex ${vertex.id}: half-edge ${vertex.halfEdge} has different origin`);
+      else if (halfEdge.vertex !== vertex.id)
+        add(`vertex ${vertex.id}: half-edge ${vertex.halfEdge} has different origin`);
     }
   }
 

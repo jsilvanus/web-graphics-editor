@@ -15,7 +15,12 @@ describe("extrudeRegion", () => {
 
     expect(result.geometry.vertices).toHaveLength(mesh.geometry.vertices.length + 4 * 3);
     expect(result.geometry.indices).toHaveLength(mesh.geometry.indices.length + 4 * 6);
-    const topology = fromPolygons({ positions: result.geometry.vertices, faces: Array.from({ length: result.geometry.indices.length / 3 }, (_, i) => result.geometry.indices.slice(i * 3, i * 3 + 3)) });
+    const topology = fromPolygons({
+      positions: result.geometry.vertices,
+      faces: Array.from({ length: result.geometry.indices.length / 3 }, (_, i) =>
+        result.geometry.indices.slice(i * 3, i * 3 + 3),
+      ),
+    });
     expect(validateHalfEdgeMesh(topology).valid).toBe(true);
     expect(vertices(result, [8, 9, 10, 11])).toEqual([
       [-0.5, -0.5, -1.5],

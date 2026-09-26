@@ -11,11 +11,16 @@ import type { GraphicsDocument, Layer } from "../types";
 export function updateLayer(document: GraphicsDocument, id: string, patch: Partial<Layer>): GraphicsDocument {
   return {
     ...document,
-    layers: document.layers.map(layer => layer.id === id ? { ...layer, ...patch } : layer),
+    layers: document.layers.map(layer => (layer.id === id ? { ...layer, ...patch } : layer)),
   };
 }
 
-export function updateLayerStyle(document: GraphicsDocument, id: string, key: string, value: string | number): GraphicsDocument {
+export function updateLayerStyle(
+  document: GraphicsDocument,
+  id: string,
+  key: string,
+  value: string | number,
+): GraphicsDocument {
   const layer = document.layers.find(item => item.id === id);
   if (!layer) return document;
   return updateLayer(document, id, { style: { ...layer.style, [key]: value } });
@@ -23,7 +28,8 @@ export function updateLayerStyle(document: GraphicsDocument, id: string, key: st
 
 function moveLayer(document: GraphicsDocument, id: string, targetIndex: number): GraphicsDocument {
   const index = document.layers.findIndex(layer => layer.id === id);
-  if (index < 0 || index === targetIndex || targetIndex < 0 || targetIndex >= document.layers.length) return document;
+  if (index < 0 || index === targetIndex || targetIndex < 0 || targetIndex >= document.layers.length)
+    return document;
   const layers = [...document.layers];
   const [layer] = layers.splice(index, 1);
   layers.splice(targetIndex, 0, layer);
@@ -48,7 +54,10 @@ export function sendLayerToBack(document: GraphicsDocument, id: string): Graphic
   return moveLayer(document, id, 0);
 }
 
-export function groupLayers(document: GraphicsDocument, ids: Set<string>): { document: GraphicsDocument; groupId: string } {
+export function groupLayers(
+  document: GraphicsDocument,
+  ids: Set<string>,
+): { document: GraphicsDocument; groupId: string } {
   const selected = document.layers.filter(layer => ids.has(layer.id) && layer.type !== "group");
   if (selected.length < 2) return { document, groupId: "" };
 
@@ -103,13 +112,18 @@ export function getLayerTreeIds(document: GraphicsDocument, id: string): Set<str
   return result;
 }
 
-export function moveLayersByDelta(document: GraphicsDocument, ids: Set<string>, dx: number, dy: number): GraphicsDocument {
+export function moveLayersByDelta(
+  document: GraphicsDocument,
+  ids: Set<string>,
+  dx: number,
+  dy: number,
+): GraphicsDocument {
   if (!ids.size || (dx === 0 && dy === 0)) return document;
   return {
     ...document,
-    layers: document.layers.map(layer => ids.has(layer.id)
-      ? { ...layer, x: Math.round(layer.x + dx), y: Math.round(layer.y + dy) }
-      : layer),
+    layers: document.layers.map(layer =>
+      ids.has(layer.id) ? { ...layer, x: Math.round(layer.x + dx), y: Math.round(layer.y + dy) } : layer,
+    ),
   };
 }
 

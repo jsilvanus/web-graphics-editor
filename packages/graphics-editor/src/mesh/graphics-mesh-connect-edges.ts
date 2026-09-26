@@ -57,7 +57,8 @@ export function connectGraphicsMeshEdges(
 
   const newFaceIds: number[] = [];
   for (let i = 0; i + 1 < pointIds.length; i++) {
-    const a = pointIds[i], b = pointIds[i + 1];
+    const a = pointIds[i],
+      b = pointIds[i + 1];
     const existingEdge = edgeIdForVertices(topology, a, b);
     if (existingEdge !== null) continue;
 
@@ -75,7 +76,11 @@ export function connectGraphicsMeshEdges(
   return { mesh: graphicsMeshFromTopology(source, topology), newFaceIds };
 }
 
-function findFacePath(mesh: HalfEdgeMesh, startEdgeId: number, endEdgeId: number): { crossingEdges: [number, number][] } | null {
+function findFacePath(
+  mesh: HalfEdgeMesh,
+  startEdgeId: number,
+  endEdgeId: number,
+): { crossingEdges: [number, number][] } | null {
   const startFaces = edgeFaces(mesh, startEdgeId);
   const targetFaces = new Set(edgeFaces(mesh, endEdgeId));
   const queue = [...startFaces];

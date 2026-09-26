@@ -38,7 +38,9 @@ export function bevelSelectedEdges(mesh: Graphics3DMesh, keys: Set<string>, amou
     for (const face of edge.faces) {
       const corner = faceCornerForEdge(mesh, face, edge.a, edge.b);
       if (corner === undefined) continue;
-      const pa = point(mesh, edge.a), pb = point(mesh, edge.b), pc = point(mesh, corner);
+      const pa = point(mesh, edge.a),
+        pb = point(mesh, edge.b),
+        pc = point(mesh, corner);
       const distanceToCorner = Math.min(distance(pa, pc), distance(pb, pc));
       const t = Math.min(0.49, amount / Math.max(distanceToCorner, 1e-8));
       const a = lerp(pa, pc, t);
@@ -56,7 +58,11 @@ export function bevelSelectedEdges(mesh: Graphics3DMesh, keys: Set<string>, amou
   // edges, the incoming and outgoing offsets become a new corner edge.
   for (let face = 0; face < mesh.geometry.indices.length / 3; face++) {
     const base = face * 3;
-    const ids = [mesh.geometry.indices[base], mesh.geometry.indices[base + 1], mesh.geometry.indices[base + 2]];
+    const ids = [
+      mesh.geometry.indices[base],
+      mesh.geometry.indices[base + 1],
+      mesh.geometry.indices[base + 2],
+    ];
     if (!affectedFaces.has(face)) {
       indices.push(...ids);
       continue;
@@ -116,17 +122,19 @@ export function bevelSelectedEdges(mesh: Graphics3DMesh, keys: Set<string>, amou
       const o1 = offsets.get(faceEdgeKey(f1, key));
       if (!o0 || !o1) continue;
       const reversed = edgeIsReversed(mesh.geometry.indices, f0, edge.a, edge.b);
-      indices.push(...(reversed
-        ? [o0.a, o1.a, o1.b, o0.a, o1.b, o0.b]
-        : [o0.a, o0.b, o1.b, o0.a, o1.b, o1.a]));
+      indices.push(
+        ...(reversed ? [o0.a, o1.a, o1.b, o0.a, o1.b, o0.b] : [o0.a, o0.b, o1.b, o0.a, o1.b, o1.a]),
+      );
     } else {
       const face = edge.faces[0];
       const offset = offsets.get(faceEdgeKey(face, key));
       if (!offset) continue;
       const reversed = edgeIsReversed(mesh.geometry.indices, face, edge.a, edge.b);
-      indices.push(...(reversed
-        ? [edge.a, edge.b, offset.b, edge.a, offset.b, offset.a]
-        : [edge.a, offset.a, offset.b, edge.a, offset.b, edge.b]));
+      indices.push(
+        ...(reversed
+          ? [edge.a, edge.b, offset.b, edge.a, offset.b, offset.a]
+          : [edge.a, offset.a, offset.b, edge.a, offset.b, edge.b]),
+      );
     }
   }
 
@@ -163,7 +171,11 @@ function triangulateFan(polygon: number[], indices: number[]): void {
 }
 
 function point(mesh: Graphics3DMesh, i: number): [number, number, number] {
-  return [mesh.geometry.vertices[i * 3], mesh.geometry.vertices[i * 3 + 1], mesh.geometry.vertices[i * 3 + 2]];
+  return [
+    mesh.geometry.vertices[i * 3],
+    mesh.geometry.vertices[i * 3 + 1],
+    mesh.geometry.vertices[i * 3 + 2],
+  ];
 }
 
 function lerp(a: [number, number, number], b: [number, number, number], t: number): [number, number, number] {

@@ -3,12 +3,7 @@ import type { Graphics3DMesh } from "../types";
 import { connectGraphicsMeshEdges } from "./graphics-mesh-connect-edges";
 import { edgeKey, meshEdges } from "../3d-mesh-topology";
 
-function mesh(indices: number[], vertices: number[] = [
-  0, 0, 0,
-  1, 0, 0,
-  0, 1, 0,
-  1, 1, 0,
-]): Graphics3DMesh {
+function mesh(indices: number[], vertices: number[] = [0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0]): Graphics3DMesh {
   return {
     id: "test",
     geometry: { vertices, indices },
@@ -19,11 +14,7 @@ function mesh(indices: number[], vertices: number[] = [
 describe("connectGraphicsMeshEdges", () => {
   it("creates a cut path between edges across adjacent triangles", () => {
     const source = mesh([0, 1, 2, 1, 3, 2]);
-    const result = connectGraphicsMeshEdges(
-      source,
-      edgeKey(0, 1),
-      edgeKey(2, 3),
-    );
+    const result = connectGraphicsMeshEdges(source, edgeKey(0, 1), edgeKey(2, 3));
 
     expect(result.mesh.geometry.vertices).toHaveLength(21);
     expect(result.mesh.geometry.indices).toHaveLength(12);
@@ -33,10 +24,6 @@ describe("connectGraphicsMeshEdges", () => {
 
   it("rejects an edge selected twice", () => {
     const source = mesh([0, 1, 2]);
-    expect(() => connectGraphicsMeshEdges(
-      source,
-      edgeKey(0, 1),
-      edgeKey(0, 1),
-    )).toThrow(/itself/);
+    expect(() => connectGraphicsMeshEdges(source, edgeKey(0, 1), edgeKey(0, 1))).toThrow(/itself/);
   });
 });

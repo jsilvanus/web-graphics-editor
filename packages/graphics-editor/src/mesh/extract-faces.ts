@@ -42,7 +42,6 @@ export function extractFaces(source: Graphics3DMesh, faceIds: Set<number>): Grap
   };
 }
 
-
 export function duplicateFaces(source: Graphics3DMesh, faceIds: Set<number>): Graphics3DMesh {
   if (!faceIds.size) return source;
 

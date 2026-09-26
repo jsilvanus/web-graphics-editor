@@ -18,7 +18,10 @@ describe("3D mesh operations", () => {
   });
 
   it("merges duplicate vertices", () => {
-    const mesh = { ...createBoxMesh("box"), geometry: { vertices: [0, 0, 0, 0.00001, 0, 0, 1, 0, 0], indices: [0, 1, 2] } };
+    const mesh = {
+      ...createBoxMesh("box"),
+      geometry: { vertices: [0, 0, 0, 0.00001, 0, 0, 1, 0, 0], indices: [0, 1, 2] },
+    };
     const result = mergeMeshVertices(mesh, 0.001);
     expect(result.geometry.vertices).toHaveLength(6);
     expect(result.geometry.indices).toEqual([0, 0, 1]);
