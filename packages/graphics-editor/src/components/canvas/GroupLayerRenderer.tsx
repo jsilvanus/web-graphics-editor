@@ -57,8 +57,10 @@ export const GroupLayerRenderer: FC<GroupLayerRendererProps> = ({
         position: "absolute",
         left: -originX,
         top: -originY,
-        width: "100vw",
-        height: "100vh",
+        // Zero-size: positions children in document space without adding a hit area of its own
+        // (a full-size box here swallowed clicks on empty canvas and dragged the group).
+        width: 0,
+        height: 0,
         overflow: "visible",
       }}
     >

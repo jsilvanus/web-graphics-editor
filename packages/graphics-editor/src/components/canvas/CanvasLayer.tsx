@@ -1,4 +1,4 @@
-import type { FC, PointerEvent as ReactPointerEvent } from "react";
+import { useState, type FC, type PointerEvent as ReactPointerEvent } from "react";
 import type {
   EvaluatedVideo,
   Graphics3DView,
@@ -55,8 +55,11 @@ export const CanvasLayer: FC<{
   assets = [],
   currentTime = 0,
 }) => {
+  // Incremented on double-click; text layers enter edit mode when it changes.
+  const [editRequest, setEditRequest] = useState(0);
   const content = (
     <CanvasLayerContent
+      editRequest={editRequest}
       layer={layer}
       layers={layers}
       renderNode={renderNode}
@@ -86,6 +89,7 @@ export const CanvasLayer: FC<{
       selected={selected}
       multiSelected={multiSelected}
       onPointerDown={onPointerDown}
+      onDoubleClick={layer.type === "text" && !layer.locked ? () => setEditRequest(n => n + 1) : undefined}
     >
       {content}
     </LayerFrame>

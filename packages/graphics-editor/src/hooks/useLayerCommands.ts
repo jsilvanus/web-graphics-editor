@@ -24,6 +24,8 @@ export function useLayerCommands(
   primaryId: string | null,
   select: (id: string) => void,
   clear: () => void,
+  /** Latest-document getter; layer operations build on it rather than the render-time document. */
+  getDocument?: () => GraphicsDocument,
 ) {
   const {
     add,
@@ -36,7 +38,7 @@ export function useLayerCommands(
     group,
     ungroup,
     move,
-  } = useLayerOperations(executeCommand, document);
+  } = useLayerOperations(executeCommand, getDocument ?? document);
 
   const addLayer = useCallback(
     (type: Parameters<typeof add>[0]) => {
@@ -129,6 +131,7 @@ export function useLayerCommands(
     sendToBack,
     group,
     ungroup,
+    move,
     addLayer,
     deleteSelected,
     duplicateSelected,

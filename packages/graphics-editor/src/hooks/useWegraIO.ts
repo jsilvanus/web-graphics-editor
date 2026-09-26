@@ -1,13 +1,13 @@
 import { useCallback } from "react";
 import { deserializeWegra, serializeWegra } from "../wegra";
 import type { GraphicsDocument, SceneTimeline } from "../types";
+import { withDefaultTimeline } from "./useGraphicsEditorTimeline";
 
 export function useWegraIO(
   document: GraphicsDocument,
   timeline: SceneTimeline,
   history: unknown,
   resetHistory: (document: GraphicsDocument) => void,
-  setTimeline: React.Dispatch<React.SetStateAction<SceneTimeline>>,
   clear: () => void,
 ) {
   const saveWegra = useCallback(async () => {
@@ -33,15 +33,16 @@ export function useWegraIO(
     async (file: File) => {
       try {
         const project = deserializeWegra(new Uint8Array(await file.arrayBuffer()));
-        resetHistory(project.document);
-        setTimeline(project.document.timeline ?? timeline);
+        // The timeline is part of the document; don't set it separately afterwards, which would
+        // apply it to the pre-load document and discard the file that was just opened.
+        resetHistory(withDefaultTimeline(project.document));
         clear();
       } catch (error) {
         console.error("Failed to open .wegra", error);
         window.alert("Could not open this .wegra file.");
       }
     },
-    [resetHistory, setTimeline, clear, timeline],
+    [resetHistory, clear],
   );
   return { saveWegra, openWegra };
 }

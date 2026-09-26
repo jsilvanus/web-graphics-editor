@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import type { GraphicsDocument, Layer, LayerType } from "../types";
 import {
   updateLayerCommand,
@@ -75,40 +75,54 @@ function createLayer(type: LayerType): Layer {
   };
 }
 
-export function useLayerOperations(executeCommand: ExecuteCommand, document: GraphicsDocument) {
+/**
+ * Layer editing commands. `source` should be a getter for the latest document (see
+ * `useEditorHistory().getDocument`), so several operations in one event build on each other
+ * instead of on the document captured at render time.
+ */
+export function useLayerOperations(
+  executeCommand: ExecuteCommand,
+  source: GraphicsDocument | (() => GraphicsDocument),
+) {
+  const sourceRef = useRef(source);
+  sourceRef.current = source;
+  const current = useCallback(() => {
+    const value = sourceRef.current;
+    return typeof value === "function" ? value() : value;
+  }, []);
   const execute = useCallback(
     (command: Command, label: string) => executeCommand(command, { label }),
     [executeCommand],
   );
 
   const updateLayer = useCallback(
-    (id: string, patch: Partial<Layer>) => execute(updateLayerCommand(document, id, patch), "Update layer"),
-    [document, execute],
+    (id: string, patch: Partial<Layer>) => execute(updateLayerCommand(current(), id, patch), "Update layer"),
+    [current, execute],
   );
   const updateStyle = useCallback(
     (id: string, key: string, value: string | number | undefined) =>
-      execute(updateLayerStyleCommand(document, id, key, value), `Set ${key}`),
-    [document, execute],
+      execute(updateLayerStyleCommand(current(), id, key, value), `Set ${key}`),
+    [current, execute],
   );
 
   const add = useCallback(
     (type: LayerType) => {
       const layer = createLayer(type);
-      execute(addLayerCommand(document, layer), `Add ${type}`);
+      execute(addLayerCommand(current(), layer), `Add ${type}`);
       return layer.id;
     },
-    [document, execute],
+    [current, execute],
   );
 
   const remove = useCallback(
     (ids: Set<string>) => {
-      const selected = document.layers.filter(layer => ids.has(layer.id));
-      let next = document;
+      const selected = current().layers.filter(layer => ids.has(layer.id));
+      let next = current();
       const operations: DocumentOperation[] = [];
       for (const layer of [...selected].sort(
         (a, b) =>
-          document.layers.findIndex(item => item.id === b.id) -
-          document.layers.findIndex(item => item.id === a.id),
+          current().layers.findIndex(item => item.id === b.id) -
+          current().layers.findIndex(item => item.id === a.id),
       )) {
         const result = removeLayerCommand(next, layer.id);
         next = result.document;
@@ -123,12 +137,12 @@ export function useLayerOperations(executeCommand: ExecuteCommand, document: Gra
           "Remove layers",
         );
     },
-    [document, execute],
+    [current, execute],
   );
 
   const duplicate = useCallback(
     (ids: Set<string>) => {
-      const selected = document.layers.filter(layer => ids.has(layer.id));
+      const selected = current().layers.filter(layer => ids.has(layer.id));
       const copies = selected.map(layer => ({
         ...layer,
         id: `${layer.type}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -142,7 +156,7 @@ export function useLayerOperations(executeCommand: ExecuteCommand, document: Gra
           handleOut: node.handleOut && { ...node.handleOut },
         })),
       }));
-      let next = document;
+      let next = current();
       const operations: DocumentOperation[] = [];
       for (const layer of copies) {
         const result = addLayerCommand(next, layer);
@@ -159,13 +173,13 @@ export function useLayerOperations(executeCommand: ExecuteCommand, document: Gra
         );
       return copies.map(layer => layer.id);
     },
-    [document, execute],
+    [current, execute],
   );
 
   const reorder = useCallback(
     (id: string, action: "forward" | "backward" | "front" | "back") =>
       execute(
-        reorderLayerCommand(document, id, action),
+        reorderLayerCommand(current(), id, action),
         action === "forward"
           ? "Bring layer forward"
           : action === "backward"
@@ -174,7 +188,7 @@ export function useLayerOperations(executeCommand: ExecuteCommand, document: Gra
               ? "Bring layer to front"
               : "Send layer to back",
       ),
-    [document, execute],
+    [current, execute],
   );
   const bringForward = useCallback((id: string) => reorder(id, "forward"), [reorder]);
   const sendBackward = useCallback((id: string) => reorder(id, "backward"), [reorder]);
@@ -182,20 +196,20 @@ export function useLayerOperations(executeCommand: ExecuteCommand, document: Gra
   const sendToBack = useCallback((id: string) => reorder(id, "back"), [reorder]);
   const group = useCallback(
     (ids: Set<string>) => {
-      const result = groupLayersCommand(document, ids);
+      const result = groupLayersCommand(current(), ids);
       execute(result, "Group layers");
       return result.operation?.type === "group-layers" ? result.operation.group.id : "";
     },
-    [document, execute],
+    [current, execute],
   );
   const ungroup = useCallback(
-    (id: string) => execute(ungroupLayerCommand(document, id), "Ungroup layer"),
-    [document, execute],
+    (id: string) => execute(ungroupLayerCommand(current(), id), "Ungroup layer"),
+    [current, execute],
   );
   const move = useCallback(
     (id: string, targetId: string, position: "inside" | "before" | "after") =>
-      execute(moveLayerCommand(document, id, targetId, position), "Move layer"),
-    [document, execute],
+      execute(moveLayerCommand(current(), id, targetId, position), "Move layer"),
+    [current, execute],
   );
 
   return {

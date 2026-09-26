@@ -9,6 +9,7 @@ import { LayerProperties } from "./components/properties/LayerProperties";
 import { CompositionProperties } from "./components/properties/CompositionProperties";
 import { Graphics3DRenderSettingsPanel } from "./components/Graphics3DRenderSettingsPanel";
 import { KEYFRAMES } from "./constants";
+import { EDITOR_STYLES } from "./styles";
 import { useCanvasInteraction } from "./hooks/useCanvasInteraction";
 import { useCanvasViewport } from "./hooks/useCanvasViewport";
 import { useEditorHistory } from "./hooks/useEditorHistory";
@@ -17,7 +18,11 @@ import { useEditorTransaction } from "./hooks/useEditorTransaction";
 import { useEditorKeyboard } from "./hooks/useEditorKeyboard";
 import { useLayerOperations } from "./hooks/useLayerOperations";
 import { useLayerCommands } from "./hooks/useLayerCommands";
-import { useGraphicsEditorTimeline, createDefaultTimeline } from "./hooks/useGraphicsEditorTimeline";
+import {
+  useGraphicsEditorTimeline,
+  createDefaultTimeline,
+  withDefaultTimeline,
+} from "./hooks/useGraphicsEditorTimeline";
 import { useTimelinePlayback } from "./hooks/useTimelinePlayback";
 import { useAnimatedLayers } from "./hooks/useAnimatedLayers";
 import { useAnimatedLayerEditing } from "./hooks/useAnimatedLayerEditing";
@@ -40,8 +45,23 @@ import type {
 } from "./types";
 
 export function GraphicsEditor({ document: initialDocument, assets = [], onChange }: GraphicsEditorProps) {
-  const { document, setDocument, executeCommand, undo, redo, canUndo, canRedo, resetHistory, history } =
-    useEditorHistory(initialDocument);
+  const {
+    document,
+    setDocument,
+    commitFrom,
+    getDocument,
+    executeCommand,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    resetHistory,
+    history,
+  } = useEditorHistory(withDefaultTimeline(initialDocument));
+  const transientDocumentChange = useCallback(
+    (next: GraphicsDocument) => setDocument(next, false),
+    [setDocument],
+  );
   useEditorKeyboard(undo, redo);
   const [compositionPath, setCompositionPath] = useState<string[]>([]);
   const [compositionTime, setCompositionTime] = useState(0);
@@ -52,8 +72,12 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
   const editorLayers = activeComposition
     ? document.layers.filter(layer => activeComposition.layerIds.includes(layer.id))
     : document.layers;
+  const initialDocumentRef = useRef(initialDocument);
+  const { selectedIds, primaryId, select, clear } = useEditorSelection(document.layers[0]?.id ?? null);
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.matches("input, textarea, select, [contenteditable=true]")) return;
       if (!selectedIds.size || event.ctrlKey || event.metaKey || event.altKey) return;
       if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "[", "]"].includes(event.key)) return;
       const step = event.shiftKey ? 10 : 1;
@@ -77,8 +101,6 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [document, selectedIds, setDocument]);
-  const initialDocumentRef = useRef(initialDocument);
-  const { selectedIds, primaryId, select, clear } = useEditorSelection(document.layers[0]?.id ?? null);
   const [grid, setGrid] = useState(false),
     [safe, setSafe] = useState(false),
     [aspectLock, setAspectLock] = useState(true),
@@ -95,6 +117,7 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
   const [marquee, setMarquee] = useState<{ x: number; y: number; width: number; height: number } | null>(
     null,
   );
+  const viewport = useCanvasViewport(document.width, document.height);
   const canvasPoint = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
       const rect = artboardRef.current?.getBoundingClientRect();
@@ -106,10 +129,8 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
     },
     [viewport.viewport.zoom],
   );
-  const viewport = useCanvasViewport(document.width, document.height);
   const {
     timeline,
-    setTimeline,
     seek,
     changeTimeline,
     context,
@@ -119,7 +140,7 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
     worldTimeline,
     worldCurrentTime,
     updateWorldTimeline,
-  } = useGraphicsEditorTimeline(document, executeCommand);
+  } = useGraphicsEditorTimeline(document, executeCommand, transientDocumentChange);
   const [playing, setPlaying] = useState(false);
   const [compositionPlaying, setCompositionPlaying] = useState(false);
   const projectAssets = useProjectAssets(document, assets);
@@ -145,8 +166,7 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
     async (file: File) => {
       try {
         const imported = deserializeGraphicsDocument(await file.text());
-        resetHistory(imported);
-        setTimeline(imported.timeline ?? createDefaultTimeline());
+        resetHistory(withDefaultTimeline(imported));
         clear();
         viewport.fit();
       } catch (error) {
@@ -154,13 +174,21 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
         window.alert("Could not open this graphics JSON document.");
       }
     },
-    [resetHistory, setTimeline, clear, viewport],
+    [resetHistory, clear, viewport],
   );
   const commit = useCallback((next: GraphicsDocument) => setDocument(next, true), [setDocument]);
-  const transientChange = useCallback((next: GraphicsDocument) => setDocument(next, false), [setDocument]);
-  const transaction = useEditorTransaction(commit);
-  const { updateLayer, updateStyle } = useLayerOperations(executeCommand, document);
-  const commands = useLayerCommands(document, executeCommand, selectedIds, primaryId, select, clear);
+  const transientChange = transientDocumentChange;
+  const transaction = useEditorTransaction(getDocument, commitFrom);
+  const { updateLayer, updateStyle } = useLayerOperations(executeCommand, getDocument);
+  const commands = useLayerCommands(
+    document,
+    executeCommand,
+    selectedIds,
+    primaryId,
+    select,
+    clear,
+    getDocument,
+  );
   const interaction = useCanvasInteraction(
     document,
     artboardRef,
@@ -175,6 +203,21 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       if (target?.matches("input, textarea, select, [contenteditable=true]")) return;
+      if ((event.key === "Delete" || event.key === "Backspace") && selectedIds.size) {
+        event.preventDefault();
+        commands.deleteSelected();
+        return;
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "d" && selectedIds.size) {
+        event.preventDefault();
+        commands.duplicateSelected();
+        return;
+      }
+      if (event.key === "Enter" && drawing.drawingRef.current) {
+        event.preventDefault();
+        drawing.finishDrawing();
+        return;
+      }
       if (event.key === "Escape") {
         drawing.resetTool("select");
         setMarquee(null);
@@ -204,12 +247,12 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [drawing, viewport]);
+  }, [drawing, viewport, commands, selectedIds]);
   const { add3DView, update3DView } = use3DViews(document, commit, select);
-  const { saveWegra, openWegra } = useWegraIO(document, timeline, history, resetHistory, setTimeline, clear);
+  const { saveWegra, openWegra } = useWegraIO(document, timeline, history, resetHistory, clear);
   const transientSeek = useCallback(
-    (next: typeof timeline) => setDocument({ ...document, timeline: next }, false),
-    [document, setDocument],
+    (next: typeof timeline) => setDocument(current => ({ ...current, timeline: next }), false),
+    [setDocument],
   );
   useTimelinePlayback(
     playing && context.kind === "main" && !activeCompositionId,
@@ -247,12 +290,17 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
   const animatedLayers = useAnimatedLayers(document, timeline);
   const editorTime = activeCompositionId ? compositionTime : timeline.currentTime;
   const { changeLayer, changeStyle } = useAnimatedLayerEditing(document, executeCommand, editorTime);
+  // Documents this editor has reported through onChange. A host that feeds them back in as the
+  // `document` prop (the usual controlled pattern) must not reset the editor or its history.
+  const emittedDocumentsRef = useRef(new WeakSet<GraphicsDocument>());
   useEffect(() => {
+    emittedDocumentsRef.current.add(document);
     onChange?.(document);
   }, [document, onChange]);
   useEffect(() => {
     if (initialDocumentRef.current === initialDocument) return;
     initialDocumentRef.current = initialDocument;
+    if (emittedDocumentsRef.current.has(initialDocument)) return;
     resetHistory({ ...initialDocument, timeline: initialDocument.timeline ?? createDefaultTimeline() });
   }, [initialDocument, resetHistory]);
   const createComposition = useCallback(() => {
@@ -411,18 +459,19 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
       else clear();
       return;
     }
-    if (drawing.drawingRef.current?.tool === "line" || drawing.drawingRef.current?.tool === "freehand")
+    const drawingTool = drawing.drawingRef.current?.tool;
+    if (drawingTool === "line" || drawingTool === "freehand" || drawingTool === "star")
       drawing.finishDrawing();
     else {
       interaction.pointerUp();
-      transaction.end(document);
+      transaction.end();
     }
   }, [drawing, interaction, transaction, document, select, clear]);
   const onLayerPointerDown = useCallback(
     (event: React.PointerEvent<HTMLDivElement>, id: string, kind: string, handle?: string) => {
       if (drawing.activeTool !== "select") return;
       if (kind === "move") select(id, event.shiftKey);
-      transaction.begin(document);
+      transaction.begin();
       interaction.pointerDown(event, id, kind, handle);
     },
     [drawing.activeTool, select, transaction, document, interaction],
@@ -455,7 +504,7 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
   }, [enterWorld, selected3DWorld]);
   return (
     <div className="graphics-editor">
-      <style>{KEYFRAMES}</style>
+      <style>{EDITOR_STYLES + KEYFRAMES}</style>
       <GraphicsEditorToolbar
         grid={grid}
         safe={safe}
@@ -520,12 +569,12 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
       <div className="ge-layout">
         <GraphicsEditorCanvas
           frame={compositorFrame}
+          marquee={marquee ?? undefined}
           artboardRef={artboardRef}
           viewportRef={viewport.hostRef}
           zoom={viewport.viewport.zoom}
           panX={viewport.viewport.panX}
           panY={viewport.viewport.panY}
-          onWheel={viewport.onWheel}
           onViewportPointerDown={viewport.onPointerDown}
           onViewportPointerMove={viewport.onPointerMove}
           onViewportPointerUp={viewport.onPointerUp}
@@ -542,8 +591,13 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
           grid={grid}
           safe={safe}
           background={document.background ?? "#111"}
+          width={document.width}
+          height={document.height}
           worlds3d={document.worlds3d ?? []}
           views3d={document.views3d ?? []}
+          assets={projectAssets}
+          currentTime={editorTime}
+          onSelectLayer={select}
           onPointerMove={onCanvasPointerMove}
           onPointerUp={onCanvasPointerUp}
           onCanvasPointerDown={onCanvasPointerDown}
@@ -600,7 +654,7 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
               if (layer?.locked) return;
               select(id);
             }}
-            onMove={commands.moveLayer}
+            onMove={commands.move}
             onDuplicate={id => {
               const ids = new Set([id]);
               const copies = commands.duplicate(ids);
@@ -759,7 +813,7 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
                   assets: [...(d.assets ?? []).filter(a => a.id !== asset.id), asset],
                 }))
               }
-              onOffset={(id, distance) => commands.applyOffset(id, distance)}
+              onOffset={(_id, distance) => commands.applyOffset(distance)}
             />
           ) : (
             <div className="ge-section">

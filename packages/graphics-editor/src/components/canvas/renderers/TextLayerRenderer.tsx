@@ -64,11 +64,13 @@ function normalizeRuns(runs: TextRun[]) {
 export function TextLayerRenderer({
   layer,
   layers = [],
+  editRequest = 0,
   onTextCommit,
   onTextRunsCommit,
 }: {
   layer: Layer;
   layers?: Layer[];
+  editRequest?: number;
   onTextCommit?: (text: string) => void;
   onTextRunsCommit?: (runs: TextRun[] | undefined) => void;
 }) {
@@ -155,12 +157,17 @@ export function TextLayerRenderer({
     document.execCommand(command);
     setDraft(editorRef.current?.textContent ?? draft);
   };
-  const beginEdit = (event: React.MouseEvent) => {
-    event.stopPropagation();
+  const beginEdit = (event?: React.MouseEvent) => {
+    event?.stopPropagation();
     originalRef.current = layer.text ?? "";
     setDraft(layer.text ?? "");
     setEditing(true);
   };
+  useEffect(() => {
+    if (editRequest > 0) beginEdit();
+    // Only a new request should start editing, not re-renders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editRequest]);
 
   if (editing || !pathLayer) {
     if (!editing)

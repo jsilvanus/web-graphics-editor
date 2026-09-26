@@ -2,42 +2,39 @@ import { useEffect, useRef } from "react";
 import { timelineDuration } from "../timeline";
 import type { SceneTimeline } from "../types";
 
+/** Advances the timeline's current time with requestAnimationFrame while `playing` is true. */
 export function useTimelinePlayback(
   playing: boolean,
-  setPlaying: (v: boolean) => void,
+  setPlaying: (value: boolean) => void,
   setTimeline: (next: SceneTimeline) => void,
   timeline: SceneTimeline,
 ) {
-  const frame = useRef<number | null>(null);
-  const playingRef = useRef(playing);
-  playingRef.current = playing;
+  // The loop runs for the whole play session; it reads the latest values through refs so that
+  // each frame's timeline update does not restart it.
+  const latest = useRef({ timeline, setTimeline, setPlaying });
+  latest.current = { timeline, setTimeline, setPlaying };
+
   useEffect(() => {
-    if (!playing) {
-      if (frame.current !== null) cancelAnimationFrame(frame.current);
-      frame.current = null;
-      return;
-    }
+    if (!playing) return;
+    let frame = 0;
     let last: number | null = null;
     const tick = (now: number) => {
-      if (!playingRef.current) return;
       const dt = last === null ? 0 : (now - last) / 1000;
       last = now;
-      const total = timelineDuration(timeline);
-      const next = timeline.currentTime + dt;
+      const { timeline: current, setTimeline: update, setPlaying: setPlayingState } = latest.current;
+      const total = timelineDuration(current);
+      const next = current.currentTime + dt;
       if (next >= total) {
-        if (timeline.loop) setTimeline({ ...timeline, currentTime: total > 0 ? next % total : 0 });
+        if (current.loop && total > 0) update({ ...current, currentTime: next % total });
         else {
-          setTimeline({ ...timeline, currentTime: total });
-          setPlaying(false);
+          update({ ...current, currentTime: total });
+          setPlayingState(false);
+          return;
         }
-      } else setTimeline({ ...timeline, currentTime: next });
-      if (playingRef.current) frame.current = requestAnimationFrame(tick);
-      else frame.current = null;
+      } else if (dt > 0) update({ ...current, currentTime: next });
+      frame = requestAnimationFrame(tick);
     };
-    frame.current = requestAnimationFrame(tick);
-    return () => {
-      if (frame.current !== null) cancelAnimationFrame(frame.current);
-      frame.current = null;
-    };
-  }, [playing, setPlaying, setTimeline, timeline]);
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [playing]);
 }

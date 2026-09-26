@@ -41,6 +41,8 @@ export interface CanvasLayerContentProps {
   videos?: EvaluatedVideo[];
   assets?: GraphicsAsset[];
   currentTime?: number;
+  /** Changes when the host asks a text layer to start editing (double-click on its frame). */
+  editRequest?: number;
 }
 
 export function CanvasLayerContent({
@@ -61,6 +63,7 @@ export function CanvasLayerContent({
   videos = [],
   assets = [],
   currentTime = 0,
+  editRequest = 0,
 }: CanvasLayerContentProps): ReactNode {
   if (layer.type === "composition" && renderNode)
     return (
@@ -118,6 +121,7 @@ export function CanvasLayerContent({
       <TextLayerRenderer
         layer={layer}
         layers={layers}
+        editRequest={editRequest}
         onTextCommit={text => onTextCommit?.(layer.id, text)}
         onTextRunsCommit={runs => onTextRunsCommit?.(layer.id, runs)}
       />
