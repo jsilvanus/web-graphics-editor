@@ -29,8 +29,9 @@ function easing(t: number, o?: InterpolationOptions) {
   if (e === "ease-in") return t * t;
   if (e === "ease-out") return 1 - (1 - t) * (1 - t);
   if (e === "ease-in-out") return t < 0.5 ? 2 * t * t : 1 - 2 * (1 - t) * (1 - t);
-  if (e === "cubic-bezier" && o.easing?.bezier) {
-    const [x1, y1, x2, y2] = o.easing.bezier;
+  const bezier = o?.easing?.bezier;
+  if (e === "cubic-bezier" && bezier) {
+    const [x1, y1, x2, y2] = bezier;
     let lo = 0,
       hi = 1;
     for (let i = 0; i < 32; i++) {
@@ -141,7 +142,8 @@ export function interpolateSpatial(from: Vec3, to: Vec3, t: number, s?: SpatialI
   if (!s || s.mode === "linear") return from.map((v, i) => v + (to[i] - v) * x) as Vec3;
   const p = s.path;
   if (!p) return from.map((v, i) => v + (to[i] - v) * x) as Vec3;
-  if (s.constantSpeed) return evaluateConstantSpeedBezier(p, x);
+  if (s.constantSpeed)
+    return evaluateConstantSpeedBezier({ p0: p.from, p1: p.control1, p2: p.control2, p3: p.to }, x);
   const q = 1 - x;
   return [
     q * q * q * p.from[0] +

@@ -27,7 +27,7 @@ export function evaluateWorldAtTime(
   mapping: Parameters<typeof mapWorldTime>[1],
 ): Evaluated3DWorld {
   const worldTime = mapWorldTime(wegraTime, mapping);
-  let meshes = world.meshes.map(m => ({
+  let meshes: Graphics3DMesh[] = world.meshes.map(m => ({
     ...m,
     transform: {
       ...m.transform,
@@ -42,7 +42,7 @@ export function evaluateWorldAtTime(
     position: [...c.position] as [number, number, number],
     rotation: [...c.rotation] as [number, number, number],
   }));
-  let lights = (world.lights ?? []).map(l => ({
+  let lights: Graphics3DLight[] = (world.lights ?? []).map(l => ({
     ...l,
     position: l.position ? ([...l.position] as [number, number, number]) : undefined,
     rotation: l.rotation ? ([...l.rotation] as [number, number, number]) : undefined,
@@ -54,7 +54,8 @@ export function evaluateWorldAtTime(
       meshes = meshes.map(m => (m.id === track.targetId ? applyMeshTrack(m, track.property, value) : m));
     else if (track.targetType === "camera")
       cameras = cameras.map(c => (c.id === track.targetId ? applyCameraTrack(c, track.property, value) : c));
-    else lights = lights.map(l => (l.id === track.targetId ? applyLightTrack(l, track.property, value) : l));
+    else if (track.targetType === "light")
+      lights = lights.map(l => (l.id === track.targetId ? applyLightTrack(l, track.property, value) : l));
   }
   return { worldTime, meshes, cameras, lights };
 }

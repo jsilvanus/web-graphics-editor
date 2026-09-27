@@ -103,31 +103,33 @@ function parsePathData(d: string): PathCommand[] {
           d2 = num(),
           nx = num(),
           ny = num();
-        out.push({
-          type: "C",
+        const command = {
+          type: "C" as const,
           x1: rel ? x + a : a,
           y1: rel ? y + b : b,
           x2: rel ? x + c : c,
           y2: rel ? y + d2 : d2,
           x: rel ? x + nx : nx,
           y: rel ? y + ny : ny,
-        });
-        x = out[out.length - 1].x as number;
-        y = out[out.length - 1].y as number;
+        };
+        out.push(command);
+        x = command.x;
+        y = command.y;
       } else if (C === "Q") {
         const a = num(),
           b = num(),
           nx = num(),
           ny = num();
-        out.push({
-          type: "Q",
+        const command = {
+          type: "Q" as const,
           x1: rel ? x + a : a,
           y1: rel ? y + b : b,
           x: rel ? x + nx : nx,
           y: rel ? y + ny : ny,
-        });
-        x = out[out.length - 1].x as number;
-        y = out[out.length - 1].y as number;
+        };
+        out.push(command);
+        x = command.x;
+        y = command.y;
       } else if (C === "Z") out.push({ type: "Z" });
       else {
         i++;
@@ -140,7 +142,8 @@ function parsePathData(d: string): PathCommand[] {
 }
 export function importSvg(svg: string): GraphicsDocument {
   if (typeof DOMParser === "undefined") throw new Error("SVG import requires DOMParser");
-  const root = new DOMParser().parseFromString(svg, "image/svg+xml").documentElement;
+  const root = new DOMParser().parseFromString(svg, "image/svg+xml")
+    .documentElement as unknown as SVGSVGElement;
   if (!root || root.tagName.toLowerCase() !== "svg") throw new Error("Invalid SVG document");
   const width = Number(root.getAttribute("width") ?? root.viewBox?.baseVal?.width ?? 1920) || 1920;
   const height = Number(root.getAttribute("height") ?? root.viewBox?.baseVal?.height ?? 1080) || 1080;

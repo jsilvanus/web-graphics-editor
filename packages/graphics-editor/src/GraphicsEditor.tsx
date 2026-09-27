@@ -119,7 +119,7 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
   );
   const viewport = useCanvasViewport(document.width, document.height);
   const canvasPoint = useCallback(
-    (event: React.PointerEvent<HTMLDivElement>) => {
+    (event: React.PointerEvent) => {
       const rect = artboardRef.current?.getBoundingClientRect();
       if (!rect) return null;
       return {
@@ -392,7 +392,7 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
     [updateLayer],
   );
   const onCanvasPointerDown = useCallback(
-    (event: React.PointerEvent<HTMLDivElement>) => {
+    (event: React.PointerEvent) => {
       if (drawing.activeTool === "select") {
         if (event.target !== event.currentTarget) return;
         const point = canvasPoint(event);
@@ -413,7 +413,7 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
     [drawing, canvasPoint],
   );
   const onCanvasPointerMove = useCallback(
-    (event: React.PointerEvent<HTMLDivElement>) => {
+    (event: React.PointerEvent) => {
       const m = marqueeRef.current;
       if (m) {
         const point = canvasPoint(event);
@@ -468,7 +468,7 @@ export function GraphicsEditor({ document: initialDocument, assets = [], onChang
     }
   }, [drawing, interaction, transaction, document, select, clear]);
   const onLayerPointerDown = useCallback(
-    (event: React.PointerEvent<HTMLDivElement>, id: string, kind: string, handle?: string) => {
+    (event: React.PointerEvent, id: string, kind: "move" | "resize" | "rotate", handle?: string) => {
       if (drawing.activeTool !== "select") return;
       if (kind === "move") select(id, event.shiftKey);
       transaction.begin();

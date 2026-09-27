@@ -294,7 +294,11 @@ export const GraphicsEditorCanvas: FC<{
             <CanvasSelectionOverlay
               layers={frame?.layers ?? layers}
               selectedIds={selectedIds}
-              onPointerDown={onLayerPointerDown}
+              onPointerDown={(event, kind, handle) => {
+                // The multi-selection box acts on the whole selection; any selected id identifies it.
+                const [anyId] = selectedIds;
+                if (anyId) onLayerPointerDown(event, anyId, kind, handle);
+              }}
             />
             {marquee && (
               <div

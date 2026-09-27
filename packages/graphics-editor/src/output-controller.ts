@@ -46,6 +46,7 @@ export class OutputController {
         time: output.defaultTime ?? 0,
         transitionTime: 0,
         direction: null,
+        playing: false,
         updatedAt: this.now(),
       },
       output,

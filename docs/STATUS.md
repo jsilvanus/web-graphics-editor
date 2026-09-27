@@ -7,8 +7,8 @@ This is the first time the repository was installed, compiled, tested and run. T
 | Check | At audit | Now |
 |---|---|---|
 | `npm ci` | ✅ | ✅ |
-| `tsc --noEmit` (package) | ❌ syntax errors, then ≈196 type errors | ❌ 143 type errors (mostly model drift, step 4) |
-| `vitest run` | ❌ 58 failed / 265 passed | ❌ 45 failed / 281 passed |
+| `tsc --noEmit` (package) | ❌ syntax errors, then ≈196 type errors | ⚠️ source clean; 17 errors left in test files (step 5) |
+| `vitest run` | ❌ 58 failed / 265 passed | ❌ 41 failed / 285 passed |
 | Demo: 3D workspace | ❌ blank page | ✅ works in a browser (see below) |
 | Demo: 2D editor | ❌ blank page | ✅ works in a browser (see below) |
 | CI (test-pyramid) | ❌ | ❌ first floor still fails; the format job passes |
@@ -84,19 +84,43 @@ The 2D editor crashed on load and, once it loaded, had no styling and several br
   - adding a 3D view
   - no console errors
 
-Known gaps: multi-selection shows a box but no resize handles, and the file-input ids are global, which would break two editors on one page.
+Known gap: the file-input ids are global, which would break two editors on one page.
+
+### Step 4: model reconciliation (done)
+Guiding rule: where code and tests disagree, the code's intent wins.
+- **Keyframes:**
+  - `AnimationKeyframe<T>` / `AnimationTrack<T>` are the one keyframe model. `Track` (2D layers) and `Graphics3DTrack` are specialisations.
+  - Keyframe helpers (`upsertKeyframe`, `moveKeyframe`, …) are generic over any track.
+  - Easing lives in `interpolation.easing`. The scene and composition timelines wrote it elsewhere, so the easing picker had no effect. Old documents' bare `easing` is still read.
+- **Declared types that code already used:**
+  - `Viewport`; resolved outputs now carry their `viewport`.
+  - `SceneTimeline.tracks3d` for 3D-view presentation tracks, with the `"view"` target.
+  - `Layer.sourceIn`, and `Layer.scaleX/scaleY` (now also rendered).
+  - `GraphicsOutput.duration`.
+  - One shared `Vec3`, and `GroupChildSnapshot`.
+  - `Scene.compositionId` and `Graphics3DView.renderAssetId` are now optional.
+- **Bugs found through the type errors:**
+  - Scene-timeline 3D keys were written to a stray `timeline.timeline`. `3d-timeline` now has track-list helpers used by both world and scene timelines.
+  - An `add-keyframe` on a document without a timeline returned `undefined` as the document.
+  - Constant-speed spatial interpolation passed the wrong bezier shape and produced NaN.
+  - Nested compositions inside scenes were evaluated without a time.
+  - Face inset flattened untouched faces into loose vertex ids, corrupting the mesh.
+  - Edge split read half-edge faces as vertex arrays and always threw.
+  - World-animation applied `"view"` tracks as light tracks.
+  - Multi-selection resize handles passed arguments in the wrong order; resizing several layers together works now.
+  - The path offset callback was never destructured.
+  - Numeric `border-radius` rendered without a unit.
+  - The 3D view inspector treated the boolean `loop` as a string.
+- Removed the unused duplicate `history/historyStore.ts`.
+- The scene timeline's `tracks3d` are stored, but not yet evaluated onto 3D views at render time. That is part of the 2D↔3D link, which is deferred for now.
 
 ## Blocking problems that remain
 
-### Missing code: things referenced but never written
-- The `Viewport` type (used by `types.ts`, `presentation.ts` and `index.ts`); `Vec3` export; `GroupChildSnapshot`.
-- Undefined identifier `onOffset` inside `LayerProperties`.
-
-### Model drift: code and types disagree
-- `SceneTimeline.tracks3d` is used by the timelines but not declared.
-- `Layer.sourceIn` is used for video trimming but not declared.
-- `Graphics3DView` and `Graphics3DAnimationTarget` shapes differ between tests, UI and types.
-- `AnimationTrack` / `Keyframe` / `Track` are three overlapping keyframe types used interchangeably.
+### Test files out of date with the model
+17 type errors remain, all in tests:
+- Fixtures missing now-required fields (`Track.targetId`, `GraphicsOutput.background`, mesh `transform`).
+- Tests reading `viewport` without an optional check.
+- A few expectations that don't match the code. For example, the edge-split tests expect 4, 6 and 18 where the geometry gives 5, 8 and 12.
 
 ### Tooling
 - The demo has never been type-checked in CI. CI only checks the package.

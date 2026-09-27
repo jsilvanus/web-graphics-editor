@@ -33,6 +33,7 @@ export const LayerProperties: FC<{
   assetPicker,
   onFont,
   onAsset,
+  onOffset,
 }) => {
   const patch = (value: Partial<Layer>) => onLayer(layer.id, value);
   const style = (key: string, value: string) => onStyle(layer.id, key, value);

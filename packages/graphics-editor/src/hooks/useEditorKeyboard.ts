@@ -6,7 +6,8 @@ export function useEditorKeyboard(undo: () => void, redo: () => void) {
       if (!(event.ctrlKey || event.metaKey)) return;
       if (!["z", "y"].includes(event.key.toLowerCase())) return;
       const target = event.target as HTMLElement | null;
-      if (target?.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) return;
+      if (target?.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target?.tagName ?? ""))
+        return;
       event.preventDefault();
       if (event.key.toLowerCase() === "y" || event.shiftKey) redo();
       else undo();

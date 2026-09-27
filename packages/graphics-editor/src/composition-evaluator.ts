@@ -321,7 +321,7 @@ export function evaluateScene(
     time: compositionTime,
     timeDomain: { output: globalTime, composition: compositionTime },
     layers: animatedLayers,
-    renderTree: renderTreeForLayers(document, animatedLayers),
+    renderTree: renderTreeForLayers(document, animatedLayers, compositionTime),
     videos: evaluateVideos(document, animatedLayers, compositionTime),
     views3d: evaluateViews3d(document, animatedLayers, compositionTime),
   };

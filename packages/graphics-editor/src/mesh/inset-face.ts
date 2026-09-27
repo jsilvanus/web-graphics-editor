@@ -39,18 +39,17 @@ export function insetFace(mesh: HalfEdgeMesh, faceId: number, distance: number):
     return id;
   });
 
-  const nextFaces = polygons
-    .map((current, index) => {
-      if (index !== faceId) return current;
-      const ringFaces = current.map((outer, i) => {
-        const nextOuter = current[(i + 1) % current.length];
-        const inner = innerVertexIds[i];
-        const nextInner = innerVertexIds[(i + 1) % current.length];
-        return [outer, nextOuter, nextInner, inner];
-      });
-      return [...ringFaces, innerVertexIds] as number[][];
-    })
-    .flat();
+  // One entry per polygon, except the inset face, which becomes its ring faces plus the inner face.
+  const nextFaces: number[][] = polygons.flatMap((current, index) => {
+    if (index !== faceId) return [current];
+    const ringFaces = current.map((outer, i) => {
+      const nextOuter = current[(i + 1) % current.length];
+      const inner = innerVertexIds[i];
+      const nextInner = innerVertexIds[(i + 1) % current.length];
+      return [outer, nextOuter, nextInner, inner];
+    });
+    return [...ringFaces, innerVertexIds];
+  });
 
   const result = fromPolygons({ positions, faces: nextFaces });
   validateHalfEdgeMesh(result);

@@ -1,5 +1,5 @@
 import type { Graphics3DMesh } from "../types";
-import { edgeIdForVertices } from "./topology";
+import { edgeIdForVertices, faceVertices } from "./topology";
 import { splitEdge } from "./split-edge";
 import { fromPolygons } from "./from-polygons";
 import type { HalfEdgeMesh } from "./half-edge";
@@ -40,8 +40,10 @@ function buildTopology(mesh: Graphics3DMesh): HalfEdgeMesh {
 function graphicsMeshFromTopology(source: Graphics3DMesh, topology: HalfEdgeMesh): Graphics3DMesh {
   const indices: number[] = [];
   for (const face of topology.faces) {
-    if (face.length !== 3) throw new Error("Edge split produced a non-triangle face");
-    indices.push(face[0], face[1], face[2]);
+    if (face.boundary) continue;
+    const vertices = faceVertices(topology, face.id);
+    if (vertices.length !== 3) throw new Error("Edge split produced a non-triangle face");
+    indices.push(vertices[0], vertices[1], vertices[2]);
   }
 
   return {

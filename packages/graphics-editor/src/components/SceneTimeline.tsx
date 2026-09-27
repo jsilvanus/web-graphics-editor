@@ -328,7 +328,9 @@ export const SceneTimelinePanel: FC<SceneTimelinePanelProps> = ({
           onTimeChange={time => move(selectedKey.kind, selectedKey.trackId, selectedKey.keyId, time)}
           onValueChange={value => patch(selectedKey.kind, selectedKey.trackId, selectedKey.keyId, { value })}
           onEasingChange={easing =>
-            patch(selectedKey.kind, selectedKey.trackId, selectedKey.keyId, { easing })
+            patch(selectedKey.kind, selectedKey.trackId, selectedKey.keyId, {
+              interpolation: { ...selected.interpolation, easing: { mode: easing } },
+            })
           }
           onDelete={() => remove(selectedKey.kind, selectedKey.trackId, selectedKey.keyId)}
         />

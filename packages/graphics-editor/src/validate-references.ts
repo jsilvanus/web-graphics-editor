@@ -70,7 +70,8 @@ export function validateDocumentReferences(document: GraphicsDocument): Document
   const timeline = document.timeline;
   if (timeline) {
     for (const scene of timeline.scenes)
-      requireReference(compositions, scene.compositionId, `scene "${scene.id}" compositionId`, errors);
+      if (scene.compositionId)
+        requireReference(compositions, scene.compositionId, `scene "${scene.id}" compositionId`, errors);
     for (const track of timeline.tracks)
       requireReference(layers, track.layerId, `timeline track "${track.id}" layerId`, errors);
     for (const clip of timeline.clips ?? [])

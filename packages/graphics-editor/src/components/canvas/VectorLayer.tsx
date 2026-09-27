@@ -76,11 +76,11 @@ export const VectorLayer: FC<{
         <path
           d={d}
           fill={layer.type === "line" ? "none" : layer.gradient ? `url(#ge-gradient-${layer.id})` : fill}
-          fillRule={fillRule}
+          fillRule={fillRule as "nonzero" | "evenodd"}
           stroke={stroke === "none" && layer.type === "line" ? String(layer.style?.color ?? "#fff") : stroke}
           strokeWidth={strokeWidth}
-          strokeLinecap={String(layer.style?.["stroke-linecap"] ?? "round")}
-          strokeLinejoin={String(layer.style?.["stroke-linejoin"] ?? "round")}
+          strokeLinecap={String(layer.style?.["stroke-linecap"] ?? "round") as "round" | "butt" | "square"}
+          strokeLinejoin={String(layer.style?.["stroke-linejoin"] ?? "round") as "round" | "bevel" | "miter"}
           opacity={Number(layer.style?.opacity ?? 1)}
           vectorEffect="non-scaling-stroke"
         />

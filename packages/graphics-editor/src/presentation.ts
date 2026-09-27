@@ -14,12 +14,15 @@ export interface ResolvedLayer extends Layer {
 export interface ResolvedComposition {
   composition: Composition;
   layers: ResolvedLayer[];
+  /** The viewport the layers were resolved for, when one was requested and exists. */
+  viewport?: Viewport;
 }
 export interface ResolvedScene {
   scene: Scene;
   composition: Composition;
   localTime: number;
   layers: ResolvedLayer[];
+  viewport?: Viewport;
 }
 
 export function findComposition(
@@ -62,6 +65,7 @@ export function resolveViewportComposition(
   if (!viewportId) return resolved;
   return {
     ...resolved,
+    viewport,
     layers: resolved.layers.map(layer => ({ ...layer, ...viewportOverride(layer, viewportId) })),
   };
 }
@@ -91,6 +95,7 @@ export function resolveScene(
     composition: resolved.composition,
     localTime: Math.max(0, resolvedTime - scene.start),
     layers: resolved.layers,
+    viewport: resolved.viewport,
   };
 }
 export function resolveOutput(

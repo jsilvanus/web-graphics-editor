@@ -1,10 +1,12 @@
-export type Vec3 = readonly [number, number, number];
+import type { Vec3 } from "./types";
+export type { Vec3 };
 
+type ReadonlyVec3 = readonly [number, number, number];
 export interface CubicBezier3D {
-  p0: Vec3;
-  p1: Vec3;
-  p2: Vec3;
-  p3: Vec3;
+  p0: ReadonlyVec3;
+  p1: ReadonlyVec3;
+  p2: ReadonlyVec3;
+  p3: ReadonlyVec3;
 }
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;

@@ -1,4 +1,9 @@
-import type { FC, PointerEvent as ReactPointerEvent, KeyboardEvent as ReactKeyboardEvent } from "react";
+import type {
+  FC,
+  MouseEvent as ReactMouseEvent,
+  PointerEvent as ReactPointerEvent,
+  KeyboardEvent as ReactKeyboardEvent,
+} from "react";
 import { useState } from "react";
 import type { Layer, PathNode, Point } from "../../types";
 import { mirrorHandle } from "../../geometry";
@@ -12,7 +17,7 @@ type Drag = {
   broken?: boolean;
 };
 
-function cloneNodes(nodes: PathNode[]) {
+function cloneNodes(nodes: PathNode[]): PathNode[] {
   return nodes.map(n => ({
     ...n,
     handleIn: n.handleIn && { ...n.handleIn },
@@ -46,7 +51,7 @@ export const PathEditor: FC<{ layer: Layer; onNodes: (nodes: PathNode[]) => void
   const [selected, setSelected] = useState<number[]>([]);
   const [drag, setDrag] = useState<Drag | null>(null);
 
-  const point = (event: ReactPointerEvent, svg: SVGSVGElement): Point => {
+  const point = (event: ReactMouseEvent, svg: SVGSVGElement): Point => {
     const r = svg.getBoundingClientRect();
     return {
       x: ((event.clientX - r.left) * layer.width) / r.width,
@@ -55,7 +60,7 @@ export const PathEditor: FC<{ layer: Layer; onNodes: (nodes: PathNode[]) => void
   };
 
   const begin = (event: ReactPointerEvent, index: number, part: "node" | "in" | "out") => {
-    const svg = event.currentTarget.ownerSVGElement;
+    const svg = (event.currentTarget as SVGGraphicsElement).ownerSVGElement;
     if (!svg) return;
     event.stopPropagation();
     const nextSelection = event.shiftKey
@@ -97,7 +102,7 @@ export const PathEditor: FC<{ layer: Layer; onNodes: (nodes: PathNode[]) => void
       next = drag.nodes.map((node, i) => {
         if (i !== drag.index) return node;
         if (drag.broken) return { ...node, [drag.part === "in" ? "handleIn" : "handleOut"]: p };
-        return mirrorHandle(node, drag.part, p);
+        return mirrorHandle(node, drag.part as "in" | "out", p);
       });
     }
     onNodes(next);
@@ -135,8 +140,8 @@ export const PathEditor: FC<{ layer: Layer; onNodes: (nodes: PathNode[]) => void
     setSelected(previous => previous.filter(i => i !== index).map(i => (i > index ? i - 1 : i)));
   };
 
-  const insertNode = (event: ReactPointerEvent, index: number) => {
-    const svg = event.currentTarget.ownerSVGElement;
+  const insertNode = (event: ReactMouseEvent, index: number) => {
+    const svg = (event.currentTarget as SVGGraphicsElement).ownerSVGElement;
     if (!svg) return;
     event.stopPropagation();
     const p = point(event, svg);

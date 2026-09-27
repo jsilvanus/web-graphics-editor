@@ -35,7 +35,8 @@ function domToRuns(root: HTMLElement): TextRun[] {
       next.fontStyle = style.fontStyle === "italic" ? "italic" : "italic";
     if (style.fontFamily) next.fontFamily = style.fontFamily;
     if (style.textDecoration || node.tagName === "U" || node.tagName === "S" || node.tagName === "STRIKE")
-      next.textDecoration = style.textDecoration || (node.tagName === "U" ? "underline" : "line-through");
+      next.textDecoration = (style.textDecoration ||
+        (node.tagName === "U" ? "underline" : "line-through")) as TextRun["textDecoration"];
     if (style.fontSize) {
       const parsed = Number.parseFloat(style.fontSize);
       if (Number.isFinite(parsed)) next.fontSize = parsed;

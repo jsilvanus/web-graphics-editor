@@ -1,3 +1,4 @@
+export type Vec3 = [number, number, number];
 export interface Point {
   x: number;
   y: number;
@@ -53,6 +54,19 @@ export interface Gradient {
   cy?: number;
   stops: GradientStop[];
 }
+/**
+ * A presentation context for compositions (e.g. a landscape broadcast frame or a portrait venue
+ * screen). It does not copy content: layers adapt to it through `Layer.viewportOverrides`.
+ */
+export interface Viewport {
+  id: string;
+  name?: string;
+  width: number;
+  height: number;
+  /** Compositions this viewport presents; the first is the default. */
+  compositionIds?: string[];
+  provenance?: Provenance;
+}
 export interface ViewportOverride {
   x?: number;
   y?: number;
@@ -71,6 +85,9 @@ export interface Layer {
   width: number;
   height: number;
   rotation?: number;
+  /** Scale factors applied around the layer's centre (default 1). */
+  scaleX?: number;
+  scaleY?: number;
   skewX?: number;
   skewY?: number;
   transformOrigin?: Point;
@@ -108,6 +125,8 @@ export interface Layer {
   compositionIn?: number;
   compositionOut?: number;
   videoAssetId?: string;
+  /** Trim of the video source, in media seconds. */
+  sourceIn?: number;
   sourceOut?: number;
   timeOffset?: number;
   playbackRate?: number;
@@ -160,7 +179,8 @@ export interface AnimationTrack<T extends AnimationValue = AnimationValue> {
   keyframes: AnimationKeyframe<T>[];
   groupIds?: string[];
 }
-export type AnimatedProperty = "x" | "y" | "width" | "height" | "rotation" | "opacity" | "scaleX" | "scaleY";
+export type AnimatedProperty =
+  "x" | "y" | "width" | "height" | "rotation" | "opacity" | "scaleX" | "scaleY" | "textPathStartOffset";
 export interface Track extends AnimationTrack<number> {
   layerId: string;
   property: AnimatedProperty;
@@ -185,7 +205,8 @@ export type Graphics3DAnimatedProperty =
   | "distance"
   | "angle"
   | "penumbra";
-export type Graphics3DAnimationTarget = "mesh" | "camera" | "light";
+/** "view" targets a Graphics3DView and is only used on the main scene timeline. */
+export type Graphics3DAnimationTarget = "mesh" | "camera" | "light" | "view";
 export interface Graphics3DTrack {
   id: string;
   targetType: Graphics3DAnimationTarget;
@@ -208,7 +229,8 @@ export interface SceneTransition {
 export interface Scene {
   id: string;
   name: string;
-  compositionId: string;
+  /** Composition shown during the scene; without one, the document's own layers are shown. */
+  compositionId?: string;
   start: number;
   duration: number;
   transition?: SceneTransition;
@@ -219,6 +241,8 @@ export interface SceneTimeline {
   currentSceneId: string;
   currentTime: number;
   tracks: Track[];
+  /** Presentation tracks for 3D views (see docs/WORLD-TIME-MODEL.md). */
+  tracks3d?: Graphics3DTrack[];
   clips?: LayerClip[];
   loop?: boolean;
 }
@@ -352,7 +376,8 @@ export interface Graphics3DView {
   visibility?: Graphics3DVisibility;
   renderMode?: Graphics3DRenderMode;
   renderSettings?: Graphics3DRenderSettings;
-  renderAssetId: string;
+  /** Asset holding pre-rendered frames for this view, once rendered. */
+  renderAssetId?: string;
   x: number;
   y: number;
   width: number;
@@ -382,6 +407,8 @@ export interface GraphicsOutput {
   editable?: boolean;
   liveControl?: boolean;
   defaultTime?: number;
+  /** Length of the output's program in seconds; looping outputs wrap at this time. */
+  duration?: number;
   createdAt?: string;
   updatedAt?: string;
   provenance?: Provenance;

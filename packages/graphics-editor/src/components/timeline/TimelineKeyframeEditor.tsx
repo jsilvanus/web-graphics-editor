@@ -1,7 +1,7 @@
 import type { FC } from "react";
 import type { Easing, AnimationKeyframe } from "../../types";
 
-export interface TimelineKeyframeEditorValue extends AnimationKeyframe<number> {}
+export type TimelineKeyframeEditorValue = AnimationKeyframe;
 export interface TimelineKeyframeEditorProps {
   value?: TimelineKeyframeEditorValue;
   onTimeChange: (time: number) => void;
@@ -46,7 +46,9 @@ export const TimelineKeyframeEditor: FC<TimelineKeyframeEditorProps> = ({
         <input
           type="number"
           step="0.01"
-          value={value.value}
+          value={typeof value.value === "number" ? value.value : ""}
+          disabled={typeof value.value !== "number"}
+          title={typeof value.value === "number" ? undefined : "Only numeric keyframes can be edited here"}
           onChange={e => onValueChange(Number(e.target.value) || 0)}
         />
       </label>
