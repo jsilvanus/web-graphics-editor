@@ -99,12 +99,11 @@ export function faceHandleGeometry(
 }
 
 /**
- * Selects an edge loop using inferred quad topology where possible. A pair of
- * coplanar triangles sharing a diagonal is treated as one logical quad; loop
- * traversal then crosses the quad through opposite boundary edges. The
- * geometric traversal remains the fallback for genuinely triangular regions.
+ * Selects an edge ring (Blender's meaning): from an edge, cross each quad to its opposite edge, in
+ * both directions. A pair of coplanar triangles sharing a diagonal is treated as one logical quad.
+ * Without quads there is no ring, so only the starting edge is selected.
  */
-export function selectEdgeLoop(data: Graphics3DMesh, startKey: string): Set<string> {
+export function selectEdgeRing(data: Graphics3DMesh, startKey: string): Set<string> {
   const edges = meshEdges(data);
   const start = edges.find(edge => edgeKey(edge.a, edge.b) === startKey);
   if (!start) return new Set();
@@ -131,7 +130,7 @@ export function selectEdgeLoop(data: Graphics3DMesh, startKey: string): Set<stri
     return result;
   }
 
-  return selectGeometricEdgeLoop(data, startKey);
+  return new Set([startKey]);
 }
 
 function walkOppositeEdges(startKey: string, opposite: Map<string, string[]>, result: Set<string>) {
@@ -300,12 +299,11 @@ function triangleNormal(data: Graphics3DMesh, a: number, b: number, c: number): 
 }
 
 /**
- * Selects an edge ring from inferred quad strips. Parallel edges connected
- * through logical quads are preferred; disconnected parallel edges are not
- * pulled in. If no logical quad connectivity exists, use the geometric
- * triangulated-mesh fallback.
+ * Selects an edge loop (Blender's meaning): the chain of edges that continue through shared
+ * vertices in the same direction, along logical quad boundaries. Disconnected parallel edges are
+ * not pulled in. Without quad connectivity, the geometric chain walk is used.
  */
-export function selectEdgeRing(data: Graphics3DMesh, startKey: string): Set<string> {
+export function selectEdgeLoop(data: Graphics3DMesh, startKey: string): Set<string> {
   const edges = meshEdges(data);
   const start = edges.find(edge => edgeKey(edge.a, edge.b) === startKey);
   if (!start) return new Set();
@@ -342,10 +340,5 @@ export function selectEdgeRing(data: Graphics3DMesh, startKey: string): Set<stri
   }
 
   if (result.size > 1) return result;
-
-  for (const edge of edges) {
-    const direction = vertexDirection(data, edge.a, edge.b).normalize();
-    if (Math.abs(target.dot(direction)) >= 0.85) result.add(edgeKey(edge.a, edge.b));
-  }
-  return result;
+  return selectGeometricEdgeLoop(data, startKey);
 }

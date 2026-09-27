@@ -137,10 +137,7 @@ Guiding rule: where code and tests disagree, the code's intent wins. Real bugs i
   - Missing fixture fields were added.
 - **Browser smoke tests:** `apps/demo/e2e` has Playwright tests that load both editors, check for console errors, and do a basic edit in each. CI runs them in an `e2e` job. The package CI job now typechecks every workspace.
 
-**Needs a decision.** The mesh-edit functions are named against Blender's conventions:
-- `selectEdgeLoop` walks across quads to the opposite edge. Blender calls that a ring.
-- `selectEdgeRing` follows parallel edges that meet at a vertex. Blender calls that a loop.
-The tests now document the current behaviour; swapping the names (and the toolbar labels) would be a small follow-up.
+**Loop and ring now follow Blender's naming.** Edge **Loop** selects the chain that continues through shared vertices. **Ring** crosses each quad to its opposite edge. They were swapped before; the swap was done at the user's request. Without quads, a ring is just the starting edge, and a loop falls back to the geometric chain walk.
 
 Also a choice to confirm: a scene resolved for an unknown viewport id still renders, without overrides, rather than returning nothing.
 

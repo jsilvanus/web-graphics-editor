@@ -16,23 +16,30 @@ function quad(): Graphics3DMesh {
 }
 
 describe("edge loop and ring selection", () => {
-  // Note: in this code a "loop" crosses each quad to the opposite edge, and a "ring" follows
-  // parallel edges that share a vertex (Blender uses these two names the other way round).
-  it("follows a geometric edge loop through opposite directions", () => {
+  // Blender's meaning: a loop continues through vertices; a ring crosses quads to opposite edges.
+  it("selects a ring by crossing each quad to the opposite edge, in both directions", () => {
     const data = quad();
     // The middle edge borders both quads, so the walk reaches the opposite edge on each side.
-    expect([...selectEdgeLoop(data, "1:3")].sort()).toEqual(["0:2", "1:3", "4:5"]);
+    expect([...selectEdgeRing(data, "1:3")].sort()).toEqual(["0:2", "1:3", "4:5"]);
   });
 
-  it("infers a logical quad for loop traversal across triangulated faces", () => {
+  it("infers a logical quad for ring traversal across triangulated faces", () => {
     const data = quad();
-    expect([...selectEdgeLoop(data, "0:1")].sort()).toEqual(["0:1", "2:3"]);
+    expect([...selectEdgeRing(data, "0:1")].sort()).toEqual(["0:1", "2:3"]);
   });
 
-  it("selects a connected ring without pulling in disconnected parallel edges", () => {
+  it("selects a connected loop without pulling in disconnected parallel edges", () => {
     const data = quad();
-    expect([...selectEdgeRing(data, "0:1")].sort()).toEqual(["0:1", "1:4"]);
-    expect(selectEdgeRing(data, "0:1")).not.toContain("6:7");
+    expect([...selectEdgeLoop(data, "0:1")].sort()).toEqual(["0:1", "1:4"]);
+    expect(selectEdgeLoop(data, "0:1")).not.toContain("6:7");
+  });
+
+  it("selects only the starting edge as a ring when there are no quads", () => {
+    const triangle: Graphics3DMesh = {
+      ...quad(),
+      geometry: { vertices: [0, 0, 0, 1, 0, 0, 0, 1, 0], indices: [0, 1, 2] },
+    };
+    expect([...selectEdgeRing(triangle, "0:1")]).toEqual(["0:1"]);
   });
 });
 
