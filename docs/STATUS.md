@@ -7,11 +7,12 @@ This is the first time the repository was installed, compiled, tested and run. T
 | Check | At audit | Now |
 |---|---|---|
 | `npm ci` | ✅ | ✅ |
-| `tsc --noEmit` (package) | ❌ syntax errors, then ≈196 type errors | ⚠️ source clean; 17 errors left in test files (step 5) |
-| `vitest run` | ❌ 58 failed / 265 passed | ❌ 41 failed / 285 passed |
-| Demo: 3D workspace | ❌ blank page | ✅ works in a browser (see below) |
-| Demo: 2D editor | ❌ blank page | ✅ works in a browser (see below) |
-| CI (test-pyramid) | ❌ | ❌ first floor still fails; the format job passes |
+| `npm run typecheck` (package + demo) | ❌ syntax errors, then ≈196 type errors | ✅ 0 errors |
+| `vitest run` | ❌ 58 failed / 265 passed | ✅ 331 passed |
+| Build | ❌ | ✅ |
+| Demo: 3D workspace | ❌ blank page | ✅ works in a browser |
+| Demo: 2D editor | ❌ blank page | ✅ works in a browser |
+| Browser smoke tests (`npm run test:e2e -w @jsilvanus/graphics-editor-demo`) | — | ✅ run in CI |
 
 ## Progress log
 
@@ -113,6 +114,32 @@ Guiding rule: where code and tests disagree, the code's intent wins.
   - The 3D view inspector treated the boolean `loop` as a string.
 - Removed the unused duplicate `history/historyStore.ts`.
 - The scene timeline's `tracks3d` are stored, but not yet evaluated onto 3D views at render time. That is part of the 2D↔3D link, which is deferred for now.
+
+### Step 5: tests green and browser smoke tests in CI (done)
+Guiding rule: where code and tests disagree, the code's intent wins. Real bugs in the code were fixed rather than papered over.
+- **Code bugs fixed:**
+  - Polygon booleans never actually clipped: intersection nodes were spliced into the rings but never visited. This is rewritten as proper Greiner–Hormann (intersect, union, subtract; either orientation), with new union and subtract tests.
+  - Bevel bands were wound backwards, so they were back-face culled. Winding is now tested.
+  - The legacy `extrudeMeshFace` kept the base face and capped the top facing inwards.
+  - The edge-loop walk only went in one direction across an edge shared by two quads.
+  - Any world timeline track edit dropped the world's `duration` and `loop`.
+  - `ungroup-layer` and `group-layers` were not exact inverses.
+  - Undoing a style change left an empty `style: {}`.
+  - Transition progress read 0 for an output that is fully on.
+  - Video clips mapped media time as if `timeOffset` were a media offset. The composition timeline UI treats it as the clip start.
+- **Tests corrected to the code's intent:**
+  - Colours are `#rrggbbaa`.
+  - World time wraps into `[inPoint, outPoint)` as the world-time doc specifies.
+  - Negative scene time clamps to the start.
+  - Inverse operations undo; several tests asserted the reverse.
+  - Mesh counts that the geometry can't produce were fixed (split, connect, bevel, duplicate).
+  - Viewport-override fixtures were keyed by composition instead of viewport.
+  - Missing fixture fields were added.
+- **Browser smoke tests:** `apps/demo/e2e` has Playwright tests that load both editors, check for console errors, and do a basic edit in each. CI runs them in an `e2e` job. The package CI job now typechecks every workspace.
+
+**Loop and ring now follow Blender's naming.** Edge **Loop** selects the chain that continues through shared vertices. **Ring** crosses each quad to its opposite edge. They were swapped before; the swap was done at the user's request. Without quads, a ring is just the starting edge, and a loop falls back to the geometric chain walk.
+
+Also a choice to confirm: a scene resolved for an unknown viewport id still renders, without overrides, rather than returning nothing.
 
 ## Blocking problems that remain
 

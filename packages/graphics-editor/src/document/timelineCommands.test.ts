@@ -13,6 +13,7 @@ const timeline = (track: Track): SceneTimeline => ({
 const track: Track = {
   id: "t",
   layerId: "l",
+  targetId: "l",
   property: "x",
   keyframes: [
     { id: "k1", time: 0, value: 100 },
@@ -60,7 +61,7 @@ describe("timeline operations", () => {
     const afterDelete = applyOperation(d, deleted);
     expect(afterDelete.timeline?.tracks[0].keyframes.map(k => k.id)).toEqual(["k2"]);
     expect(applyOperation(afterDelete, deleted, true)).toEqual(d);
-    expect(applyOperation(d, invertOperation(deleted))).toEqual(afterDelete);
+    expect(applyOperation(afterDelete, invertOperation(deleted))).toEqual(d);
   });
 
   it("changes clip timing without changing layer order", () => {
@@ -79,7 +80,7 @@ describe("timeline operations", () => {
 
   it("keeps timeline edits undoable as one operation", () => {
     const d = doc();
-    const next = { ...d.timeline!, currentTime: 3.25 };
+    const next = { ...d.timeline!, currentTime: 4 };
     const result = setTimelineCommand(d, next);
     expect(result.operation?.type).toBe("set-timeline");
     expect(applyOperation(d, result.operation!)).toEqual(result.document);

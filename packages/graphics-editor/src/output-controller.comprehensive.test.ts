@@ -56,6 +56,8 @@ describe("output controller", () => {
   });
   it("plays, pauses, seeks and resets", () => {
     const { controller } = make();
+    // A live output only advances while it is on air, so take it first.
+    controller.dispatch({ type: "output.take", outputId: "o" } as any);
     controller.dispatch({ type: "output.play", outputId: "o" } as any);
     controller.tick(1);
     expect(controller.getRuntime("o")?.time).toBeGreaterThan(3);

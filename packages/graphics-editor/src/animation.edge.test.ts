@@ -19,8 +19,10 @@ describe("animation edge cases", () => {
     expect(interpolateKeyframes(ks, 1)).toBe(100);
   });
   it("handles coincident keyframe times deterministically", () => {
+    // Keyframes are stably sorted by time; at a shared time the first one wins.
     const ks = [k(1, 10), k(1, 20)];
-    expect(interpolateKeyframes(ks, 1)).toBe(20);
+    expect(interpolateKeyframes(ks, 1)).toBe(10);
+    expect(interpolateKeyframes([...ks].reverse(), 1)).toBe(20);
   });
   it("handles a single keyframe", () => expect(interpolateKeyframes([k(2, 42)], 999)).toBe(42));
   it("does not produce NaN for zero-length intervals", () => {

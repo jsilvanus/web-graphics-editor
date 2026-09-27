@@ -82,7 +82,8 @@ describe("document editing commands", () => {
   });
   it("ungroups and restores original structure", () => {
     const grouped = groupLayersCommand(D(), new Set(["a", "b"]));
-    const r = ungroupLayerCommand(grouped.document, grouped.groupId);
+    const groupId = grouped.operation?.type === "group-layers" ? grouped.operation.group.id : "";
+    const r = ungroupLayerCommand(grouped.document, groupId);
     expect(r.document).toEqual(D());
     expect(applyOperation(r.document, r.operation!, true)).toEqual(grouped.document);
   });

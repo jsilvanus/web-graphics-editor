@@ -49,14 +49,6 @@ function ring(poly: PolygonPoint[]) {
   });
   return n as Node[];
 }
-function insert(edge: Node, n: Node) {
-  let cur = edge;
-  while (cur.next !== edge && cur.next.intersection && cur.next.alpha < n.alpha) cur = cur.next;
-  n.next = cur.next;
-  n.prev = cur;
-  cur.next.prev = n;
-  cur.next = n;
-}
 function fallback(a: PolygonPoint[], b: PolygonPoint[], op: BooleanOperation): BooleanContour[] {
   const ai = inside(b[0], a),
     bi = inside(a[0], b);
@@ -77,58 +69,88 @@ function fallback(a: PolygonPoint[], b: PolygonPoint[], op: BooleanOperation): B
     ];
   return [{ points: a, hole: false }];
 }
+/**
+ * Boolean of two simple polygons (Greiner–Hormann clipping).
+ *
+ * Both polygons are normalised to the same orientation. Intersections are computed on the original
+ * edges, spliced into both rings in edge order, and the result is traced by walking one ring until
+ * the next intersection and then switching to the other: forward on both rings for intersect and
+ * union, backwards on the cutter for subtract. Without proper crossings (disjoint, containment or
+ * only touching) the containment fallback applies.
+ */
 export function booleanContours(
   a: PolygonPoint[],
   b: PolygonPoint[],
   op: BooleanOperation,
 ): BooleanContour[] {
   if (a.length < 3 || b.length < 3) return [];
-  const A = ring(a),
-    B = ring(b);
-  let count = 0;
-  for (const x of A)
-    for (const y of B) {
-      const h = hit(x.p, x.next.p, y.p, y.next.p);
-      if (!h) continue;
+  // Same orientation for both, otherwise "forward" means different things on each ring.
+  const orient = (p: PolygonPoint[]) => (area(p) < 0 ? [...p].reverse() : p);
+  const polyA = orient(a),
+    polyB = orient(b);
+  const A = ring(polyA),
+    B = ring(polyB);
+
+  // 1. Find crossings on the original edges (endpoints excluded, so shared vertices don't double up).
+  const hitsA = A.map(() => [] as Node[]),
+    hitsB = B.map(() => [] as Node[]);
+  for (let i = 0; i < polyA.length; i++)
+    for (let j = 0; j < polyB.length; j++) {
+      const h = hit(polyA[i], polyA[(i + 1) % polyA.length], polyB[j], polyB[(j + 1) % polyB.length]);
+      if (!h || h.t <= EPS || h.t >= 1 - EPS || h.u <= EPS || h.u >= 1 - EPS) continue;
       const an = { p: h.p, intersection: true, alpha: h.t } as Node,
-        bn = { p: h.p, intersection: true, alpha: h.u } as Node;
+        bn = { p: { ...h.p }, intersection: true, alpha: h.u } as Node;
       an.neighbor = bn;
       bn.neighbor = an;
-      insert(x, an);
-      insert(y, bn);
-      count++;
+      hitsA[i].push(an);
+      hitsB[j].push(bn);
     }
-  if (!count) return fallback(a, b, op);
-  for (const n of A)
-    if (n.intersection) {
-      const q = { x: n.p.x + (n.next.p.x - n.p.x) * 1e-6, y: n.p.y + (n.next.p.y - n.p.y) * 1e-6 };
-      const other = inside(q, b);
-      n.entry = op === "intersect" ? other : op === "union" ? !other : other;
-    }
-  for (const n of B)
-    if (n.intersection) {
-      const q = { x: n.p.x + (n.next.p.x - n.p.x) * 1e-6, y: n.p.y + (n.next.p.y - n.p.y) * 1e-6 };
-      const other = inside(q, a);
-      n.entry = op === "intersect" ? other : op === "union" ? !other : other;
-    }
+  const crossings = hitsA.flat();
+  if (crossings.length < 2) return fallback(a, b, op);
+
+  // 2. Splice them into the rings in order along each edge.
+  const splice = (nodes: Node[], hits: Node[][]) =>
+    nodes.forEach((node, i) => {
+      let cur = node;
+      for (const h of hits[i].sort((x, y) => x.alpha - y.alpha)) {
+        h.next = cur.next;
+        h.prev = cur;
+        cur.next.prev = h;
+        cur.next = h;
+        cur = h;
+      }
+    });
+  splice(A, hitsA);
+  splice(B, hitsB);
+
+  // 3. Trace. Start on A at crossings where A continues into the wanted region.
+  const backwardsOnB = op === "subtract";
+  const wantInsideB = op === "intersect";
+  const after = (n: Node, other: PolygonPoint[]) =>
+    inside({ x: n.p.x + (n.next.p.x - n.p.x) * 1e-6, y: n.p.y + (n.next.p.y - n.p.y) * 1e-6 }, other);
   const result: BooleanContour[] = [];
-  for (const start of [...A, ...B])
-    if (start.intersection && !start.visited && start.entry) {
-      const out = [];
-      let n = start,
-        guard = 0;
-      do {
-        n.visited = true;
-        out.push(n.p);
-        if (n.intersection && n.neighbor) {
-          n = n.neighbor;
-          if (n.visited) break;
-        }
-        n = n.next;
-        guard++;
-      } while (n !== start && guard < 10000);
-      if (out.length > 2 && Math.abs(area(out)) > EPS) result.push({ points: out, hole: false });
+  for (const start of crossings) {
+    if (start.visited || after(start, polyB) !== wantInsideB) continue;
+    const out: PolygonPoint[] = [];
+    let cur = start,
+      onA = true,
+      guard = 0;
+    while (guard++ < 100000) {
+      cur.visited = true;
+      if (cur.neighbor) cur.neighbor.visited = true;
+      out.push(cur.p);
+      const step = (n: Node) => (!onA && backwardsOnB ? n.prev : n.next);
+      cur = step(cur);
+      while (!cur.intersection) {
+        out.push(cur.p);
+        cur = step(cur);
+      }
+      if (cur === start || cur.neighbor === start) break;
+      cur = cur.neighbor!;
+      onA = !onA;
     }
+    if (out.length > 2 && Math.abs(area(out)) > EPS) result.push({ points: out, hole: false });
+  }
   return result.length ? result : fallback(a, b, op);
 }
 export function booleanPolygons(

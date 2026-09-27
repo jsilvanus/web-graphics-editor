@@ -70,6 +70,7 @@ describe("3D animation", () => {
         {
           id: "x",
           layerId: "v",
+          targetId: "v",
           property: "width" as const,
           keyframes: [
             { id: "a", time: 0, value: 100 },
@@ -79,6 +80,7 @@ describe("3D animation", () => {
         {
           id: "o",
           layerId: "v",
+          targetId: "v",
           property: "opacity" as const,
           keyframes: [
             { id: "c", time: 0, value: 1 },

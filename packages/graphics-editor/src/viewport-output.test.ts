@@ -45,8 +45,8 @@ describe("viewport/output contracts", () => {
   });
   it("allows multiple outputs to resolve independently", () => {
     const d = make();
-    expect(resolveOutput(d, "o1", 0)?.viewport.id).toBe("venue");
-    expect(resolveOutput(d, "o2", 0)?.viewport.id).toBe("wide");
+    expect(resolveOutput(d, "o1", 0)?.viewport?.id).toBe("venue");
+    expect(resolveOutput(d, "o2", 0)?.viewport?.id).toBe("wide");
   });
   it("keeps output playback configuration separate from viewport geometry", () => {
     const d = make();

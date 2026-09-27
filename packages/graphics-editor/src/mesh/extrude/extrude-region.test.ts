@@ -22,12 +22,16 @@ describe("extrudeRegion", () => {
       ),
     });
     expect(validateHalfEdgeMesh(topology).valid).toBe(true);
-    expect(vertices(result, [8, 9, 10, 11])).toEqual([
-      [-0.5, -0.5, -1.5],
-      [0.5, -0.5, -1.5],
-      [0.5, 0.5, -1.5],
-      [-0.5, 0.5, -1.5],
-    ]);
+    // The new cap vertices; their id order follows the boundary walk, so compare as a set.
+    const sorted = (points: number[][]) => [...points].sort((p, q) => p[0] - q[0] || p[1] - q[1]);
+    expect(sorted(vertices(result, [8, 9, 10, 11]))).toEqual(
+      sorted([
+        [-0.5, -0.5, -1.5],
+        [0.5, -0.5, -1.5],
+        [0.5, 0.5, -1.5],
+        [-0.5, 0.5, -1.5],
+      ]),
+    );
   });
 
   it("is independent of face-selection order", () => {

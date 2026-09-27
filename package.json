@@ -12,8 +12,8 @@
     "build": "npm run build --workspaces --if-present",
     "test": "npm test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "format": "prettier --write \"packages/*/src/**/*.{ts,tsx,css}\" \"apps/*/src/**/*.{ts,tsx,css}\" \"apps/*/*.{ts,json,html}\" \"packages/*/*.json\" \"*.json\"",
-    "format:check": "prettier --check \"packages/*/src/**/*.{ts,tsx,css}\" \"apps/*/src/**/*.{ts,tsx,css}\" \"apps/*/*.{ts,json,html}\" \"packages/*/*.json\" \"*.json\""
+    "format": "prettier --write \"packages/*/src/**/*.{ts,tsx,css}\" \"apps/*/src/**/*.{ts,tsx,css}\" \"apps/*/e2e/**/*.ts\" \"apps/*/*.{ts,json,html}\" \"packages/*/*.json\" \"*.json\"",
+    "format:check": "prettier --check \"packages/*/src/**/*.{ts,tsx,css}\" \"apps/*/src/**/*.{ts,tsx,css}\" \"apps/*/e2e/**/*.ts\" \"apps/*/*.{ts,json,html}\" \"packages/*/*.json\" \"*.json\""
   },
   "engines": {
     "node": ">=20"

@@ -16,10 +16,13 @@ describe("connectGraphicsMeshEdges", () => {
     const source = mesh([0, 1, 2, 1, 3, 2]);
     const result = connectGraphicsMeshEdges(source, edgeKey(0, 1), edgeKey(2, 3));
 
+    // Two edge midpoints plus the point where the cut crosses the diagonal.
     expect(result.mesh.geometry.vertices).toHaveLength(21);
-    expect(result.mesh.geometry.indices).toHaveLength(12);
+    // 7 vertices, 6 on the boundary: a planar triangulation has 2·7 − 6 − 2 = 6 triangles
+    // and (3·6 + 6) / 2 = 12 edges.
+    expect(result.mesh.geometry.indices).toHaveLength(18);
     expect(result.mesh.geometry.normals).toBeUndefined();
-    expect(meshEdges(result.mesh)).toHaveLength(7);
+    expect(meshEdges(result.mesh)).toHaveLength(12);
   });
 
   it("rejects an edge selected twice", () => {

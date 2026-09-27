@@ -4,7 +4,12 @@ import { edgeKey, meshEdges } from "../3d-mesh-topology";
 import type { Graphics3DMesh } from "../types";
 
 function mesh(indices: number[], vertices: number[]): Graphics3DMesh {
-  return { id: "test", name: "test", geometry: { vertices, indices } };
+  return {
+    id: "test",
+    name: "test",
+    geometry: { vertices, indices },
+    transform: { position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] },
+  };
 }
 
 describe("splitGraphicsMeshEdges", () => {
@@ -15,7 +20,8 @@ describe("splitGraphicsMeshEdges", () => {
 
     expect(result.geometry.vertices).toHaveLength(12);
     expect(result.geometry.indices).toHaveLength(6);
-    expect(meshEdges(result)).toHaveLength(4);
+    // Two triangles sharing the new spoke: 3 original sides (one now halved) + the spoke = 5 edges.
+    expect(meshEdges(result)).toHaveLength(5);
   });
 
   it("splits an interior edge and creates four triangles", () => {
@@ -25,7 +31,8 @@ describe("splitGraphicsMeshEdges", () => {
 
     expect(result.geometry.vertices).toHaveLength(15);
     expect(result.geometry.indices).toHaveLength(12);
-    expect(meshEdges(result)).toHaveLength(6);
+    // A fan of four triangles around the midpoint: 4 spokes + 4 outer edges.
+    expect(meshEdges(result)).toHaveLength(8);
   });
 
   it("splits multiple independent edges", () => {
@@ -34,6 +41,7 @@ describe("splitGraphicsMeshEdges", () => {
     const result = splitGraphicsMeshEdges(source, new Set([edgeKey(0, 1), edgeKey(2, 3)]));
 
     expect(result.geometry.vertices).toHaveLength(18);
-    expect(result.geometry.indices).toHaveLength(18);
+    // Each boundary split turns one triangle into two: 2 + 2 = 4 triangles.
+    expect(result.geometry.indices).toHaveLength(12);
   });
 });

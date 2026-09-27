@@ -18,5 +18,5 @@
       "@jsilvanus/graphics-editor": ["../../packages/graphics-editor/src/index.ts"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "e2e", "playwright.config.ts"]
 }

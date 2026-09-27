@@ -34,6 +34,9 @@ export function createOutputRuntime(output: GraphicsOutput): OutputRuntime {
   };
 }
 export function outputTransitionProgress(runtime: OutputRuntime, output: GraphicsOutput): number {
+  // Settled states: fully shown when on, fully hidden when off.
+  if (runtime.state === "on") return 1;
+  if (runtime.state === "off") return 0;
   const duration = durationOf(runtime.direction === "out" ? output.outTransition : output.inTransition);
   if (!duration) return runtime.state === "exiting" ? 0 : 1;
   return clamp(runtime.transitionTime / duration, 0, 1);

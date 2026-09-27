@@ -56,7 +56,8 @@ describe("WEGRA serialization", () => {
 
   it("loads a real legacy v1 package fixture and migrates it on re-save", async () => {
     const legacy = deserializeWegra(fixtureBytes());
-    expect(legacy.document.id).toBe("legacy-v1");
+    // The v1 fixture carries a document id, which is not part of the current model.
+    expect((legacy.document as { id?: string }).id).toBe("legacy-v1");
     const migrated = await serializeWegra(legacy);
     const reopened = deserializeWegra(migrated);
     expect(reopened.document).toEqual(legacy.document);

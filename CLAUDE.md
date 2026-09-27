@@ -14,11 +14,10 @@ The 2D editor and the 3D workspace are separate components. The 3D world can be 
 
 ## Current state — read before changing anything
 
-Until September 2026 the code was written without ever being run, compiled or tested. See `docs/STATUS.md` for the audit. In short:
+Until September 2026 the code was written without ever being run, compiled or tested. The audit and the fixes since are in `docs/STATUS.md`. Typecheck, unit tests, the build and the browser smoke tests now all pass, and both editors work in the demo. Much of the code has still only been exercised by those tests, so:
 
-- `npm run typecheck` fails (≈200 errors), `npm test` fails (≈58/323 tests), and the demo does not boot.
-- Many errors are API drift: callers use names, props or modules that do not exist (e.g. `mesh/scale-vertices`, `interpolateKeyframes`, `Viewport`, `tracks3d`, `sourceIn`).
 - Do not trust that a feature works because code for it exists. Verify by running it.
+- Where code and tests disagree, the code's intent wins, unless the code is plainly buggy (then fix the code). Flag genuinely unclear cases.
 
 ## Commands
 
@@ -31,6 +30,7 @@ npm test                  # vitest, packages/graphics-editor
 npm run typecheck         # tsc --noEmit, all workspaces
 npm run build             # tsc build of the package
 npm run format            # prettier (CI runs format:check)
+npm run test:e2e -w @jsilvanus/graphics-editor-demo   # Playwright smoke tests (starts vite itself)
 ```
 
 Package-only: `npm exec -w @jsilvanus/graphics-editor vitest run src/some.test.ts`.
@@ -43,9 +43,9 @@ Chromium is available for Playwright in the cloud environment (`/opt/pw-browsers
 
 ## Definition of done for a change
 
-1. `npm run typecheck` does not get worse (goal: zero errors).
-2. Tests touched by the change pass; no new failing tests.
-3. If UI is touched, the demo loads and the feature works in a real browser.
+1. `npm run typecheck` reports zero errors.
+2. `npm test` passes in full.
+3. If UI is touched, the demo loads and the feature works in a real browser, and the smoke tests pass.
 4. New test files are added to `packages/graphics-editor/test-manifest.json` (CI fails otherwise).
 
 ## Code conventions
@@ -72,4 +72,7 @@ Chromium is available for Playwright in the cloud environment (`/opt/pw-browsers
 
 ## CI
 
-`.github/workflows/test-pyramid.yml` runs vitest suites in floors (unit → model → integration → package) from `test-manifest.json`. It then runs typecheck, all tests and the build. It currently fails at the first floor.
+`.github/workflows/test-pyramid.yml` has three parts:
+- A format check.
+- Vitest suites in floors (unit → model → integration → package) from `test-manifest.json`, followed by the workspace typecheck, all tests and the package build.
+- An `e2e` job that runs the Playwright smoke tests in Chromium.

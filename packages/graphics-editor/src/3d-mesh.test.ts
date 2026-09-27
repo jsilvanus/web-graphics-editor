@@ -14,7 +14,16 @@ describe("3D mesh operations", () => {
     const mesh = createBoxMesh("box");
     const result = deleteMeshFaces(mesh, [0]);
     expect(result.geometry.indices.length).toBe(mesh.geometry.indices.length - 3);
-    expect(result.geometry.vertices.length).toBeLessThan(mesh.geometry.vertices.length);
+    // Box vertices are shared, so removing one face leaves no vertex unused.
+    expect(result.geometry.vertices.length).toBe(mesh.geometry.vertices.length);
+    // A vertex used only by the deleted face is compacted away.
+    const pair = {
+      ...mesh,
+      geometry: { vertices: [0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0], indices: [0, 1, 2, 1, 3, 2] },
+    };
+    const trimmed = deleteMeshFaces(pair, [1]);
+    expect(trimmed.geometry.vertices).toEqual([0, 0, 0, 1, 0, 0, 0, 1, 0]);
+    expect(trimmed.geometry.indices).toEqual([0, 1, 2]);
   });
 
   it("merges duplicate vertices", () => {
@@ -31,6 +40,7 @@ describe("3D mesh operations", () => {
     const mesh = createBoxMesh("box");
     const result = extrudeMeshFace(mesh, 0, 0.25);
     expect(result.geometry.vertices.length).toBe(mesh.geometry.vertices.length + 9);
-    expect(result.geometry.indices.length).toBe(mesh.geometry.indices.length + 15);
+    // The base face becomes a top cap (net 0) plus three side quads of two triangles each.
+    expect(result.geometry.indices.length).toBe(mesh.geometry.indices.length + 18);
   });
 });

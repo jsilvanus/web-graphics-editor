@@ -78,8 +78,15 @@ function updateById<T extends { id: string }>(items: T[], id: string, patch: Par
 function worldTracks(world: Graphics3DWorld): Graphics3DTrack[] {
   return world.timeline?.tracks ?? [];
 }
+/** Replace a world's tracks, keeping its other timeline settings (duration, loop). */
 function withTracks(world: Graphics3DWorld, value: Graphics3DTrack[]): Graphics3DWorld {
-  return { ...world, timeline: { tracks: value } };
+  const timeline = { ...world.timeline, tracks: value };
+  // A timeline with nothing in it is the same as no timeline; dropping it lets undo restore exactly.
+  if (!value.length && timeline.duration === undefined && timeline.loop === undefined) {
+    const { timeline: _removed, ...rest } = world;
+    return rest;
+  }
+  return { ...world, timeline };
 }
 function updateTrack(
   world: Graphics3DWorld,

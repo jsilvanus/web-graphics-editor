@@ -107,7 +107,8 @@ describe("3D world history operations", () => {
     });
     expect(updated.timeline?.tracks[0].property).toBe("positionY");
     expect(
-      applyWorldOperation(updated, { type: "remove-3d-track", track, index: 0 }).timeline?.tracks,
+      // Removing the last track leaves no tracks (an empty timeline is dropped entirely).
+      applyWorldOperation(updated, { type: "remove-3d-track", track, index: 0 }).timeline?.tracks ?? [],
     ).toEqual([]);
   });
   it("adds, removes, updates and moves 3D keyframes in the world timeline", () => {
