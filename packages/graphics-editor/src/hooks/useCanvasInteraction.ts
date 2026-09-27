@@ -47,7 +47,14 @@ function rotatePoint(x: number, y: number, cx: number, cy: number, a: number) {
     dy = y - cy;
   return { x: cx + dx * Math.cos(r) - dy * Math.sin(r), y: cy + dx * Math.sin(r) + dy * Math.cos(r) };
 }
-const animatedProperties: AnimatedProperty[] = ["x", "y", "width", "height", "rotation"];
+/** Transform properties a canvas drag can change (and keyframe, when they are animated). */
+const animatedProperties = [
+  "x",
+  "y",
+  "width",
+  "height",
+  "rotation",
+] as const satisfies readonly AnimatedProperty[];
 function applyAnimatedTransforms(
   document: GraphicsDocument,
   startLayers: Layer[],

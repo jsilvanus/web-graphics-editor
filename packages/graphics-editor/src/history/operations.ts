@@ -18,6 +18,11 @@ export interface WorldOperationReference {
   worldId: string;
   operationId: string;
 }
+/** A layer and its index in `document.layers`, captured so grouping can be undone exactly. */
+export interface GroupChildSnapshot {
+  layer: Layer;
+  index: number;
+}
 export type DocumentOperation =
   | { type: "set-layer-property"; layerId: string; property: string; from: unknown; to: unknown }
   | { type: "set-layer-style"; layerId: string; property: string; from: unknown; to: unknown }
@@ -32,8 +37,8 @@ export type DocumentOperation =
   | { type: "add-layer"; layer: Layer; index?: number }
   | { type: "remove-layer"; layer: Layer; index: number }
   | { type: "reorder-layer"; layerId: string; fromIndex: number; toIndex: number }
-  | { type: "group-layers"; group: Layer; children: { layer: Layer; index: number }[]; index: number }
-  | { type: "ungroup-layer"; group: Layer; children: { layer: Layer; index: number }[]; index: number }
+  | { type: "group-layers"; group: Layer; children: GroupChildSnapshot[]; index: number }
+  | { type: "ungroup-layer"; group: Layer; children: GroupChildSnapshot[]; index: number }
   | { type: "set-timeline"; from?: SceneTimeline; to?: SceneTimeline }
   | { type: "add-keyframe"; track: Track; keyframe: Keyframe; createdTrack?: boolean }
   | { type: "update-keyframe"; trackId: string; keyframeId: string; fromValue: number; toValue: number }
@@ -156,7 +161,7 @@ export function applyOperation(
               : [...document.timeline.tracks, { ...operation.track, keyframes: [operation.keyframe] }],
           },
         }
-      : document.timeline;
+      : document;
   }
   if (operation.type === "update-keyframe")
     return updateTrack(document, operation.trackId, track => {
@@ -278,7 +283,8 @@ export function invertOperation(operation: DocumentOperation): DocumentOperation
   if (operation.type === "move-keyframe")
     return { ...operation, fromTime: operation.toTime, toTime: operation.fromTime };
   if (operation.type === "set-clip-timing") return { ...operation, from: operation.to, to: operation.from };
-  return { ...operation, from: operation.to, to: operation.from };
+  // The remaining variants all carry `from`/`to` of the same type, so swapping keeps the variant.
+  return { ...operation, from: operation.to, to: operation.from } as DocumentOperation;
 }
 export function diffOperations(before: GraphicsDocument, after: GraphicsDocument): DocumentOperation[] {
   const ops: DocumentOperation[] = [];

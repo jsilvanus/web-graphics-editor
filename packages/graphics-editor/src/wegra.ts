@@ -262,7 +262,11 @@ export function deserializeWegra(bytes: Uint8Array): WegraProject {
     if (!data) return asset;
     const url =
       typeof URL !== "undefined" && typeof Blob !== "undefined"
-        ? URL.createObjectURL(new Blob([data], { type: asset.mimeType ?? "application/octet-stream" }))
+        ? URL.createObjectURL(
+            new Blob([data as Uint8Array<ArrayBuffer>], {
+              type: asset.mimeType ?? "application/octet-stream",
+            }),
+          )
         : asset.url;
     return { ...asset, url };
   });

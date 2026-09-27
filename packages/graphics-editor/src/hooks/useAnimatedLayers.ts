@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 import { evaluateAnimationKeyframes } from "../animation";
 import { transitionType } from "../timeline";
-import type { GraphicsDocument, SceneTimeline } from "../types";
+import type { Easing, GraphicsDocument, InterpolationOptions, SceneTimeline } from "../types";
 
-function transitionStyle(type: string, progress: number) {
+function transitionStyle(type: string, progress: number): Record<string, string | number> {
   if (progress <= 0) return {};
   switch (type) {
     case "slide-left":
@@ -47,7 +47,7 @@ export function useAnimatedLayers(document: GraphicsDocument, timeline: SceneTim
             id: k.id,
             time: k.time,
             value: k.value,
-            interpolation: k.interpolation ?? (k.easing ? { easing: { mode: k.easing } } : undefined),
+            interpolation: k.interpolation ?? legacyEasing(k),
           })),
           timeline.currentTime,
         );
@@ -68,4 +68,10 @@ export function useAnimatedLayers(document: GraphicsDocument, timeline: SceneTim
       return next;
     });
   }, [document.layers, timeline]);
+}
+
+/** Early documents stored a bare `easing` on keyframes; the model now uses `interpolation.easing`. */
+function legacyEasing(keyframe: object): InterpolationOptions | undefined {
+  const easing = (keyframe as { easing?: Easing }).easing;
+  return easing ? { easing: { mode: easing } } : undefined;
 }

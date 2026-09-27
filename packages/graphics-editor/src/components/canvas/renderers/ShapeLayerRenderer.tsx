@@ -16,8 +16,9 @@ export function ShapeLayerRenderer({ layer }: { layer: Layer }) {
   if (borderWidth > 0) style.border = String(borderWidth) + "px solid " + String(borderColor);
   if (layer.type === "ellipse") style.borderRadius = "50%";
   else {
+    // Unitless values (e.g. 12 or "12") are pixels; strings with units are used as given.
     const radius = styleValue(layer, "border-radius", 0);
-    style.borderRadius = typeof radius === "number" ? String(radius) + "px" : String(radius);
+    style.borderRadius = /^-?\d+(\.\d+)?$/.test(radius) ? `${radius}px` : radius;
   }
   return <div style={style} />;
 }

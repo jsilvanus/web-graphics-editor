@@ -218,7 +218,7 @@ export function moveLayerCommand(
     : undefined;
   if (position === "inside" && target.type !== "group") return { document };
   if (parentId && !parent) return { document };
-  let next = {
+  let next: GraphicsDocument = {
     ...document,
     layers: document.layers.map(layer => ({
       ...layer,

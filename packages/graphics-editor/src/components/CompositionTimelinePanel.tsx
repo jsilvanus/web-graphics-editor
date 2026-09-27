@@ -553,7 +553,9 @@ export const CompositionTimelinePanel: FC<{
                       ? {
                           ...x,
                           keyframes: x.keyframes.map(y =>
-                            y.id === k.id ? { ...y, interpolation: easing } : y,
+                            y.id === k.id
+                              ? { ...y, interpolation: { ...y.interpolation, easing: { mode: easing } } }
+                              : y,
                           ),
                         }
                       : x,

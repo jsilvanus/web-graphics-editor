@@ -74,8 +74,8 @@ export function Graphics3DViewInspector({
         <label style={{ display: "block" }}>
           <input
             type="checkbox"
-            checked={mapping.loop === "loop"}
-            onChange={e => setMapping({ loop: e.target.checked ? "loop" : "none" })}
+            checked={!!mapping.loop}
+            onChange={e => setMapping({ loop: e.target.checked })}
           />{" "}
           Loop
         </label>

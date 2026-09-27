@@ -1,12 +1,13 @@
 import { useCallback } from "react";
 import { deserializeWegra, serializeWegra } from "../wegra";
 import type { GraphicsDocument, SceneTimeline } from "../types";
+import type { DocumentHistory } from "../history/store";
 import { withDefaultTimeline } from "./useGraphicsEditorTimeline";
 
 export function useWegraIO(
   document: GraphicsDocument,
   timeline: SceneTimeline,
-  history: unknown,
+  history: DocumentHistory,
   resetHistory: (document: GraphicsDocument) => void,
   clear: () => void,
 ) {
@@ -17,7 +18,7 @@ export function useWegraIO(
         history,
         actors: { actors: {} },
       });
-      const blob = new Blob([bytes], { type: "application/zip" });
+      const blob = new Blob([bytes as Uint8Array<ArrayBuffer>], { type: "application/zip" });
       const url = URL.createObjectURL(blob);
       const a = window.document.createElement("a");
       a.href = url;

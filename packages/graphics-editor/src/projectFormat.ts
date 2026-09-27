@@ -74,14 +74,14 @@ function crc32(d: Uint8Array) {
 async function deflate(d: Uint8Array) {
   const cs = new CompressionStream("deflate-raw" as CompressionFormat);
   const w = cs.writable.getWriter();
-  await w.write(d);
+  await w.write(d as Uint8Array<ArrayBuffer>);
   await w.close();
   return new Uint8Array(await new Response(cs.readable).arrayBuffer());
 }
 async function inflate(d: Uint8Array) {
   const cs = new DecompressionStream("deflate-raw" as CompressionFormat);
   const w = cs.writable.getWriter();
-  await w.write(d);
+  await w.write(d as Uint8Array<ArrayBuffer>);
   await w.close();
   return new Uint8Array(await new Response(cs.readable).arrayBuffer());
 }

@@ -2,7 +2,9 @@ import type { HalfEdgeMesh, PolygonMeshInput } from "./half-edge";
 
 /** Build a manifold-oriented half-edge mesh from polygon faces. Boundary twins are null. */
 export function fromPolygons(input: PolygonMeshInput): HalfEdgeMesh {
-  const vertices = input.positions.filter((_, i) => i % 3 === 0).map((_, id) => ({ id, halfEdge: null }));
+  const vertices: HalfEdgeMesh["vertices"] = input.positions
+    .filter((_, i) => i % 3 === 0)
+    .map((_, id) => ({ id, halfEdge: null }));
   const halfEdges: HalfEdgeMesh["halfEdges"] = [];
   const faces: HalfEdgeMesh["faces"] = [];
   const edges: HalfEdgeMesh["edges"] = [];
@@ -14,7 +16,7 @@ export function fromPolygons(input: PolygonMeshInput): HalfEdgeMesh {
   input.faces.forEach((polygon, faceId) => {
     if (polygon.length < 3) return;
     const start = halfEdges.length;
-    const hes = polygon.map((vertex, i) => {
+    const hes: HalfEdgeMesh["halfEdges"] = polygon.map((vertex, i) => {
       const id = start + i;
       const next = start + ((i + 1) % polygon.length);
       if (vertices[vertex]) vertices[vertex].halfEdge ??= id;

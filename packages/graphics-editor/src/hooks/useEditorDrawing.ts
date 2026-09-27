@@ -15,7 +15,7 @@ export function useEditorDrawing(
   const [drawing, setDrawing] = useState<DrawingPreview | null>(null);
   const drawingRef = useRef<DrawingPreview | null>(null);
   const canvasPoint = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>, artboardRef: React.RefObject<HTMLDivElement>) => {
+    (e: React.PointerEvent, artboardRef: React.RefObject<HTMLDivElement | null>) => {
       const r = artboardRef.current?.getBoundingClientRect();
       return r
         ? {
@@ -91,7 +91,7 @@ export function useEditorDrawing(
     setActiveTool("select");
   }, [commit, document, select]);
   const onPointerDown = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>, artboardRef: React.RefObject<HTMLDivElement>) => {
+    (e: React.PointerEvent, artboardRef: React.RefObject<HTMLDivElement | null>) => {
       if (activeTool === "select") {
         clear();
         return;
@@ -120,7 +120,7 @@ export function useEditorDrawing(
     [activeTool, canvasPoint, clear],
   );
   const onPointerMove = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>, artboardRef: React.RefObject<HTMLDivElement>) => {
+    (e: React.PointerEvent, artboardRef: React.RefObject<HTMLDivElement | null>) => {
       if (drawingRef.current?.tool === "freehand") {
         const p = canvasPoint(e, artboardRef);
         if (p) {

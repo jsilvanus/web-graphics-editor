@@ -1,8 +1,8 @@
 import type { FC, PointerEvent } from "react";
-import type { Keyframe } from "../../types";
+import type { AnimationKeyframe } from "../../types";
 
 export interface TimelineKeyMarkersProps {
-  keyframes: Keyframe[];
+  keyframes: AnimationKeyframe[];
   total: number;
   selectedKeyId?: string;
   onSelect: (keyframeId: string) => void;

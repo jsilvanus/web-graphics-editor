@@ -10,7 +10,8 @@ import type {
 } from "./types";
 import { evaluateAnimationKeyframes } from "./animation";
 export { interpolateKeyframes } from "./animation";
-export type AnimatedProperty = "x" | "y" | "width" | "height" | "rotation" | "opacity" | "scaleX" | "scaleY";
+export type { AnimatedProperty } from "./types";
+import type { AnimatedProperty } from "./types";
 export type Keyframe = AnimationKeyframe<number>;
 export { Track };
 export const DEFAULT_SCENE_DURATION = 5;
@@ -208,7 +209,15 @@ export function setLoop(t: SceneTimeline, loop: boolean): SceneTimeline {
 export function evaluateTrack(track: Track, time: number) {
   return evaluateAnimationKeyframes(track.keyframes, time);
 }
-export function upsertKeyframe(t: Track, k: Keyframe): Track {
+
+/**
+ * The keyframe helpers below work on any track shape: 2D layer tracks (`Track`), composition
+ * tracks (`AnimationTrack`) and 3D tracks all share `keyframes: AnimationKeyframe[]`.
+ */
+type KeyframeTrack = { keyframes: AnimationKeyframe[] };
+type KeyOf<T extends KeyframeTrack> = T["keyframes"][number];
+
+export function upsertKeyframe<T extends KeyframeTrack>(t: T, k: KeyOf<T>): T {
   return {
     ...t,
     keyframes: [...t.keyframes.filter(x => x.id !== k.id && Math.abs(x.time - k.time) > 0.0001), k].sort(
@@ -216,15 +225,19 @@ export function upsertKeyframe(t: Track, k: Keyframe): Track {
     ),
   };
 }
-export function keyframeAtTime(t: Track, time: number, epsilon = 0.0001): Keyframe | undefined {
+export function keyframeAtTime<T extends KeyframeTrack>(
+  t: T,
+  time: number,
+  epsilon = 0.0001,
+): KeyOf<T> | undefined {
   return t.keyframes.find(k => Math.abs(k.time - time) <= epsilon);
 }
-export function setKeyframeAtTime(
-  t: Track,
+export function setKeyframeAtTime<T extends KeyframeTrack>(
+  t: T,
   time: number,
-  value: number,
+  value: KeyOf<T>["value"],
   interpolation?: InterpolationOptions,
-): Track {
+): T {
   const existing = keyframeAtTime(t, time);
   return upsertKeyframe(t, {
     id: existing?.id ?? id("key"),
@@ -233,10 +246,10 @@ export function setKeyframeAtTime(
     interpolation: interpolation ?? existing?.interpolation ?? { easing: { mode: "linear" } },
   });
 }
-export function moveKeyframe(t: Track, id: string, time: number): Track {
+export function moveKeyframe<T extends KeyframeTrack>(t: T, id: string, time: number): T {
   const k = t.keyframes.find(x => x.id === id);
   return k ? upsertKeyframe(t, { ...k, time: Math.max(0, time) }) : t;
 }
-export function removeKeyframe(t: Track, id: string): Track {
+export function removeKeyframe<T extends KeyframeTrack>(t: T, id: string): T {
   return { ...t, keyframes: t.keyframes.filter(k => k.id !== id) };
 }

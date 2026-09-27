@@ -7,7 +7,12 @@ import type {
   Layer,
 } from "../../types";
 import type { SceneTimeline as Timeline } from "../../types";
-import { add3DTrack, move3DKeyframe, remove3DKeyframe, upsert3DKeyframe } from "../../3d-timeline";
+import {
+  addScene3DTrack,
+  moveScene3DKeyframe,
+  removeScene3DKeyframe,
+  upsertScene3DKeyframe,
+} from "../../3d-timeline";
 import {
   createKeyframe,
   createTrack,
@@ -74,14 +79,14 @@ export const useTimelineKeyframes = (timeline: Timeline, onChange: (timeline: Ti
         t => t.targetType === targetType && t.targetId === targetId && t.property === property,
       );
       if (!track) {
-        next = add3DTrack(timeline, targetType, targetId, property);
+        next = addScene3DTrack(timeline, targetType, targetId, property);
         track = next.tracks3d?.find(
           t => t.targetType === targetType && t.targetId === targetId && t.property === property,
         );
       }
       if (!track) return;
       const key = createKeyframe(next.currentTime, base);
-      next = upsert3DKeyframe(next, track.id, key);
+      next = upsertScene3DKeyframe(next, track.id, key);
       onChange(next);
       setSelectedKey({ kind: "3d", trackId: track.id, keyId: key.id });
     },
@@ -95,7 +100,7 @@ export const useTimelineKeyframes = (timeline: Timeline, onChange: (timeline: Ti
               ...timeline,
               tracks: timeline.tracks.map(t => (t.id === trackId ? moveKeyframe(t, keyId, time) : t)),
             }
-          : move3DKeyframe(timeline, trackId, keyId, time),
+          : moveScene3DKeyframe(timeline, trackId, keyId, time),
       ),
     [timeline, onChange],
   );
@@ -107,7 +112,7 @@ export const useTimelineKeyframes = (timeline: Timeline, onChange: (timeline: Ti
               ...timeline,
               tracks: timeline.tracks.map(t => (t.id === trackId ? removeKeyframe(t, keyId) : t)),
             }
-          : remove3DKeyframe(timeline, trackId, keyId),
+          : removeScene3DKeyframe(timeline, trackId, keyId),
       );
       setSelectedKey(current => (current?.keyId === keyId ? null : current));
     },

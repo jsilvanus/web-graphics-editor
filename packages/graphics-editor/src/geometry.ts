@@ -53,6 +53,9 @@ export function layerStyle(layer: Layer, selected: boolean): CSSProperties {
     transform:
       [
         layer.rotation ? `rotate(${layer.rotation}deg)` : "",
+        (layer.scaleX ?? 1) !== 1 || (layer.scaleY ?? 1) !== 1
+          ? `scale(${layer.scaleX ?? 1}, ${layer.scaleY ?? 1})`
+          : "",
         layer.skewX ? `skewX(${layer.skewX}deg)` : "",
         layer.skewY ? `skewY(${layer.skewY}deg)` : "",
       ]
@@ -68,7 +71,7 @@ export function parsePx(value: unknown, fallback = 0) {
   const n = Number.parseFloat(String(value ?? ""));
   return Number.isFinite(n) ? n : fallback;
 }
-export function styleValue(layer: Layer, key: string, fallback = "") {
+export function styleValue(layer: Layer, key: string, fallback: string | number = "") {
   return String(layer.style?.[key] ?? fallback);
 }
 export function nodesToD(nodes: PathNode[], closed = false): string {
