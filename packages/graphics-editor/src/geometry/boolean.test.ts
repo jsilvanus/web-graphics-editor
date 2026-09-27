@@ -19,6 +19,20 @@ describe("polygon booleans", () => {
     expect(out).toHaveLength(1);
     expect(signedArea(out[0])).toBe(25);
   });
+  it("unites overlapping rectangles into one outline", () => {
+    const out = booleanPolygons(r(0, 0, 10, 10), r(5, 5, 10, 10), "union");
+    expect(out).toHaveLength(1);
+    expect(Math.abs(signedArea(out[0]))).toBe(175);
+  });
+  it("subtracts an overlapping rectangle", () => {
+    const out = booleanPolygons(r(0, 0, 10, 10), r(5, 5, 10, 10), "subtract");
+    expect(out).toHaveLength(1);
+    expect(Math.abs(signedArea(out[0]))).toBe(75);
+  });
+  it("gives the same result for either polygon orientation", () => {
+    const reversed = [...r(5, 5, 10, 10)].reverse();
+    expect(Math.abs(signedArea(booleanPolygons(r(0, 0, 10, 10), reversed, "intersect")[0]))).toBe(25);
+  });
   it("returns both disjoint polygons for union", () =>
     expect(booleanPolygons(r(0, 0, 10, 10), r(20, 0, 10, 10), "union")).toHaveLength(2));
   it("subtracts a contained polygon without returning the cutter", () =>

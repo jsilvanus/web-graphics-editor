@@ -43,8 +43,13 @@ describe("presentation edge cases", () => {
   it("returns undefined for unknown IDs", () => {
     expect(resolveComposition(base, "x")).toBeUndefined();
     expect(resolveViewportComposition(base, "x")).toBeUndefined();
-    expect(resolveScene(base, 1, "x")).toBeUndefined();
     expect(resolveOutput(base, "x", 1)).toBeUndefined();
+  });
+  it("still resolves a scene for an unknown viewport, without viewport overrides", () => {
+    const r = resolveScene(base, 1, "x")!;
+    expect(r.scene.id).toBe("s1");
+    expect(r.viewport).toBeUndefined();
+    expect(r.layers[0].x).toBe(1);
   });
   it("applies only defined viewport overrides", () => {
     const r = resolveViewportComposition(base, "v")!;
@@ -65,8 +70,8 @@ describe("presentation edge cases", () => {
     expect(sceneAtTime(base.timeline, 4.999)?.id).toBe("s2");
     expect(sceneAtTime(base.timeline, 5)).toBeUndefined();
   });
-  it("supports negative and out-of-range times without loop", () => {
-    expect(sceneAtTime(base.timeline, -1)).toBeUndefined();
+  it("clamps negative times to the start and has no scene past the end without loop", () => {
+    expect(sceneAtTime(base.timeline, -1)?.id).toBe("s1");
     expect(sceneAtTime(base.timeline, 99)).toBeUndefined();
   });
   it("returns local scene time from the selected scene", () => {

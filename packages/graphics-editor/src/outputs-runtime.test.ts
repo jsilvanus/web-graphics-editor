@@ -6,6 +6,7 @@ import {
   takeOffOutput,
   takeOutput,
   tickOutputRuntime,
+  type OutputRuntime,
 } from "./outputs-runtime";
 import type { GraphicsOutput } from "./types";
 
@@ -45,7 +46,7 @@ describe("output runtime", () => {
   });
   it("takes off with an out transition", () => {
     const o = output();
-    let r = { ...createOutputRuntime(o), state: "on" as const };
+    let r: OutputRuntime = { ...createOutputRuntime(o), state: "on" };
     r = takeOffOutput(r, o);
     expect(r.state).toBe("exiting");
     r = tickOutputRuntime(r, o, 0.5);
@@ -60,13 +61,13 @@ describe("output runtime", () => {
   });
   it("advances playing output time and loops", () => {
     const o = output({ duration: 2, loop: true });
-    let r = { ...createOutputRuntime(o), state: "on" as const, time: 1.75 };
+    let r: OutputRuntime = { ...createOutputRuntime(o), state: "on", time: 1.75 };
     r = dispatchOutputRuntime(r, o, { type: "TICK", delta: 0.5 });
     expect(r.time).toBeCloseTo(0.25);
   });
   it("does not advance a paused/static runtime", () => {
     const o = output({ playback: "static" });
-    let r = { ...createOutputRuntime(o), state: "on" as const, time: 1 };
+    let r: OutputRuntime = { ...createOutputRuntime(o), state: "on", time: 1 };
     r = dispatchOutputRuntime(r, o, { type: "TICK", delta: 2 });
     expect(r.time).toBe(1);
   });

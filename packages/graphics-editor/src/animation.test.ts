@@ -40,7 +40,8 @@ describe("animation primitives", () => {
     expect(interpolateAnimationValue(false, true, 1, { mode: "discrete" })).toBe(true);
   });
   it("interpolates colors", () => {
-    expect(interpolateAnimationValue("#ff0000", "#000000", 0.5)).toBe("#800000");
+    // Colours are always emitted as #rrggbbaa.
+    expect(interpolateAnimationValue("#ff0000", "#000000", 0.5)).toBe("#800000ff");
     expect(interpolateAnimationValue("#ff0000", "#000000", 0.5, { colorSpace: "oklab" })).toMatch(/^#/);
   });
   it("falls back for incompatible values", () =>

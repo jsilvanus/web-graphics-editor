@@ -25,6 +25,7 @@ describe("compositor", () => {
       name: "Program",
       viewportId: "main",
       playback: "static",
+      background: "opaque",
     } as const;
     const withViewport = {
       ...document,

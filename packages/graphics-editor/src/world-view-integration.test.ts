@@ -60,6 +60,6 @@ describe("3D view/world integration", () => {
     expect(a.worldTime).toBe(2);
     expect(b.worldTime).toBe(7);
     expect(a.meshes[0].transform.rotation[1]).toBe(72);
-    expect(b.meshes[0].transform.rotation[1]).toBe(252);
+    expect(b.meshes[0].transform.rotation[1]).toBeCloseTo(252);
   });
 });

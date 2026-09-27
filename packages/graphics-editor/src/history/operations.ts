@@ -220,13 +220,12 @@ export function applyOperation(
         layers: [...without, ...groupedChildren(operation.children, operation.group.id)],
       };
     }
-    const ids = new Set(operation.children.map(s => s.layer.id));
-    return {
-      ...document,
-      layers: document.layers
-        .filter(layer => layer.id !== operation.group.id && !ids.has(layer.id))
-        .concat(operation.children.map(s => ({ ...s.layer, parentId: undefined }))),
-    };
+    // Ungrouped children return to their snapshot positions, without a parent. This is the same
+    // state that undoing a "group-layers" produces, so the two operations are exact inverses.
+    return restoreChildren(
+      { ...document, layers: document.layers.filter(layer => layer.id !== operation.group.id) },
+      operation.children.map(s => ({ ...s, layer: { ...s.layer, parentId: undefined } })),
+    );
   }
   const value = reverse ? operation.from : operation.to;
   return {
@@ -237,6 +236,11 @@ export function applyOperation(
         const style = { ...(layer.style ?? {}) };
         if (value === undefined || value === "") delete style[operation.property];
         else style[operation.property] = value as string | number;
+        // An empty style is the same as none; dropping it lets undo restore the layer exactly.
+        if (!Object.keys(style).length) {
+          const { style: _removed, ...rest } = layer;
+          return rest;
+        }
         return { ...layer, style };
       }
       if (operation.type === "move-layer") return { ...layer, ...(value as { x: number; y: number }) };

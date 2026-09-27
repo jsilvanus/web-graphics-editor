@@ -16,9 +16,12 @@ function quad(): Graphics3DMesh {
 }
 
 describe("edge loop and ring selection", () => {
+  // Note: in this code a "loop" crosses each quad to the opposite edge, and a "ring" follows
+  // parallel edges that share a vertex (Blender uses these two names the other way round).
   it("follows a geometric edge loop through opposite directions", () => {
     const data = quad();
-    expect([...selectEdgeLoop(data, "1:3")].sort()).toEqual(["0:1", "0:2", "1:3", "2:3"]);
+    // The middle edge borders both quads, so the walk reaches the opposite edge on each side.
+    expect([...selectEdgeLoop(data, "1:3")].sort()).toEqual(["0:2", "1:3", "4:5"]);
   });
 
   it("infers a logical quad for loop traversal across triangulated faces", () => {
@@ -28,7 +31,7 @@ describe("edge loop and ring selection", () => {
 
   it("selects a connected ring without pulling in disconnected parallel edges", () => {
     const data = quad();
-    expect([...selectEdgeRing(data, "0:1")].sort()).toEqual(["0:1", "1:4", "2:3", "4:5"]);
+    expect([...selectEdgeRing(data, "0:1")].sort()).toEqual(["0:1", "1:4"]);
     expect(selectEdgeRing(data, "0:1")).not.toContain("6:7");
   });
 });
@@ -43,7 +46,8 @@ describe("face region selection", () => {
   });
 
   it("shrinks an edge-connected selection by one ring", () => {
-    expect([...shrinkFaceSelection(quad(), new Set([0, 1, 2]))].sort((a, b) => a - b)).toEqual([1]);
+    // Face 2 shares an edge with unselected face 3; mesh-boundary edges don't count.
+    expect([...shrinkFaceSelection(quad(), new Set([0, 1, 2]))].sort((a, b) => a - b)).toEqual([0, 1]);
   });
 
   it("does not cross a vertex-only contact", () => {

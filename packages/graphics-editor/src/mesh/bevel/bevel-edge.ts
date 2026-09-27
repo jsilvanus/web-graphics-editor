@@ -122,8 +122,9 @@ export function bevelSelectedEdges(mesh: Graphics3DMesh, keys: Set<string>, amou
       const o1 = offsets.get(faceEdgeKey(f1, key));
       if (!o0 || !o1) continue;
       const reversed = edgeIsReversed(mesh.geometry.indices, f0, edge.a, edge.b);
+      // Wound like the surrounding faces (checked against the face normal in the tests).
       indices.push(
-        ...(reversed ? [o0.a, o1.a, o1.b, o0.a, o1.b, o0.b] : [o0.a, o0.b, o1.b, o0.a, o1.b, o1.a]),
+        ...(reversed ? [o0.a, o0.b, o1.b, o0.a, o1.b, o1.a] : [o0.a, o1.a, o1.b, o0.a, o1.b, o0.b]),
       );
     } else {
       const face = edge.faces[0];
@@ -132,8 +133,8 @@ export function bevelSelectedEdges(mesh: Graphics3DMesh, keys: Set<string>, amou
       const reversed = edgeIsReversed(mesh.geometry.indices, face, edge.a, edge.b);
       indices.push(
         ...(reversed
-          ? [edge.a, edge.b, offset.b, edge.a, offset.b, offset.a]
-          : [edge.a, offset.a, offset.b, edge.a, offset.b, edge.b]),
+          ? [edge.a, offset.a, offset.b, edge.a, offset.b, edge.b]
+          : [edge.a, edge.b, offset.b, edge.a, offset.b, offset.a]),
       );
     }
   }

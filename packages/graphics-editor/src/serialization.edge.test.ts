@@ -64,7 +64,7 @@ describe("serialization robustness", () => {
             id: "t",
             layerId: "a",
             targetId: "a",
-            property: "x",
+            property: "x" as const,
             keyframes: [{ id: "k", time: 1, value: 50 }],
           },
         ],

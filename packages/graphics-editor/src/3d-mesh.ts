@@ -96,7 +96,9 @@ export function extrudeMeshFace(mesh: Graphics3DMesh, faceId: number, distance: 
     vertices.push(p[0] + n[0] * distance, p[1] + n[1] * distance, p[2] + n[2] * distance);
     return id;
   });
-  const next = [...indices, newIds[0], newIds[2], newIds[1]];
+  // The base face is replaced by a cap on top (same winding, so it faces along the normal)
+  // plus one quad (two triangles) per side.
+  const next = [...indices.slice(0, base), ...indices.slice(base + 3), newIds[0], newIds[1], newIds[2]];
   next.push(ids[0], ids[1], newIds[1], ids[0], newIds[1], newIds[0]);
   next.push(ids[1], ids[2], newIds[2], ids[1], newIds[2], newIds[1]);
   next.push(ids[2], ids[0], newIds[0], ids[2], newIds[0], newIds[2]);

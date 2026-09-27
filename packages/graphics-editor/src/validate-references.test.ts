@@ -67,7 +67,13 @@ const base = (): GraphicsDocument => ({
     currentSceneId: "scene",
     currentTime: 0,
     tracks: [
-      { id: "layer-track", layerId: "title", property: "x", keyframes: [{ id: "key", time: 0, value: 0 }] },
+      {
+        id: "layer-track",
+        layerId: "title",
+        targetId: "title",
+        property: "x",
+        keyframes: [{ id: "key", time: 0, value: 0 }],
+      },
     ],
     clips: [{ id: "clip", layerId: "title", start: 0, duration: 10 }],
   },

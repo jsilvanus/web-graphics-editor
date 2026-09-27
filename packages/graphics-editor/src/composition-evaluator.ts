@@ -89,19 +89,27 @@ function evaluateVideos(document: GraphicsDocument, layers: Layer[], time: numbe
     if (layer.type !== "video" || !layer.videoAssetId) return [];
     const asset = assets.get(layer.videoAssetId);
     if (!asset || asset.type !== "video") return [];
+    // A clip starts at `timeOffset` in composition time and plays its source from `sourceIn`
+    // (the same meaning the composition timeline UI uses): media = sourceIn + (t - timeOffset) * rate.
+    const start = layer.timeOffset ?? 0;
+    const rate = layer.playbackRate ?? 1;
+    const sourceIn = layer.sourceIn ?? 0;
     const mediaTime = mapMediaTime(time, {
-      offset: layer.timeOffset ?? 0,
-      rate: layer.playbackRate ?? 1,
+      offset: sourceIn - start * rate,
+      rate,
       loop: layer.loop ?? false,
       inPoint: layer.sourceIn,
       outPoint: layer.sourceOut,
     });
+    const unclamped = sourceIn + (time - start) * rate;
+    const playing =
+      time >= start && (!!layer.loop || layer.sourceOut === undefined || unclamped < layer.sourceOut);
     return [
       {
         layerId: layer.id,
         assetId: asset.id,
         mediaTime,
-        playing: true,
+        playing,
         sourceIn: layer.sourceIn,
         sourceOut: layer.sourceOut,
       },

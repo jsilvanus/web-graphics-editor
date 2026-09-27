@@ -23,7 +23,8 @@ const document = (...layers: Layer[]): GraphicsDocument => ({
 function roundTrip(before: GraphicsDocument, operation: Parameters<typeof applyOperation>[1]) {
   const after = applyOperation(before, operation);
   expect(applyOperation(after, operation, true)).toEqual(before);
-  expect(applyOperation(before, invertOperation(operation))).toEqual(after);
+  // The inverse operation undoes the operation.
+  expect(applyOperation(after, invertOperation(operation))).toEqual(before);
   return after;
 }
 
@@ -135,7 +136,11 @@ describe("DocumentOperation", () => {
       index: 0,
     };
     const after = roundTrip(before, operation);
-    expect(after.layers).toEqual([a, b]);
+    // Ungrouped layers keep their order and no longer have a parent.
+    expect(after.layers).toEqual([
+      { ...a, parentId: undefined },
+      { ...b, parentId: undefined },
+    ]);
     expect(applyOperation(after, operation, true).layers).toEqual(before.layers);
   });
   it("creates a keyframe at the exact playhead when a property is already animated", () => {

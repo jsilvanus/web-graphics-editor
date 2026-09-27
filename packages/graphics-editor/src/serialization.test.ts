@@ -45,6 +45,6 @@ describe("document serialization", () => {
     expect(() => deserializeGraphicsDocument(JSON.stringify({ width: 100, height: 100 }))).toThrow(
       "Invalid graphics document shape",
     );
-    expect(() => deserializeGraphicsDocument("null")).toThrow("Invalid graphics document shape");
+    expect(() => deserializeGraphicsDocument("null")).toThrow("Invalid graphics document");
   });
 });

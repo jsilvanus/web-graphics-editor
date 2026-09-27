@@ -16,7 +16,8 @@ function mesh(): Graphics3DMesh {
 describe("face duplication and extraction", () => {
   it("duplicates selected faces with their own vertices", () => {
     const result = duplicateFaces(mesh(), new Set([0, 1]));
-    expect(result.geometry.vertices).toHaveLength(12);
+    // 6 source vertices plus copies of the 4 used by faces 0 and 1.
+    expect(result.geometry.vertices).toHaveLength(30);
     expect(result.geometry.indices).toHaveLength(18);
     expect(result.geometry.indices.slice(-6)).toEqual([6, 7, 8, 7, 9, 8]);
   });

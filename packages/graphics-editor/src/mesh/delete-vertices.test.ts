@@ -8,7 +8,8 @@ describe("deleteVertices", () => {
       ...createBoxMesh("box"),
       geometry: {
         vertices: [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
-        indices: [0, 1, 2, 0, 2, 3],
+        // Only the first triangle touches vertex 0, so the second one survives.
+        indices: [0, 1, 2, 1, 2, 3],
       },
     };
     const result = deleteVertices(mesh, [0]);

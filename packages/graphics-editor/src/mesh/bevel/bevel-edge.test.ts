@@ -21,7 +21,8 @@ describe("mesh edge bevel", () => {
     const result = bevelSelectedEdges(mesh, new Set([edgeKey(0, 1)]), 0.1);
 
     expect(result.geometry.vertices.length).toBe(mesh.geometry.vertices.length + 6);
-    expect(result.geometry.indices.length).toBe(mesh.geometry.indices.length + 3);
+    // The face keeps one triangle and the strip back to the boundary adds a quad (two triangles).
+    expect(result.geometry.indices.length).toBe(mesh.geometry.indices.length + 6);
     expect(meshEdges(result).some(edge => edgeKey(edge.a, edge.b) === edgeKey(0, 1))).toBe(true);
   });
 
@@ -33,6 +34,27 @@ describe("mesh edge bevel", () => {
     expect(result.geometry.indices.length).toBe(mesh.geometry.indices.length + 15);
     expect(meshEdges(result).some(edge => edgeKey(edge.a, edge.b) === edgeKey(0, 1))).toBe(false);
     expect(meshEdges(result).some(edge => edgeKey(edge.a, edge.b) === edgeKey(1, 2))).toBe(false);
+  });
+
+  it("winds new faces like the surface they replace", () => {
+    // Flat meshes in the z = 0 plane, wound counter-clockwise: every result triangle must be too.
+    const flat = (indices: number[]) => ({
+      ...createBoxMesh("flat"),
+      geometry: { vertices: [0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0], indices },
+    });
+    const windings = (g: { vertices: number[]; indices: number[] }) => {
+      const p = (i: number) => [g.vertices[i * 3], g.vertices[i * 3 + 1]];
+      const out: number[] = [];
+      for (let i = 0; i < g.indices.length; i += 3) {
+        const [a, b, c] = [p(g.indices[i]), p(g.indices[i + 1]), p(g.indices[i + 2])];
+        out.push(Math.sign((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])));
+      }
+      return out;
+    };
+    const boundary = bevelSelectedEdges(flat([0, 1, 2]), new Set([edgeKey(0, 1)]), 0.1);
+    const interior = bevelSelectedEdges(flat([0, 1, 2, 1, 3, 2]), new Set([edgeKey(1, 2)]), 0.1);
+    expect(windings(boundary.geometry).every(sign => sign === 1)).toBe(true);
+    expect(windings(interior.geometry).every(sign => sign === 1)).toBe(true);
   });
 
   it("ignores empty, zero and unsupported bevel requests", () => {

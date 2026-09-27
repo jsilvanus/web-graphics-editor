@@ -6,7 +6,7 @@ describe("animation engine", () => {
   it("applies outgoing easing", () =>
     expect(interpolateAnimationValue(0, 100, 0.5, { easing: { mode: "ease-in" } })).toBe(25));
   it("interpolates color", () =>
-    expect(interpolateAnimationValue("#ff0000", "#000000", 0.5)).toBe("#800000"));
+    expect(interpolateAnimationValue("#ff0000", "#000000", 0.5)).toBe("#800000ff"));
   it("supports discrete values", () =>
     expect(interpolateAnimationValue("red", "black", 0.5, { mode: "discrete" })).toBe("red"));
   it("evaluates keyframes at arbitrary time", () =>

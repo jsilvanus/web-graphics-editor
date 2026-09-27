@@ -110,7 +110,9 @@ export function selectEdgeLoop(data: Graphics3DMesh, startKey: string): Set<stri
   if (!start) return new Set();
 
   const quads = inferLogicalQuads(data);
-  const opposite = new Map<string, string>();
+  // An interior edge borders two quads, so it has an opposite edge in each: keep them all so the
+  // walk continues in both directions.
+  const opposite = new Map<string, string[]>();
   for (const quad of quads) {
     for (const key of quad.boundary) {
       const [a, b] = key.split(":").map(Number);
@@ -119,7 +121,7 @@ export function selectEdgeLoop(data: Graphics3DMesh, startKey: string): Set<stri
         const [c, d] = candidate.split(":").map(Number);
         return a !== c && a !== d && b !== c && b !== d;
       });
-      if (other) opposite.set(key, other);
+      if (other) opposite.set(key, [...(opposite.get(key) ?? []), other]);
     }
   }
 
@@ -132,13 +134,14 @@ export function selectEdgeLoop(data: Graphics3DMesh, startKey: string): Set<stri
   return selectGeometricEdgeLoop(data, startKey);
 }
 
-function walkOppositeEdges(startKey: string, opposite: Map<string, string>, result: Set<string>) {
-  let current = startKey;
-  while (true) {
-    const next = opposite.get(current);
-    if (!next || result.has(next)) return;
-    result.add(next);
-    current = next;
+function walkOppositeEdges(startKey: string, opposite: Map<string, string[]>, result: Set<string>) {
+  const queue = [startKey];
+  while (queue.length) {
+    for (const next of opposite.get(queue.shift()!) ?? []) {
+      if (result.has(next)) continue;
+      result.add(next);
+      queue.push(next);
+    }
   }
 }
 

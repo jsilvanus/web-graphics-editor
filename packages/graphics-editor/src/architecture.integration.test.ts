@@ -16,7 +16,7 @@ const doc = (): GraphicsDocument => ({
       height: 300,
       visible: true,
       view3dId: "view",
-      viewportOverrides: { venue: { visible: false } },
+      viewportOverrides: { led: { visible: false } },
     },
     {
       id: "name",
@@ -27,7 +27,7 @@ const doc = (): GraphicsDocument => ({
       height: 100,
       text: "Speaker",
       visible: true,
-      viewportOverrides: { venue: { y: 1400 } },
+      viewportOverrides: { led: { y: 1400 } },
     },
     {
       id: "lyrics",
@@ -38,7 +38,7 @@ const doc = (): GraphicsDocument => ({
       height: 100,
       text: "Lyrics",
       visible: true,
-      viewportOverrides: { broadcast: { visible: false } },
+      viewportOverrides: { yt: { visible: false } },
     },
   ],
   compositions: [
@@ -96,7 +96,7 @@ describe("WEGRA cross-layer integration", () => {
   it("resolves composition → scene → viewport → output", () => {
     const d = doc();
     const r = resolveOutput(d, "youtube", 7)!;
-    expect(r.viewport.id).toBe("yt");
+    expect(r.viewport?.id).toBe("yt");
     expect("scene" in r && r.scene.id).toBe("talk");
     expect("composition" in r && r.composition.id).toBe("broadcast");
   });
@@ -125,6 +125,6 @@ describe("WEGRA cross-layer integration", () => {
     const d = doc();
     const a = resolveOutput(d, "youtube", 7)!;
     const b = resolveOutput(d, "venue", 7)!;
-    expect(a.viewport.id).not.toBe(b.viewport.id);
+    expect(a.viewport?.id).not.toBe(b.viewport?.id);
   });
 });
